@@ -27,6 +27,7 @@ from freshcal.config.loader import Defaults, build_rule, calendar_warnings
 from freshcal.config.schema import validate_dbt_rule
 from freshcal.core.errors import ConfigError, Issue
 from freshcal.core.model import CalendarSpec, Origin, SourceEntry
+from freshcal.core.ports import SourceCatalog
 
 __all__ = ["SUPPORTED_MANIFEST_VERSION", "DbtManifestCatalog"]
 
@@ -35,7 +36,7 @@ _VERSION_PATTERN = re.compile(r"/manifest/v(\d+)\.json$")
 _META_PATH = "meta.freshcal"
 
 
-class DbtManifestCatalog:
+class DbtManifestCatalog(SourceCatalog):
     """Turns the sources of a dbt manifest into :class:`SourceEntry` objects."""
 
     def __init__(
