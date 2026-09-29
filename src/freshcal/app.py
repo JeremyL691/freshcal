@@ -34,14 +34,13 @@ from freshcal.core.model import (
     NextReport,
     RawObservation,
     SourceEntry,
-    SourceRule,
     Status,
     mark_duplicate_source_ids,
 )
 from freshcal.core.ports import CalendarProvider, FreshnessReader
 from freshcal.core.schedule import next_release_after
 from freshcal.core.timeutil import local_date, to_utc
-from freshcal.core.verdict import evaluate, schedule_context
+from freshcal.core.verdict import calendar_notice, evaluate, schedule_context
 
 __all__ = [
     "ValidateReport",
@@ -326,7 +325,10 @@ def _next_entry(
     except (ConfigError, CalendarError) as failure:
         error = failure.issue
         releases = []
-    warnings.extend(_consulted_past_valid_until(rule, calendar))
+    else:
+        notice = calendar_notice(rule, calendar, now)
+        if notice is not None:
+            warnings.append(notice)
     warnings.extend(issue for issue in extra_warnings if issue.location in (None, rule.source_id))
     return NextEntry(
         source_id=entry.source_id,
@@ -335,22 +337,6 @@ def _next_entry(
         warnings=tuple(warnings),
         error=error,
     )
-
-
-def _consulted_past_valid_until(rule: SourceRule, calendar: BusinessCalendar) -> list[Issue]:
-    """``W005`` when a search only *looked up* dates after ``valid_until``."""
-    consulted = calendar.consulted_past_valid_until()
-    valid_until = rule.calendar.valid_until
-    if consulted is None or valid_until is None:
-        return []
-    return [
-        Issue(
-            "W005",
-            f"calendar {calendar.label} was consulted for {consulted.isoformat()}, after its "
-            f"valid_until {valid_until.isoformat()}; the next expected arrival may be wrong",
-            rule.source_id,
-        )
-    ]
 
 
 def run_explain(
@@ -404,7 +390,11 @@ def run_validate(
                 schedule_context(rule, now, provider)
             except (ConfigError, CalendarError) as failure:
                 entry_errors.append(failure.issue)
-            warnings.extend(_consulted_past_valid_until(rule, calendar))
+            else:
+                # The same function `evaluate` uses, on the calendar this loop owns.
+                notice = calendar_notice(rule, calendar, now)
+                if notice is not None:
+                    warnings.append(notice)
         errors.extend(entry_errors)
         warnings.extend(entry.warnings)
         if entry_errors:

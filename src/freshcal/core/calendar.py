@@ -5,9 +5,12 @@ explicit non-working day, the weekend set, then the union of the holiday calenda
 Explicit user intent therefore beats library data, and a date listed in both override
 sets is a configuration error caught at load time (E403).
 
-The calendar also records the latest date anyone looked up. Rule §3.3 uses that for
-``valid_until``: evaluating after it fails with ``E408`` (``CONFIG_ERROR``), while
-merely consulting later dates (for the next expected arrival) is ``W005``.
+The calendar also records the latest date anyone looked up: every predicate and reason
+answer counts, including weekend and override decisions that never reach the provider,
+and an evaluation additionally declares its 34-day notice window with
+``BusinessCalendar.note_horizon`` (BLUEPRINT §3.3 as amended by A-11). Rule §3.3 uses the
+record for ``valid_until``: evaluating after it fails with ``E408`` (``CONFIG_ERROR``),
+while merely consulting later dates (for the next expected arrival) is ``W005``.
 """
 
 from __future__ import annotations
@@ -81,7 +84,13 @@ class BusinessCalendar:
         return self._holidays_for(day.year).get(day)
 
     def is_business_day(self, day: date) -> bool:
-        """The predicate of §3.3, in precedence order."""
+        """The predicate of §3.3, in precedence order.
+
+        Every answer is recorded as a lookup: a weekend or override decision never asks
+        the provider, but it is a business-day decision all the same, and W005 must see
+        it (BLUEPRINT §3.3 as amended by A-11).
+        """
+        self._note_lookup(day)
         if day in self._spec.extra_working_days:
             return True
         if day in self._spec.extra_non_working_days:
@@ -92,6 +101,7 @@ class BusinessCalendar:
 
     def non_business_reason(self, day: date) -> str | None:
         """Why ``day`` is not a business day, in the wording used by ``explain``."""
+        self._note_lookup(day)
         if day in self._spec.extra_working_days:
             return None
         if day in self._spec.extra_non_working_days:
@@ -125,9 +135,9 @@ class BusinessCalendar:
         """Record that business-day decisions up to ``local_date`` are in scope.
 
         ``W005`` must not depend on how far a particular search happens to look, so the
-        evaluation states its notice window explicitly (BLUEPRINT §3.3 as amended by A-9):
-        the dates a rule's horizon reaches are "consulted" even when the exact search never
-        asks about them.
+        evaluation states its notice window explicitly (BLUEPRINT §3.3 as amended by
+        A-11): the dates a rule's horizon reaches are "consulted" even when the exact
+        search never asks about them.
         """
         self._note_lookup(local_date)
 

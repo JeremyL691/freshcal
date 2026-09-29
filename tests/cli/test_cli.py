@@ -329,6 +329,36 @@ def test_c_17_validate_prints_w006_and_exits_zero(capsys: pytest.CaptureFixture[
     assert out.rstrip().endswith("1 sources valid, 0 with errors, 1 warnings")
 
 
+def test_c_17_validate_reports_w005_near_valid_until(capsys: pytest.CaptureFixture[str]) -> None:
+    """CLI-04 (W005 part): ``validate`` reports the warning ``next`` and ``check`` report.
+
+    On 2026-12-01 the 34-day notice window of the CN-like rule reaches 2027-01-04, past
+    its ``valid_until: 2026-12-31``, so all three commands must say so.
+    """
+    code, out, err = run(
+        ["validate", "-c", str(NEAR_VALID_UNTIL), "--now", "2026-12-01T00:00:00Z"], capsys
+    )
+    assert code == 0
+    assert err == ""
+    assert out.startswith("W005 ")
+    assert "calendar cn_workdays was consulted for 2027-01-04" in out
+    assert "after its valid_until 2026-12-31" in out
+    assert out.rstrip().endswith("1 sources valid, 0 with errors, 1 warnings")
+
+    code, out, _ = run(
+        ["next", "-c", str(NEAR_VALID_UNTIL), "--now", "2026-12-01T00:00:00Z", "--count", "3"],
+        capsys,
+    )
+    assert code == 0
+    assert "  W005 cn.daily_sales: calendar cn_workdays was consulted for 2027-01-04" in out
+
+    code, out, _ = run(
+        ["check", "-c", str(NEAR_VALID_UNTIL), "--now", "2026-12-01T00:00:00Z"], capsys
+    )
+    assert code == 1  # the September data is long overdue, but it is still a verdict
+    assert "  W005 calendar cn_workdays was consulted for 2027-01-04" in out
+
+
 def test_version_and_help(capsys: pytest.CaptureFixture[str]) -> None:
     code, out, _ = run(["--version"], capsys)
     assert code == 0

@@ -446,6 +446,9 @@ def test_u_app_10_run_validate_finds_schedule_calendar_and_warning_problems() ->
     )
     valid_second = source_entry("c.valid_second")
     good = source_entry("d.good")
+    # The 34-day notice window reaches 2027-02-07 on 2027-01-04, so this calendar (valid
+    # until 2027-02-01) earns W005 without being expired.
+    inside_window = source_entry("f.window", valid_until=date(2027, 2, 1))
     unloaded = SourceEntry(
         source_id="e.unloaded",
         origin=Origin.CONFIG,
@@ -459,7 +462,7 @@ def test_u_app_10_run_validate_finds_schedule_calendar_and_warning_problems() ->
 
     eventually = datetime(2027, 1, 4, 2, 0, tzinfo=UTC)
     report = run_validate(
-        [expired, impossible, valid_second, good, unloaded],
+        [expired, impossible, valid_second, good, inside_window, unloaded],
         FakeCalendarProvider(start_year=1999),
         eventually,
     )
@@ -469,12 +472,17 @@ def test_u_app_10_run_validate_finds_schedule_calendar_and_warning_problems() ->
     assert "E209" in codes  # b.impossible: no release in the horizon
     assert "E201" in codes  # e.unloaded: carried from loading
     assert "W006" in codes
+    assert "W005" in codes  # f.window: its notice window reaches past valid_until
+    # The warning comes from the same function `evaluate` uses and names the horizon.
+    w005 = next(issue for issue in report.issues if issue.code == "W005")
+    assert w005.location == "f.window"
+    assert "was consulted for 2027-02-07, after its valid_until 2027-02-01" in w005.message
     # errors come first, warnings after
     first_warning = next(index for index, code in enumerate(codes) if code.startswith("W"))
     assert all(code.startswith("E") for code in codes[:first_warning])
     assert report.error_count == 3  # expired, impossible, unloaded
-    assert report.valid_count == 2
-    assert report.warning_count == 1
+    assert report.valid_count == 3
+    assert report.warning_count == 2
 
 
 def test_u_app_10_run_validate_reports_the_horizon_and_calendar_range_errors() -> None:

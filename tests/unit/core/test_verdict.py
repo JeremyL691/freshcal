@@ -441,6 +441,36 @@ def test_w005_when_the_calendar_is_consulted_past_valid_until() -> None:
     assert "after its valid_until 2026-12-31" in result.warnings[0].message
 
 
+def test_u_ver_15_no_w005_on_a_config_error_result() -> None:
+    """SEM-07: W005 belongs to non-error returns only.
+
+    ``review/v0.1.0/A-semantics/repro_w005_on_error.py``: a leap-day schedule whose
+    calendar is valid until 2103-12-31 cannot be decided for a 2096 observation (E215),
+    and the search for the next arrival consults 2104-02-29 — past ``valid_until``. The
+    lookup is real, but a result that carries no verdict must not also carry a warning
+    about the inputs of a verdict (§3.7.2: W005 after any non-error return).
+    """
+    rule = SourceRule(
+        source_id="vendor.leap",
+        origin=Origin.CONFIG,
+        schedule=CronSchedule("0 0 29 2 *", UTC_ZONE, NonBusinessDayPolicy.SKIP),
+        calendar=CalendarSpec(name="c", valid_until=date(2103, 12, 31)),
+        grace=timedelta(days=1),
+        target=FreshnessTarget(relation="raw.leap", loaded_at_field="_loaded_at"),
+        observed_timezone=UTC_ZONE,
+    )
+    result = evaluate(
+        rule,
+        RawObservation(aware("2096-03-01T00:00:00Z")),
+        aware("2103-06-01T00:00:00Z"),
+        FakeCalendarProvider(),
+    )
+    assert result.status is Status.CONFIG_ERROR
+    assert result.error is not None
+    assert result.error.code == "E215"
+    assert result.warnings == ()
+
+
 def test_warnings_and_errors_carry_the_source_id() -> None:
     rule = ecb_rule()
     result = evaluate(

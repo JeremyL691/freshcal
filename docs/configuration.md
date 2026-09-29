@@ -105,7 +105,7 @@ calendars. A date listed in both override sets is a configuration error (`E403`)
 | `weekend` | Any subset of `mon`…`sun`, at most six entries; `[]` means no weekend. |
 | `holidays` | Public calendars (`country` + optional `subdivision` and `categories`) or financial markets (`financial: XECB`); validated against the `holidays` library (`E401`, `E402`). |
 | `overrides` | Inline lists and/or override files (paths relative to the config file). A missing, unreadable, malformed, or schema-invalid file is `E404`. |
-| `valid_until` | The last date whose holidays and overrides a person has checked. Evaluating after it fails with `E408`; merely looking up later dates (for the next expected arrival) warns with `W005`. Overrides without it warn at load time (`W006`). |
+| `valid_until` | The last date whose holidays and overrides a person has checked. Evaluating after it fails with `E408`; consulting later dates warns with `W005` — the notice window is the 34 days after `now` (`CHUNK + DATE_PADDING_DAYS`), declared explicitly, so `check`, `next` and `validate` agree. A plain `cron` with `on_non_business_day: none` never consults the calendar and never warns. Overrides without it warn at load time (`W006`). |
 
 An override file is a small YAML document:
 
