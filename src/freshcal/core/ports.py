@@ -11,9 +11,9 @@ from collections.abc import Mapping
 from datetime import date
 from typing import Protocol
 
-from freshcal.core.model import HolidayCalendarRef
+from freshcal.core.model import FreshnessTarget, HolidayCalendarRef, RawObservation
 
-__all__ = ["CalendarProvider"]
+__all__ = ["CalendarProvider", "FreshnessReader"]
 
 
 class CalendarProvider(Protocol):
@@ -26,4 +26,21 @@ class CalendarProvider(Protocol):
         outside the provider's supported range, because silently returning no holidays
         would turn every weekday into a business day.
         """
+        ...
+
+
+class FreshnessReader(Protocol):
+    """Reads one scalar per source from a warehouse, read-only."""
+
+    def read_latest(self, target: FreshnessTarget) -> RawObservation:
+        """Run ``SELECT max(loaded_at_field) ...`` and return the value as the driver
+        reported it (naive, aware, or ``None`` for SQL NULL).
+
+        Raises :class:`~freshcal.core.errors.QueryError` ``E502`` when the query fails
+        and ``E503`` when the value has an unsupported type.
+        """
+        ...
+
+    def close(self) -> None:
+        """Release the connection."""
         ...
