@@ -86,6 +86,10 @@ files = ["src"]
 [tool.pytest.ini_options]
 minversion = "9.0"
 testpaths = ["tests"]
+# tests/conftest.py holds the shared FakeCalendarProvider; the repository root on
+# sys.path lets test modules import it as `tests.conftest` without adding
+# __init__.py files to the test tree.
+pythonpath = ["."]
 addopts = ["-ra", "--strict-markers", "--strict-config", "-m", "not postgres"]
 markers = ["postgres: PostgreSQL integration tests (need FRESHCAL_TEST_PG_DSN)"]
 xfail_strict = true
