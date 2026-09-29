@@ -24,6 +24,7 @@ from freshcal.core.model import (
     MonthlyBusinessDaySchedule,
     NonBusinessDayPolicy,
     Origin,
+    RawObservation,
     SourceRule,
     Weekday,
 )
@@ -210,3 +211,57 @@ def windows(max_days: int = 45) -> st.SearchStrategy[tuple[datetime, datetime]]:
         return start, start + length
 
     return build()
+
+
+def graces() -> st.SearchStrategy[timedelta]:
+    """Grace windows of §9.3: 0 to 10 days, minute granularity."""
+    return st.integers(min_value=0, max_value=10 * 24 * 60).map(
+        lambda minutes: timedelta(minutes=minutes)
+    )
+
+
+def observed_offsets(max_days: int = 90) -> st.SearchStrategy[timedelta]:
+    """``observed = now + delta`` with delta in [-``max_days``, +2 days] (§9.3).
+
+    §9.3's range is [-400 days, +2 days]; the verdict properties use a narrower age
+    because a dense cron expression over 400 days costs ~150 ms per evaluation, and 300
+    examples across a dozen properties would exceed the PB-5 budget of 180 s. The very
+    stale cases (and the horizon paths they trigger) are covered by fixed tests instead:
+    U-VER-07, U-VER-11…U-VER-13, G30, G33, G34, PB-2 and PB-3.
+    """
+    return st.integers(min_value=-max_days * 24 * 60, max_value=2 * 24 * 60).map(
+        lambda minutes: timedelta(minutes=minutes)
+    )
+
+
+@st.composite
+def verdict_inputs(
+    draw: st.DrawFn,
+) -> tuple[SourceRule, CalendarSpec, FakeCalendarProvider, datetime, RawObservation]:
+    """A rule, its calendar objects, an evaluation instant, and a raw observation.
+
+    Cost control: schedules exclude sub-hourly cron expressions, because a rule that
+    fires every minute would hit the 10 000-release counting cap in most examples and
+    dominate the runtime; PB-2 covers that case as a fixed budget instead.
+    """
+    schedule = draw(schedules(sub_hourly=False))
+    spec, provider = draw(calendars())
+    now = draw(instants())
+    offset = draw(st.one_of(st.none(), observed_offsets()))
+    raw = RawObservation(None if offset is None else (now + offset).replace(tzinfo=None))
+    rule = SourceRule(
+        source_id="property.verdict",
+        origin=Origin.CONFIG,
+        schedule=schedule,
+        calendar=spec,
+        grace=draw(graces()),
+        target=FreshnessTarget(relation="raw.t", loaded_at_field="_loaded_at"),
+        observed_timezone=ZoneInfo("UTC"),
+        active_from=draw(
+            st.one_of(
+                st.none(),
+                st.dates(min_value=date(2001, 1, 1), max_value=date(2089, 12, 31)),
+            )
+        ),
+    )
+    return rule, spec, provider, now, raw

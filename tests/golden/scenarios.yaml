@@ -1,0 +1,846 @@
+# Golden scenarios (BLUEPRINT.md §3.10).
+#
+# Every row is a normative expected output: `status`, the reported release and its
+# deadline, the next expected arrival, the counts, warning codes, the error code (null
+# for verdicts) and the explanation sentence derived by hand from the §8.4 templates.
+# Optional `release_adjusted_from`, `release_dst` and `release_clamped` pin the reported
+# release's metadata; `next_adjusted_from` pins the next expected arrival's (G13, where
+# the rolled release is the upcoming one rather than the reported one). `observed` is an aware ISO string, a naive ISO string (interpreted in the
+# rule's observed_timezone), or null.
+#
+# Rule shorthands from §3.10: ECB = business_days 16:00 Europe/Berlin, XECB holidays,
+# grace 2h; BY3 = monthly_business_day 3, 09:00 Europe/Berlin, DE-BY holidays, grace 4h;
+# CN = business_days 15:00 Asia/Shanghai, CN holidays, six make-up workdays,
+# valid_until 2026-12-31, grace 2h; B230 = cron "30 2 * * *" Europe/Berlin, grace 1h.
+
+- id: G01
+  title: ECB Monday morning with Friday's data (dbt issue #4450)
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{financial: XECB}]}
+    grace: 2h
+  now: 2026-09-28T05:30:00Z
+  observed: 2026-09-25T14:07:00Z
+  expect:
+    status: ON_TIME
+    release: 2026-09-25T14:00:00Z
+    deadline: 2026-09-25T16:00:00Z
+    next_expected_arrival: 2026-09-28T14:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "On time: latest release Fri 2026-09-25 16:00 CEST arrived (observed Fri 2026-09-25 16:07 CEST); next release Mon 2026-09-28 16:00 CEST."
+
+- id: G02
+  title: ECB inside the grace window
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{financial: XECB}]}
+    grace: 2h
+  now: 2026-09-28T14:30:00Z
+  observed: 2026-09-25T14:07:00Z
+  expect:
+    status: NOT_DUE
+    release: 2026-09-28T14:00:00Z
+    deadline: 2026-09-28T16:00:00Z
+    next_expected_arrival: 2026-09-29T14:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 1
+    warning_codes: []
+    error_code: null
+    explanation: "Not due: release Mon 2026-09-28 16:00 CEST has not arrived yet; grace window ends Mon 2026-09-28 18:00 CEST; next release Tue 2026-09-29 16:00 CEST."
+
+- id: G03
+  title: ECB one second past the deadline
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{financial: XECB}]}
+    grace: 2h
+  now: 2026-09-28T16:00:01Z
+  observed: 2026-09-25T14:07:00Z
+  expect:
+    status: OVERDUE
+    release: 2026-09-28T14:00:00Z
+    deadline: 2026-09-28T16:00:00Z
+    next_expected_arrival: 2026-09-29T14:00:00Z
+    missed_count: 1
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "Overdue: release Mon 2026-09-28 16:00 CEST missed its deadline Mon 2026-09-28 18:00 CEST; 1 release missed; latest data observed Fri 2026-09-25 16:07 CEST."
+
+- id: G04
+  title: ECB exactly at the deadline (the grace window is closed at D)
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{financial: XECB}]}
+    grace: 2h
+  now: 2026-09-28T16:00:00Z
+  observed: 2026-09-25T14:07:00Z
+  expect:
+    status: NOT_DUE
+    release: 2026-09-28T14:00:00Z
+    deadline: 2026-09-28T16:00:00Z
+    next_expected_arrival: 2026-09-29T14:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 1
+    warning_codes: []
+    error_code: null
+    explanation: "Not due: release Mon 2026-09-28 16:00 CEST has not arrived yet; grace window ends Mon 2026-09-28 18:00 CEST; next release Tue 2026-09-29 16:00 CEST."
+
+- id: G05
+  title: ECB exactly at the release instant
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{financial: XECB}]}
+    grace: 2h
+  now: 2026-09-28T14:00:00Z
+  observed: 2026-09-25T14:07:00Z
+  expect:
+    status: NOT_DUE
+    release: 2026-09-28T14:00:00Z
+    deadline: 2026-09-28T16:00:00Z
+    next_expected_arrival: 2026-09-29T14:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 1
+    warning_codes: []
+    error_code: null
+    explanation: "Not due: release Mon 2026-09-28 16:00 CEST has not arrived yet; grace window ends Mon 2026-09-28 18:00 CEST; next release Tue 2026-09-29 16:00 CEST."
+
+- id: G06
+  title: ECB observed exactly at the release instant (arrival is inclusive)
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{financial: XECB}]}
+    grace: 2h
+  now: 2026-09-28T17:00:00Z
+  observed: 2026-09-28T14:00:00Z
+  expect:
+    status: ON_TIME
+    release: 2026-09-28T14:00:00Z
+    deadline: 2026-09-28T16:00:00Z
+    next_expected_arrival: 2026-09-29T14:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "On time: latest release Mon 2026-09-28 16:00 CEST arrived (observed Mon 2026-09-28 16:00 CEST); next release Tue 2026-09-29 16:00 CEST."
+
+- id: G07
+  title: ECB over Easter with the TARGET calendar
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{financial: XECB}]}
+    grace: 2h
+  now: 2026-04-07T06:00:00Z
+  observed: 2026-04-02T14:05:00Z
+  expect:
+    status: ON_TIME
+    release: 2026-04-02T14:00:00Z
+    deadline: 2026-04-02T16:00:00Z
+    next_expected_arrival: 2026-04-07T14:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "On time: latest release Thu 2026-04-02 16:00 CEST arrived (observed Thu 2026-04-02 16:05 CEST); next release Tue 2026-04-07 16:00 CEST."
+
+- id: G08
+  title: Same data without the TARGET calendar (two false alarms)
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar: {weekend: [sat, sun]}
+    grace: 2h
+  now: 2026-04-07T06:00:00Z
+  observed: 2026-04-02T14:05:00Z
+  expect:
+    status: OVERDUE
+    release: 2026-04-03T14:00:00Z
+    deadline: 2026-04-03T16:00:00Z
+    next_expected_arrival: 2026-04-07T14:00:00Z
+    missed_count: 2
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "Overdue: release Fri 2026-04-03 16:00 CEST missed its deadline Fri 2026-04-03 18:00 CEST; 2 releases missed; latest data observed Thu 2026-04-02 16:05 CEST."
+
+- id: G09
+  title: Third business day of the month in Bavaria, on Epiphany
+  rule:
+    schedule: {kind: monthly_business_day, business_day: 3, time: "09:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{country: DE, subdivision: BY}]}
+    grace: 4h
+  now: 2026-01-06T12:30:00Z
+  observed: 2025-12-03T08:30:00Z
+  expect:
+    status: ON_TIME
+    release: 2025-12-03T08:00:00Z
+    deadline: 2025-12-03T12:00:00Z
+    next_expected_arrival: 2026-01-07T08:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "On time: latest release Wed 2025-12-03 09:00 CET arrived (observed Wed 2025-12-03 09:30 CET); next release Wed 2026-01-07 09:00 CET."
+
+- id: G10
+  title: Third business day of the month in Bavaria, inside the grace window
+  rule:
+    schedule: {kind: monthly_business_day, business_day: 3, time: "09:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{country: DE, subdivision: BY}]}
+    grace: 4h
+  now: 2026-01-07T10:00:00Z
+  observed: 2025-12-03T08:30:00Z
+  expect:
+    status: NOT_DUE
+    release: 2026-01-07T08:00:00Z
+    deadline: 2026-01-07T12:00:00Z
+    next_expected_arrival: 2026-02-04T08:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 1
+    warning_codes: []
+    error_code: null
+    explanation: "Not due: release Wed 2026-01-07 09:00 CET has not arrived yet; grace window ends Wed 2026-01-07 13:00 CET; next release Wed 2026-02-04 09:00 CET."
+
+- id: G11
+  title: 22nd business day of a short month is clamped
+  rule:
+    schedule: {kind: monthly_business_day, business_day: 22, time: "18:00", timezone: UTC}
+    calendar: {weekend: [sat, sun]}
+    grace: 2h
+  now: 2026-02-27T19:00:00Z
+  observed: 2026-01-30T18:05:00Z
+  expect:
+    status: NOT_DUE
+    release: 2026-02-27T18:00:00Z
+    release_clamped: true
+    deadline: 2026-02-27T20:00:00Z
+    next_expected_arrival: 2026-03-31T18:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 1
+    warning_codes: []
+    error_code: null
+    explanation: "Not due: release Fri 2026-02-27 18:00 UTC has not arrived yet; grace window ends Fri 2026-02-27 20:00 UTC; next release Tue 2026-03-31 18:00 UTC."
+
+- id: G12
+  title: Last business day of May with US federal holidays
+  rule:
+    schedule: {kind: monthly_business_day, business_day: -1, time: "17:00", timezone: America/New_York}
+    calendar: {holidays: [{country: US}]}
+    grace: 3h
+  now: 2026-06-01T13:00:00Z
+  observed: 2026-04-30T21:10:00Z
+  expect:
+    status: OVERDUE
+    release: 2026-05-29T21:00:00Z
+    deadline: 2026-05-30T00:00:00Z
+    next_expected_arrival: 2026-06-30T21:00:00Z
+    missed_count: 1
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "Overdue: release Fri 2026-05-29 17:00 EDT missed its deadline Fri 2026-05-29 20:00 EDT; 1 release missed; latest data observed Thu 2026-04-30 17:10 EDT."
+
+- id: G13
+  title: Cron rolled forward over Easter Monday
+  rule:
+    schedule: {kind: cron, cron: "0 9 * * 1", timezone: Europe/Berlin, on_non_business_day: following}
+    calendar: {holidays: [{country: DE}]}
+    grace: 3h
+  now: 2026-04-06T10:00:00Z
+  observed: 2026-03-30T07:20:00Z
+  expect:
+    status: ON_TIME
+    release: 2026-03-30T07:00:00Z
+    deadline: 2026-03-30T10:00:00Z
+    next_expected_arrival: 2026-04-07T07:00:00Z
+    next_adjusted_from: 2026-04-06
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "On time: latest release Mon 2026-03-30 09:00 CEST arrived (observed Mon 2026-03-30 09:20 CEST); next release Tue 2026-04-07 09:00 CEST."
+
+- id: G14
+  title: Plain daily cron keeps its weekend release (policy none)
+  rule:
+    schedule: {kind: cron, cron: "0 6 * * *", timezone: UTC}
+    calendar: {weekend: [sat, sun]}
+    grace: 1h
+  now: 2026-09-27T08:00:00Z
+  observed: 2026-09-26T06:03:00Z
+  expect:
+    status: OVERDUE
+    release: 2026-09-27T06:00:00Z
+    deadline: 2026-09-27T07:00:00Z
+    next_expected_arrival: 2026-09-28T06:00:00Z
+    missed_count: 1
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "Overdue: release Sun 2026-09-27 06:00 UTC missed its deadline Sun 2026-09-27 07:00 UTC; 1 release missed; latest data observed Sat 2026-09-26 06:03 UTC."
+
+- id: G15
+  title: Spring-forward gap shifts a release forward
+  rule:
+    schedule: {kind: cron, cron: "30 2 * * *", timezone: Europe/Berlin}
+    calendar: {weekend: [sat, sun]}
+    grace: 1h
+  now: 2026-03-29T02:00:00Z
+  observed: 2026-03-28T01:35:00Z
+  expect:
+    status: NOT_DUE
+    release: 2026-03-29T01:30:00Z
+    release_dst: gap
+    deadline: 2026-03-29T02:30:00Z
+    next_expected_arrival: 2026-03-30T00:30:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 1
+    warning_codes: []
+    error_code: null
+    explanation: "Not due: release Sun 2026-03-29 03:30 CEST has not arrived yet; grace window ends Sun 2026-03-29 04:30 CEST; next release Mon 2026-03-30 02:30 CEST."
+
+- id: G16
+  title: Fall-back overlap keeps the first occurrence
+  rule:
+    schedule: {kind: cron, cron: "30 2 * * *", timezone: Europe/Berlin}
+    calendar: {weekend: [sat, sun]}
+    grace: 1h
+  now: 2026-10-25T01:45:00Z
+  observed: 2026-10-24T00:40:00Z
+  expect:
+    status: OVERDUE
+    release: 2026-10-25T00:30:00Z
+    release_dst: ambiguous
+    deadline: 2026-10-25T01:30:00Z
+    next_expected_arrival: 2026-10-26T01:30:00Z
+    missed_count: 1
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "Overdue: release Sun 2026-10-25 02:30 CEST missed its deadline Sun 2026-10-25 02:30 CET; 1 release missed; latest data observed Sat 2026-10-24 02:40 CEST."
+
+- id: G17
+  title: China make-up workday on a Sunday
+  rule:
+    schedule: {kind: business_days, time: "15:00", timezone: Asia/Shanghai}
+    calendar:
+      weekend: [sat, sun]
+      holidays: [{country: CN}]
+      overrides:
+        - working_days: ["2026-01-04", "2026-02-14", "2026-02-28", "2026-05-09", "2026-09-20", "2026-10-10"]
+      valid_until: "2026-12-31"
+    grace: 2h
+  now: 2026-09-20T10:00:00Z
+  observed: 2026-09-18T07:05:00Z
+  expect:
+    status: OVERDUE
+    release: 2026-09-20T07:00:00Z
+    deadline: 2026-09-20T09:00:00Z
+    next_expected_arrival: 2026-09-21T07:00:00Z
+    missed_count: 1
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "Overdue: release Sun 2026-09-20 15:00 CST missed its deadline Sun 2026-09-20 17:00 CST; 1 release missed; latest data observed Fri 2026-09-18 15:05 CST."
+
+- id: G17b
+  title: The same Sunday without the make-up workday override
+  rule:
+    schedule: {kind: business_days, time: "15:00", timezone: Asia/Shanghai}
+    calendar:
+      weekend: [sat, sun]
+      holidays: [{country: CN}]
+      valid_until: "2026-12-31"
+    grace: 2h
+  now: 2026-09-20T10:00:00Z
+  observed: 2026-09-18T07:05:00Z
+  expect:
+    status: ON_TIME
+    release: 2026-09-18T07:00:00Z
+    deadline: 2026-09-18T09:00:00Z
+    next_expected_arrival: 2026-09-21T07:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "On time: latest release Fri 2026-09-18 15:00 CST arrived (observed Fri 2026-09-18 15:05 CST); next release Mon 2026-09-21 15:00 CST."
+
+- id: G18
+  title: China National Day week
+  rule:
+    schedule: {kind: business_days, time: "15:00", timezone: Asia/Shanghai}
+    calendar:
+      weekend: [sat, sun]
+      holidays: [{country: CN}]
+      overrides:
+        - working_days: ["2026-01-04", "2026-02-14", "2026-02-28", "2026-05-09", "2026-09-20", "2026-10-10"]
+      valid_until: "2026-12-31"
+    grace: 2h
+  now: 2026-10-08T01:00:00Z
+  observed: 2026-09-30T07:02:00Z
+  expect:
+    status: ON_TIME
+    release: 2026-09-30T07:00:00Z
+    deadline: 2026-09-30T09:00:00Z
+    next_expected_arrival: 2026-10-08T07:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "On time: latest release Wed 2026-09-30 15:00 CST arrived (observed Wed 2026-09-30 15:02 CST); next release Thu 2026-10-08 15:00 CST."
+
+- id: G19
+  title: Union of the UK and TARGET calendars
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/London}
+    calendar:
+      weekend: [sat, sun]
+      holidays:
+        - {country: GB, subdivision: ENG}
+        - {financial: XECB}
+    grace: 2h
+  now: 2026-05-05T08:00:00Z
+  observed: 2026-04-30T15:05:00Z
+  expect:
+    status: ON_TIME
+    release: 2026-04-30T15:00:00Z
+    deadline: 2026-04-30T17:00:00Z
+    next_expected_arrival: 2026-05-05T15:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "On time: latest release Thu 2026-04-30 16:00 BST arrived (observed Thu 2026-04-30 16:05 BST); next release Tue 2026-05-05 16:00 BST."
+
+- id: G20a
+  title: Naive timestamp interpreted in Berlin time (E214 avoided)
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{financial: XECB}]}
+    grace: 2h
+    observed_timezone: Europe/Berlin
+  now: 2026-09-28T16:30:00Z
+  observed: 2026-09-28 15:30:00
+  expect:
+    status: OVERDUE
+    release: 2026-09-28T14:00:00Z
+    deadline: 2026-09-28T16:00:00Z
+    next_expected_arrival: 2026-09-29T14:00:00Z
+    missed_count: 1
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "Overdue: release Mon 2026-09-28 16:00 CEST missed its deadline Mon 2026-09-28 18:00 CEST; 1 release missed; latest data observed Mon 2026-09-28 15:30 CEST."
+
+- id: G20b
+  title: Naive timestamp without a configured zone
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{financial: XECB}]}
+    grace: 2h
+  now: 2026-09-28T16:30:00Z
+  observed: 2026-09-28 15:30:00
+  expect:
+    status: CONFIG_ERROR
+    release: null
+    deadline: null
+    next_expected_arrival: null
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: E214
+    explanation: "Configuration error: E214 max(_loaded_at) returned a timestamp without time zone (2026-09-28 15:30:00); set observed_timezone on the source or under defaults (write UTC explicitly if the column stores UTC)"
+
+- id: G21
+  title: Observed timestamp half an hour in the future
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{financial: XECB}]}
+    grace: 2h
+  now: 2026-09-28T05:30:00Z
+  observed: 2026-09-28T06:00:00Z
+  expect:
+    status: ON_TIME
+    release: 2026-09-25T14:00:00Z
+    deadline: 2026-09-25T16:00:00Z
+    next_expected_arrival: 2026-09-28T14:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: [W003]
+    error_code: null
+    explanation: "On time: latest release Fri 2026-09-25 16:00 CEST arrived (observed Mon 2026-09-28 08:00 CEST); next release Mon 2026-09-28 16:00 CEST."
+
+- id: G22
+  title: Empty table without active_from
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{financial: XECB}]}
+    grace: 2h
+  now: 2026-09-28T05:30:00Z
+  observed: null
+  expect:
+    status: NO_DATA
+    release: 2026-09-25T14:00:00Z
+    deadline: 2026-09-25T16:00:00Z
+    next_expected_arrival: 2026-09-28T14:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "No data: max(_loaded_at) returned NULL; latest release Fri 2026-09-25 16:00 CEST; next release Mon 2026-09-28 16:00 CEST."
+
+- id: G23a
+  title: Empty table with active_from in the future
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{financial: XECB}]}
+    grace: 2h
+    active_from: "2026-10-01"
+  now: 2026-09-30T12:00:00Z
+  observed: null
+  expect:
+    status: ON_TIME
+    release: null
+    deadline: null
+    next_expected_arrival: 2026-10-01T14:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "On time: no release has occurred yet; next release Thu 2026-10-01 16:00 CEST."
+
+- id: G23b
+  title: Empty table with active_from in the past
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{financial: XECB}]}
+    grace: 2h
+    active_from: "2026-10-01"
+  now: 2026-10-01T16:30:00Z
+  observed: null
+  expect:
+    status: OVERDUE
+    release: 2026-10-01T14:00:00Z
+    deadline: 2026-10-01T16:00:00Z
+    next_expected_arrival: 2026-10-02T14:00:00Z
+    missed_count: 1
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "Overdue: release Thu 2026-10-01 16:00 CEST missed its deadline Thu 2026-10-01 18:00 CEST; 1 release missed; latest data observed never."
+
+- id: G24
+  title: Leap-day-only cron with recent data
+  rule:
+    schedule: {kind: cron, cron: "0 0 29 2 *", timezone: UTC}
+    calendar: {weekend: [sat, sun]}
+    grace: 1d
+  now: 2026-09-28T00:00:00Z
+  observed: 2024-02-29T00:10:00Z
+  expect:
+    status: ON_TIME
+    release: 2024-02-29T00:00:00Z
+    deadline: 2024-03-01T00:00:00Z
+    next_expected_arrival: 2028-02-29T00:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "On time: latest release Thu 2024-02-29 00:00 UTC arrived (observed Thu 2024-02-29 00:10 UTC); next release Tue 2028-02-29 00:00 UTC."
+
+- id: G25
+  title: Year boundary with a TARGET holiday and a weekend
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{financial: XECB}]}
+    grace: 2h
+  now: 2027-01-04T08:00:00Z
+  observed: 2026-12-31T15:05:00Z
+  expect:
+    status: ON_TIME
+    release: 2026-12-31T15:00:00Z
+    deadline: 2026-12-31T17:00:00Z
+    next_expected_arrival: 2027-01-04T15:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "On time: latest release Thu 2026-12-31 16:00 CET arrived (observed Thu 2026-12-31 16:05 CET); next release Mon 2027-01-04 16:00 CET."
+
+- id: G26
+  title: Grace is wall-clock time across a weekend
+  rule:
+    schedule: {kind: business_days, time: "22:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{financial: XECB}]}
+    grace: 6h
+  now: 2026-09-26T03:00:00Z
+  observed: 2026-09-24T20:10:00Z
+  expect:
+    status: OVERDUE
+    release: 2026-09-25T20:00:00Z
+    deadline: 2026-09-26T02:00:00Z
+    next_expected_arrival: 2026-09-28T20:00:00Z
+    missed_count: 1
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "Overdue: release Fri 2026-09-25 22:00 CEST missed its deadline Sat 2026-09-26 04:00 CEST; 1 release missed; latest data observed Thu 2026-09-24 22:10 CEST."
+
+- id: G27
+  title: Hourly cron with two releases pending
+  rule:
+    schedule: {kind: cron, cron: "0 * * * *", timezone: UTC}
+    calendar: {weekend: [sat, sun]}
+    grace: 3h
+  now: 2026-09-28T12:30:00Z
+  observed: 2026-09-28T10:05:00Z
+  expect:
+    status: NOT_DUE
+    release: 2026-09-28T11:00:00Z
+    deadline: 2026-09-28T14:00:00Z
+    next_expected_arrival: 2026-09-28T13:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 2
+    warning_codes: []
+    error_code: null
+    explanation: "Not due: release Mon 2026-09-28 11:00 UTC has not arrived yet (2 releases pending); grace window ends Mon 2026-09-28 14:00 UTC; next release Mon 2026-09-28 13:00 UTC."
+
+- id: G28
+  title: The same instant expressed in another zone gives the same result
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{financial: XECB}]}
+    grace: 2h
+  now: 2026-09-28T05:30:00Z
+  observed: 2026-09-25T23:07:00+09:00
+  expect:
+    status: ON_TIME
+    release: 2026-09-25T14:00:00Z
+    deadline: 2026-09-25T16:00:00Z
+    next_expected_arrival: 2026-09-28T14:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "On time: latest release Fri 2026-09-25 16:00 CEST arrived (observed Fri 2026-09-25 16:07 CEST); next release Mon 2026-09-28 16:00 CEST."
+
+- id: G29
+  title: National German holidays miss Bavaria's Epiphany
+  rule:
+    schedule: {kind: monthly_business_day, business_day: 3, time: "09:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{country: DE}]}
+    grace: 4h
+  now: 2026-01-06T12:30:00Z
+  observed: 2025-12-03T08:30:00Z
+  expect:
+    status: OVERDUE
+    release: 2026-01-06T08:00:00Z
+    deadline: 2026-01-06T12:00:00Z
+    next_expected_arrival: 2026-02-04T08:00:00Z
+    missed_count: 1
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "Overdue: release Tue 2026-01-06 09:00 CET missed its deadline Tue 2026-01-06 13:00 CET; 1 release missed; latest data observed Wed 2025-12-03 09:30 CET."
+
+- id: G30
+  title: Stale beyond the horizon with a truncated count
+  rule:
+    schedule: {kind: cron, cron: "0 6 * * *", timezone: UTC}
+    calendar: {weekend: [sat, sun]}
+    grace: 1h
+  now: 2026-09-28T12:00:00Z
+  observed: 2019-01-01T00:00:00Z
+  expect:
+    status: OVERDUE
+    release: 2021-09-25T06:00:00Z
+    deadline: 2021-09-25T07:00:00Z
+    next_expected_arrival: 2026-09-29T06:00:00Z
+    missed_count: 1830
+    missed_truncated: true
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "Overdue: release Sat 2021-09-25 06:00 UTC missed its deadline Sat 2021-09-25 07:00 UTC; at least 1830 releases missed; latest data observed Tue 2019-01-01 00:00 UTC."
+
+- id: G31
+  title: Cron rolled backward across a weekend
+  rule:
+    schedule: {kind: cron, cron: "0 9 15 * *", timezone: Europe/Berlin, on_non_business_day: preceding}
+    calendar: {holidays: [{country: DE}]}
+    grace: 8h
+  now: 2026-11-13T12:00:00Z
+  observed: 2026-10-15T07:30:00Z
+  expect:
+    status: NOT_DUE
+    release: 2026-11-13T08:00:00Z
+    release_adjusted_from: 2026-11-15
+    deadline: 2026-11-13T16:00:00Z
+    next_expected_arrival: 2026-12-15T08:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 1
+    warning_codes: []
+    error_code: null
+    explanation: "Not due: release Fri 2026-11-13 09:00 CET has not arrived yet; grace window ends Fri 2026-11-13 17:00 CET; next release Tue 2026-12-15 09:00 CET."
+
+- id: G32
+  title: Three consecutive missed ECB releases
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{financial: XECB}]}
+    grace: 2h
+  now: 2026-10-01T10:00:00Z
+  observed: 2026-09-25T14:07:00Z
+  expect:
+    status: OVERDUE
+    release: 2026-09-28T14:00:00Z
+    deadline: 2026-09-28T16:00:00Z
+    next_expected_arrival: 2026-10-01T14:00:00Z
+    missed_count: 3
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "Overdue: release Mon 2026-09-28 16:00 CEST missed its deadline Mon 2026-09-28 18:00 CEST; 3 releases missed; latest data observed Fri 2026-09-25 16:07 CEST."
+
+- id: G33
+  title: Century gap finds the exact oldest miss (blueprint 1.0 regression)
+  rule:
+    schedule: {kind: cron, cron: "0 0 29 2 *", timezone: UTC}
+    calendar: {weekend: [sat, sun]}
+    grace: 1d
+  now: 2102-01-01T00:00:00Z
+  observed: 2092-03-01T00:00:00Z
+  expect:
+    status: OVERDUE
+    release: 2096-02-29T00:00:00Z
+    deadline: 2096-03-01T00:00:00Z
+    next_expected_arrival: 2104-02-29T00:00:00Z
+    missed_count: 1
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "Overdue: release Wed 2096-02-29 00:00 UTC missed its deadline Thu 2096-03-01 00:00 UTC; 1 release missed; latest data observed Sat 2092-03-01 00:00 UTC."
+
+- id: G34
+  title: "Undecidable: a gap longer than the horizon after the observed timestamp"
+  rule:
+    schedule: {kind: cron, cron: "0 0 29 2 *", timezone: UTC}
+    calendar: {weekend: [sat, sun]}
+    grace: 1d
+  now: 2103-06-01T00:00:00Z
+  observed: 2096-03-01T00:00:00Z
+  expect:
+    status: CONFIG_ERROR
+    release: null
+    deadline: null
+    next_expected_arrival: null
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: E215
+    explanation: "Configuration error: E215 cannot decide freshness: observed timestamp 2096-03-01T00:00:00Z is more than 1830 days old, no release in the last 1830 days has passed its deadline, and the schedule has no release within 1830 days after the observed timestamp"
+
+- id: G35
+  title: A late arrival that is present now is ON_TIME (known limitation)
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{financial: XECB}]}
+    grace: 2h
+  now: 2026-09-28T17:05:00Z
+  observed: 2026-09-28T17:00:00Z
+  expect:
+    status: ON_TIME
+    release: 2026-09-28T14:00:00Z
+    deadline: 2026-09-28T16:00:00Z
+    next_expected_arrival: 2026-09-29T14:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "On time: latest release Mon 2026-09-28 16:00 CEST arrived (observed Mon 2026-09-28 19:00 CEST); next release Tue 2026-09-29 16:00 CEST."
+
+- id: G36
+  title: A reload of old rows masks a missing release (known limitation)
+  rule:
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar: {holidays: [{financial: XECB}]}
+    grace: 2h
+  now: 2026-09-28T17:00:00Z
+  observed: 2026-09-28T15:00:00Z
+  expect:
+    status: ON_TIME
+    release: 2026-09-28T14:00:00Z
+    deadline: 2026-09-28T16:00:00Z
+    next_expected_arrival: 2026-09-29T14:00:00Z
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "On time: latest release Mon 2026-09-28 16:00 CEST arrived (observed Mon 2026-09-28 17:00 CEST); next release Tue 2026-09-29 16:00 CEST."
+
+- id: G37
+  title: Evaluating a calendar past its valid_until
+  calendars:
+    cn_workdays:
+      weekend: [sat, sun]
+      holidays: [{country: CN}]
+      overrides:
+        - working_days: ["2026-01-04", "2026-02-14", "2026-02-28", "2026-05-09", "2026-09-20", "2026-10-10"]
+      valid_until: "2026-12-31"
+  rule:
+    schedule: {kind: business_days, time: "15:00", timezone: Asia/Shanghai}
+    calendar: cn_workdays
+    grace: 2h
+  now: 2027-01-04T02:00:00Z
+  observed: 2026-12-31T07:05:00Z
+  expect:
+    status: CONFIG_ERROR
+    release: null
+    deadline: null
+    next_expected_arrival: null
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: E408
+    explanation: "Configuration error: E408 calendar cn_workdays is valid until 2026-12-31, but the evaluation date is 2027-01-04; review its holidays and overrides for the next period and extend valid_until"

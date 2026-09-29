@@ -3,7 +3,11 @@
 Profiles (selected with ``HYPOTHESIS_PROFILE``, default ``dev``):
 
 - ``dev``: 50 examples, fast enough for the edit loop.
-- ``ci``: 300 examples, no deadline (CI hardware is noisy).
+- ``ci``: 300 examples.
+
+Both profiles disable the per-example deadline: evaluating a 400-day-old dense cron is
+legitimately slower than Hypothesis's 200 ms default, and the overall budget is measured
+by PB-5 in ``tests/perf`` instead.
 
 ``FakeCalendarProvider`` keeps every core test independent of the ``holidays``
 library: tests state exactly which holiday dates exist, and a year outside the
@@ -21,7 +25,7 @@ from hypothesis import settings
 from freshcal.core.errors import CalendarError, Issue
 from freshcal.core.model import HolidayCalendarRef
 
-settings.register_profile("dev", max_examples=50)
+settings.register_profile("dev", max_examples=50, deadline=None)
 settings.register_profile("ci", max_examples=300, deadline=None)
 settings.load_profile(os.environ.get("HYPOTHESIS_PROFILE", "dev"))
 
