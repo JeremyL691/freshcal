@@ -67,7 +67,7 @@ def test_golden_scenario(
 
     assert result.deadline == instant(expect["deadline"]), scenario_id
     assert result.next_expected_arrival == instant(expect["next_expected_arrival"]), scenario_id
-    if "next_adjusted_from" in expect:
+    if "next_adjusted_from" in expect or "next_dst" in expect:
         provider = HolidaysCalendarProvider()
         upcoming = next_release_after(
             rule,
@@ -76,8 +76,11 @@ def test_golden_scenario(
         )
         assert upcoming is not None, scenario_id
         assert upcoming.instant == result.next_expected_arrival, scenario_id
-        assert upcoming.adjusted_from is not None, scenario_id
-        assert upcoming.adjusted_from.isoformat() == expect["next_adjusted_from"], scenario_id
+        if "next_adjusted_from" in expect:
+            assert upcoming.adjusted_from is not None, scenario_id
+            assert upcoming.adjusted_from.isoformat() == expect["next_adjusted_from"], scenario_id
+        if "next_dst" in expect:
+            assert upcoming.dst == expect["next_dst"], scenario_id
 
     assert result.missed_count == expect["missed_count"], scenario_id
     assert result.missed_truncated is expect["missed_truncated"], scenario_id

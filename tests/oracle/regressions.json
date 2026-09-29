@@ -1,0 +1,9409 @@
+[
+ {
+  "args": {
+   "O": "2011-12-14T06:20:11+00:00",
+   "now": "2011-12-31T15:40:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 766891020,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 23 * * 0,6",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-10-17T01:26:06+00:00",
+   "now": "2011-12-31T15:40:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 766891020,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 23 * * 0,6",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-10-24T22:48:47+00:00",
+   "now": "2011-12-31T15:40:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 766891020,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 23 * * 0,6",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2030-04-26T03:25:59+00:00",
+   "now": "2030-06-23T18:12:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 320909943,
+  "rule": {
+   "X+": [
+    "2030-05-25"
+   ],
+   "X-": [],
+   "active_from": "2030-06-23",
+   "expr": "15 2 * * 1",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Kiritimati",
+   "weekend": [
+    0,
+    2,
+    4,
+    5
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2030-06-23T18:12:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 320909943,
+  "rule": {
+   "X+": [
+    "2030-05-25"
+   ],
+   "X-": [],
+   "active_from": "2030-06-23",
+   "expr": "15 2 * * 1",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Kiritimati",
+   "weekend": [
+    0,
+    2,
+    4,
+    5
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2030-04-14T08:50:04+00:00",
+   "now": "2030-06-23T18:12:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 320909943,
+  "rule": {
+   "X+": [
+    "2030-05-25"
+   ],
+   "X-": [],
+   "active_from": "2030-06-23",
+   "expr": "15 2 * * 1",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Kiritimati",
+   "weekend": [
+    0,
+    2,
+    4,
+    5
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2017-06-24T23:31:34+00:00",
+   "now": "2017-09-22T15:35:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 557167733,
+  "rule": {
+   "X+": [
+    "2017-09-09",
+    "2017-10-02",
+    "2017-10-22"
+   ],
+   "X-": [
+    "2017-08-20",
+    "2017-08-23",
+    "2017-09-18"
+   ],
+   "active_from": "None",
+   "expr": "59 3 * 2 6",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Apia",
+   "weekend": [
+    1,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2017-09-01T12:40:43+00:00",
+   "now": "2017-09-22T15:35:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 557167733,
+  "rule": {
+   "X+": [
+    "2017-09-09",
+    "2017-10-02",
+    "2017-10-22"
+   ],
+   "X-": [
+    "2017-08-20",
+    "2017-08-23",
+    "2017-09-18"
+   ],
+   "active_from": "None",
+   "expr": "59 3 * 2 6",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Apia",
+   "weekend": [
+    1,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2017-08-18T14:09:54+00:00",
+   "now": "2017-09-22T15:35:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 557167733,
+  "rule": {
+   "X+": [
+    "2017-09-09",
+    "2017-10-02",
+    "2017-10-22"
+   ],
+   "X-": [
+    "2017-08-20",
+    "2017-08-23",
+    "2017-09-18"
+   ],
+   "active_from": "None",
+   "expr": "59 3 * 2 6",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Apia",
+   "weekend": [
+    1,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2025-02-13T09:19:53+00:00",
+   "now": "2025-02-14T18:20:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 542078408,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "2025-02-11",
+   "expr": "30 * * 1-6 5",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Asia/Beirut",
+   "weekend": [
+    0,
+    1,
+    4
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2025-02-13T08:18:35+00:00",
+   "now": "2025-02-14T18:20:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 542078408,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "2025-02-11",
+   "expr": "30 * * 1-6 5",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Asia/Beirut",
+   "weekend": [
+    0,
+    1,
+    4
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2025-02-13T14:19:28+00:00",
+   "now": "2025-02-14T18:20:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 542078408,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "2025-02-11",
+   "expr": "30 * * 1-6 5",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Asia/Beirut",
+   "weekend": [
+    0,
+    1,
+    4
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2011-12-31T10:14:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 2871371,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "59 22 * * 6",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    2,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "NO_DATA",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-12-01T09:27:59+00:00",
+   "now": "2011-12-31T10:14:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 2871371,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "59 22 * * 6",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    2,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-12-17T18:02:24+00:00",
+   "now": "2011-12-31T10:14:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 2871371,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "59 22 * * 6",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    2,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2023-02-03T10:17:29+00:00",
+   "now": "2023-03-28T19:27:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 640433178,
+  "rule": {
+   "X+": [
+    "2023-04-24"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 16 * 1-6 6",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Antarctica/Troll",
+   "weekend": [
+    1,
+    2,
+    4,
+    5
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2023-01-03T17:11:01+00:00",
+   "now": "2023-03-28T19:27:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 640433178,
+  "rule": {
+   "X+": [
+    "2023-04-24"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 16 * 1-6 6",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Antarctica/Troll",
+   "weekend": [
+    1,
+    2,
+    4,
+    5
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2023-03-11T03:53:44+00:00",
+   "now": "2023-03-28T19:27:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 640433178,
+  "rule": {
+   "X+": [
+    "2023-04-24"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 16 * 1-6 6",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Antarctica/Troll",
+   "weekend": [
+    1,
+    2,
+    4,
+    5
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "t": "2011-12-30T14:10:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 0,
+  "expect": [
+   "2011-12-31T09:15:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 288308715,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2012-01-04",
+    "2012-01-09",
+    "2012-02-06"
+   ],
+   "active_from": "None",
+   "expr": "15 22 * * *",
+   "grace": "1 day, 4:09:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "2011-12-31T09:15:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": false,
+   "t": "2011-12-30T14:10:00+00:00",
+   "until": "2012-01-05T21:10:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 0,
+  "expect": [
+   "2011-12-31T09:15:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 288308715,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2012-01-04",
+    "2012-01-09",
+    "2012-02-06"
+   ],
+   "active_from": "None",
+   "expr": "15 22 * * *",
+   "grace": "1 day, 4:09:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "2011-12-31T09:15:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-10-29T09:14:59.999999+00:00",
+   "now": "2011-12-30T14:10:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "OVERDUE",
+   "2011-10-29T09:15:00+00:00",
+   "2011-10-30T13:24:00+00:00",
+   "2011-12-31T09:15:00+00:00",
+   35,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 288308715,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2012-01-04",
+    "2012-01-09",
+    "2012-02-06"
+   ],
+   "active_from": "None",
+   "expr": "15 22 * * *",
+   "grace": "1 day, 4:09:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "OVERDUE",
+   "2011-10-29T09:15:00+00:00",
+   "2011-10-30T13:24:00+00:00",
+   "2011-12-31T09:15:00+00:00",
+   35,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-11-19T09:15:00.000001+00:00",
+   "now": "2011-12-30T14:10:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "OVERDUE",
+   "2011-11-23T09:15:00+00:00",
+   "2011-11-24T13:24:00+00:00",
+   "2011-12-31T09:15:00+00:00",
+   22,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 288308715,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2012-01-04",
+    "2012-01-09",
+    "2012-02-06"
+   ],
+   "active_from": "None",
+   "expr": "15 22 * * *",
+   "grace": "1 day, 4:09:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "OVERDUE",
+   "2011-11-23T09:15:00+00:00",
+   "2011-11-24T13:24:00+00:00",
+   "2011-12-31T09:15:00+00:00",
+   22,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2011-12-30T14:10:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "NO_DATA",
+   "2011-12-30T09:15:00+00:00",
+   "2011-12-31T13:24:00+00:00",
+   "2011-12-31T09:15:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 288308715,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2012-01-04",
+    "2012-01-09",
+    "2012-02-06"
+   ],
+   "active_from": "None",
+   "expr": "15 22 * * *",
+   "grace": "1 day, 4:09:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "NO_DATA",
+   "2011-12-30T09:15:00+00:00",
+   "2011-12-31T13:24:00+00:00",
+   "2011-12-31T09:15:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2025-03-19T08:32:12+00:00",
+   "now": "2025-03-19T19:10:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 497266638,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2025-03-06"
+   ],
+   "active_from": "None",
+   "expr": "10-20/5 1-3 * * 6",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Europe/Dublin",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2025-03-19T19:10:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 497266638,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2025-03-06"
+   ],
+   "active_from": "None",
+   "expr": "10-20/5 1-3 * * 6",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Europe/Dublin",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "NO_DATA",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2029-02-18T06:46:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 918668389,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 3 * 1-6 6",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/New_York",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "NO_DATA",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2029-02-11T11:01:26+00:00",
+   "now": "2029-02-18T06:46:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 918668389,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 3 * 1-6 6",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/New_York",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2028-12-20T21:17:49+00:00",
+   "now": "2029-02-18T06:46:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 918668389,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 3 * 1-6 6",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/New_York",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "t": "2011-12-30T11:55:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 10,
+  "expect": [
+   "2011-12-30T12:10:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 858748061,
+  "rule": {
+   "X+": [
+    "2011-12-25"
+   ],
+   "X-": [
+    "2011-12-19",
+    "2012-01-13",
+    "2012-01-23"
+   ],
+   "active_from": "None",
+   "expr": "10-20/5 * 30 * 5",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "2011-12-30T12:10:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": true,
+   "t": "2011-12-30T11:55:00+00:00",
+   "until": "2011-12-31T03:55:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 10,
+  "expect": [
+   "2011-12-30T12:10:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 858748061,
+  "rule": {
+   "X+": [
+    "2011-12-25"
+   ],
+   "X-": [
+    "2011-12-19",
+    "2012-01-13",
+    "2012-01-23"
+   ],
+   "active_from": "None",
+   "expr": "10-20/5 * 30 * 5",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "2011-12-30T12:10:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-12-30T11:15:00+00:00",
+   "now": "2011-12-30T11:16:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "ON_TIME",
+   "2011-12-30T11:15:00+00:00",
+   "2011-12-30T11:16:00+00:00",
+   "2011-12-30T11:20:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 858748061,
+  "rule": {
+   "X+": [
+    "2011-12-25"
+   ],
+   "X-": [
+    "2011-12-19",
+    "2012-01-13",
+    "2012-01-23"
+   ],
+   "active_from": "None",
+   "expr": "10-20/5 * 30 * 5",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   "2011-12-30T11:15:00+00:00",
+   "2011-12-30T11:16:00+00:00",
+   "2011-12-30T11:20:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-12-30T11:14:59.999999+00:00",
+   "now": "2011-12-30T11:16:01+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "OVERDUE",
+   "2011-12-30T11:15:00+00:00",
+   "2011-12-30T11:16:00+00:00",
+   "2011-12-30T11:20:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 858748061,
+  "rule": {
+   "X+": [
+    "2011-12-25"
+   ],
+   "X-": [
+    "2011-12-19",
+    "2012-01-13",
+    "2012-01-23"
+   ],
+   "active_from": "None",
+   "expr": "10-20/5 * 30 * 5",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "OVERDUE",
+   "2011-12-30T11:15:00+00:00",
+   "2011-12-30T11:16:00+00:00",
+   "2011-12-30T11:20:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2011-12-30T11:55:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "NO_DATA",
+   "2011-12-30T11:20:00+00:00",
+   "2011-12-30T11:21:00+00:00",
+   "2011-12-30T12:10:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 858748061,
+  "rule": {
+   "X+": [
+    "2011-12-25"
+   ],
+   "X-": [
+    "2011-12-19",
+    "2012-01-13",
+    "2012-01-23"
+   ],
+   "active_from": "None",
+   "expr": "10-20/5 * 30 * 5",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "NO_DATA",
+   "2011-12-30T11:20:00+00:00",
+   "2011-12-30T11:21:00+00:00",
+   "2011-12-30T12:10:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2036-11-01T05:59:44+00:00",
+   "now": "2036-11-02T07:29:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 331215548,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2036-12-04"
+   ],
+   "active_from": "2036-10-26",
+   "expr": "*/30 * * * 0,6",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/New_York",
+   "weekend": [
+    0,
+    1,
+    2,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2036-11-01T06:12:08+00:00",
+   "now": "2036-11-02T07:29:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 331215548,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2036-12-04"
+   ],
+   "active_from": "2036-10-26",
+   "expr": "*/30 * * * 0,6",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/New_York",
+   "weekend": [
+    0,
+    1,
+    2,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2036-10-31T16:12:00+00:00",
+   "now": "2036-11-02T07:29:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 331215548,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2036-12-04"
+   ],
+   "active_from": "2036-10-26",
+   "expr": "*/30 * * * 0,6",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/New_York",
+   "weekend": [
+    0,
+    1,
+    2,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2029-08-30T06:49:28+00:00",
+   "now": "2029-08-31T06:04:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 515564833,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "15 1-3 * * 6",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Santiago",
+   "weekend": [
+    0,
+    1,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2029-08-29T12:06:47+00:00",
+   "now": "2029-08-31T06:04:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 515564833,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "15 1-3 * * 6",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Santiago",
+   "weekend": [
+    0,
+    1,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2029-08-31T06:04:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 515564833,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "15 1-3 * * 6",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Santiago",
+   "weekend": [
+    0,
+    1,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_11.jsonl",
+  "want": [
+   "NO_DATA",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2009-06-21T05:31:08+00:00",
+   "now": "2009-07-22T21:34:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 709502770,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "2009-06-24",
+   "expr": "0 16 * * 0,6",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Asia/Kolkata",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_12.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2009-05-03T21:36:19+00:00",
+   "now": "2009-07-22T21:34:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 709502770,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "2009-06-24",
+   "expr": "0 16 * * 0,6",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Asia/Kolkata",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_12.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2009-07-21T21:29:37+00:00",
+   "now": "2009-07-22T21:34:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 709502770,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "2009-06-24",
+   "expr": "0 16 * * 0,6",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Asia/Kolkata",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_12.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2012-09-30T19:21:53+00:00",
+   "now": "2012-11-04T07:40:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 669078745,
+  "rule": {
+   "X+": [
+    "2012-10-17"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "5 */6 * * 5",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/New_York",
+   "weekend": [
+    0,
+    1,
+    2,
+    4,
+    6
+   ]
+  },
+  "source": "findings_all_12.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2012-11-04T07:40:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 669078745,
+  "rule": {
+   "X+": [
+    "2012-10-17"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "5 */6 * * 5",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/New_York",
+   "weekend": [
+    0,
+    1,
+    2,
+    4,
+    6
+   ]
+  },
+  "source": "findings_all_12.jsonl",
+  "want": [
+   "NO_DATA",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2012-11-02T07:33:51+00:00",
+   "now": "2012-11-04T07:40:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 669078745,
+  "rule": {
+   "X+": [
+    "2012-10-17"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "5 */6 * * 5",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/New_York",
+   "weekend": [
+    0,
+    1,
+    2,
+    4,
+    6
+   ]
+  },
+  "source": "findings_all_12.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2003-10-09T09:49:58+00:00",
+   "now": "2003-10-26T08:54:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 914450982,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "45 3 * 3,10 5",
+   "grace": "2 days, 9:47:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Africa/Casablanca",
+   "weekend": [
+    1,
+    4
+   ]
+  },
+  "source": "findings_all_12.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2003-09-02T23:46:45+00:00",
+   "now": "2003-10-26T08:54:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 914450982,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "45 3 * 3,10 5",
+   "grace": "2 days, 9:47:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Africa/Casablanca",
+   "weekend": [
+    1,
+    4
+   ]
+  },
+  "source": "findings_all_12.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2003-10-18T06:24:24+00:00",
+   "now": "2003-10-26T08:54:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 914450982,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "45 3 * 3,10 5",
+   "grace": "2 days, 9:47:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Africa/Casablanca",
+   "weekend": [
+    1,
+    4
+   ]
+  },
+  "source": "findings_all_12.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2016-05-01T09:19:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 90108715,
+  "rule": {
+   "X+": [
+    "2016-04-07",
+    "2016-04-13",
+    "2016-04-26"
+   ],
+   "X-": [
+    "2016-04-06",
+    "2016-04-21",
+    "2016-05-01"
+   ],
+   "active_from": "None",
+   "expr": "10-20/5 0 * * 0,6",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Caracas",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_12.jsonl",
+  "want": [
+   "NO_DATA",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2016-02-16T13:04:41+00:00",
+   "now": "2016-05-01T09:19:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 90108715,
+  "rule": {
+   "X+": [
+    "2016-04-07",
+    "2016-04-13",
+    "2016-04-26"
+   ],
+   "X-": [
+    "2016-04-06",
+    "2016-04-21",
+    "2016-05-01"
+   ],
+   "active_from": "None",
+   "expr": "10-20/5 0 * * 0,6",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Caracas",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_12.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2016-03-06T00:50:03+00:00",
+   "now": "2016-05-01T09:19:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 90108715,
+  "rule": {
+   "X+": [
+    "2016-04-07",
+    "2016-04-13",
+    "2016-04-26"
+   ],
+   "X-": [
+    "2016-04-06",
+    "2016-04-21",
+    "2016-05-01"
+   ],
+   "active_from": "None",
+   "expr": "10-20/5 0 * * 0,6",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Caracas",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_12.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2016-05-01T10:57:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 316749320,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 1-3 * * 6",
+   "grace": "0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Caracas",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_12.jsonl",
+  "want": [
+   "NO_DATA",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2016-04-30T10:38:54+00:00",
+   "now": "2016-05-01T10:57:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 316749320,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 1-3 * * 6",
+   "grace": "0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Caracas",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_12.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2016-04-30T04:12:33+00:00",
+   "now": "2016-05-01T10:57:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 316749320,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 1-3 * * 6",
+   "grace": "0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Caracas",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_12.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2009-10-20T01:44:59.999999+00:00",
+   "now": "2009-10-20T03:45:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "NOT_DUE",
+   "2009-10-20T01:45:00+00:00",
+   "2009-10-20T03:45:00+00:00",
+   "2009-10-27T02:45:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 278322096,
+  "rule": {
+   "X+": [
+    "2010-01-15"
+   ],
+   "X-": [
+    "2009-12-18",
+    "2009-12-31",
+    "2010-01-16"
+   ],
+   "active_from": "None",
+   "expr": "45 3 15 * 1",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "Europe/Berlin",
+   "weekend": [
+    0,
+    2,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_12.jsonl",
+  "want": [
+   "NOT_DUE",
+   "2009-10-20T01:45:00+00:00",
+   "2009-10-20T03:45:00+00:00",
+   "2009-10-27T02:45:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2016-09-25T04:04:00+00:00",
+   "now": "2016-09-25T05:05:00.000001+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "OVERDUE",
+   "2016-09-25T04:05:00+00:00",
+   "2016-09-25T05:05:00+00:00",
+   "2016-10-02T04:05:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 974567492,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "5 0 29 3,10 0,6",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "America/Asuncion",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "source": "findings_all_13.jsonl",
+  "want": [
+   "OVERDUE",
+   "2016-09-25T04:05:00+00:00",
+   "2016-09-25T05:05:00+00:00",
+   "2016-10-02T04:05:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2017-10-04T11:30:02+00:00",
+   "now": "2017-10-15T04:49:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 977998078,
+  "rule": {
+   "X+": [
+    "2017-09-23",
+    "2017-10-30",
+    "2017-11-06"
+   ],
+   "X-": [
+    "2017-10-11",
+    "2017-10-14",
+    "2017-10-29"
+   ],
+   "active_from": "2017-10-09",
+   "expr": "15 9 * * 6",
+   "grace": "2 days, 22:04:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Sao_Paulo",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_13.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2017-09-03T23:59:02+00:00",
+   "now": "2017-10-15T04:49:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 977998078,
+  "rule": {
+   "X+": [
+    "2017-09-23",
+    "2017-10-30",
+    "2017-11-06"
+   ],
+   "X-": [
+    "2017-10-11",
+    "2017-10-14",
+    "2017-10-29"
+   ],
+   "active_from": "2017-10-09",
+   "expr": "15 9 * * 6",
+   "grace": "2 days, 22:04:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Sao_Paulo",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_13.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2017-09-18T02:50:45+00:00",
+   "now": "2017-10-15T04:49:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 977998078,
+  "rule": {
+   "X+": [
+    "2017-09-23",
+    "2017-10-30",
+    "2017-11-06"
+   ],
+   "X-": [
+    "2017-10-11",
+    "2017-10-14",
+    "2017-10-29"
+   ],
+   "active_from": "2017-10-09",
+   "expr": "15 9 * * 6",
+   "grace": "2 days, 22:04:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Sao_Paulo",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_13.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2026-05-11T12:04:00+00:00",
+   "now": "2026-05-11T12:05:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "NOT_DUE",
+   "2026-05-11T12:05:00+00:00",
+   "2026-05-11T12:35:00+00:00",
+   "2026-05-11T13:05:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 118903793,
+  "rule": {
+   "X+": [
+    "2026-04-17",
+    "2026-04-24",
+    "2026-05-05"
+   ],
+   "X-": [
+    "2026-05-19"
+   ],
+   "active_from": "2026-04-20",
+   "expr": "5 2,3 29 * 5",
+   "grace": "0:30:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "Pacific/Kiritimati",
+   "weekend": [
+    0,
+    2,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_13.jsonl",
+  "want": [
+   "NOT_DUE",
+   "2026-05-11T12:05:00+00:00",
+   "2026-05-11T12:35:00+00:00",
+   "2026-05-11T13:05:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2015-02-11T05:15:00+00:00",
+   "now": "2015-02-11T05:15:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "ON_TIME",
+   "2015-02-11T05:15:00+00:00",
+   "2015-02-14T05:15:00+00:00",
+   "2016-01-27T05:15:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 342115937,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2015-04-04"
+   ],
+   "active_from": "None",
+   "expr": "15 2 1,15 2 *",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "America/Santiago",
+   "weekend": [
+    0,
+    1,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_13.jsonl",
+  "want": [
+   "ON_TIME",
+   "2015-02-11T05:15:00+00:00",
+   "2015-02-14T05:15:00+00:00",
+   "2016-01-27T05:15:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2001-03-20T06:14:12+00:00",
+   "now": "2001-03-23T23:54:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 750120659,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "15 16 * 2 6",
+   "grace": "16:24:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Europe/Berlin",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2001-02-20T07:52:32+00:00",
+   "now": "2001-03-23T23:54:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 750120659,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "15 16 * 2 6",
+   "grace": "16:24:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Europe/Berlin",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2001-03-23T23:54:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 750120659,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "15 16 * 2 6",
+   "grace": "16:24:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Europe/Berlin",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "NO_DATA",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "t": "2008-06-01T00:47:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 3,
+  "expect": [
+   "2008-06-01T00:48:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 182598259,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "2008-05-16",
+   "expr": "* * * * *",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Africa/Casablanca",
+   "weekend": [
+    4
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "2008-06-01T00:48:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": true,
+   "t": "2008-06-01T00:47:00+00:00",
+   "until": "2008-06-01T15:47:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 3,
+  "expect": [
+   "2008-06-01T00:47:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 182598259,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "2008-05-16",
+   "expr": "* * * * *",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Africa/Casablanca",
+   "weekend": [
+    4
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "2008-06-01T00:47:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2034-12-01T04:45:19+00:00",
+   "now": "2035-01-14T08:24:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 581190856,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2035-01-22"
+   ],
+   "active_from": "None",
+   "expr": "59 0,12 * * 1",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Antarctica/Troll",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2034-11-19T00:55:17+00:00",
+   "now": "2035-01-14T08:24:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 581190856,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2035-01-22"
+   ],
+   "active_from": "None",
+   "expr": "59 0,12 * * 1",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Antarctica/Troll",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2035-01-14T08:24:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 581190856,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2035-01-22"
+   ],
+   "active_from": "None",
+   "expr": "59 0,12 * * 1",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Antarctica/Troll",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "NO_DATA",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2029-03-31T00:00:00+00:00",
+   "now": "2029-03-31T08:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 171527610,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "*/30 * * 3,10 0,6",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Sao_Paulo",
+   "weekend": [
+    0,
+    2,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2029-03-30T00:32:21+00:00",
+   "now": "2029-03-31T08:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 171527610,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "*/30 * * 3,10 0,6",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Sao_Paulo",
+   "weekend": [
+    0,
+    2,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2029-03-30T01:08:02+00:00",
+   "now": "2029-03-31T08:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 171527610,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "*/30 * * 3,10 0,6",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Sao_Paulo",
+   "weekend": [
+    0,
+    2,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2023-12-16T06:21:16+00:00",
+   "now": "2023-12-17T20:50:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 498325445,
+  "rule": {
+   "X+": [
+    "2024-01-17"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "*/15 0,12 * * 6",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Antarctica/Vostok",
+   "weekend": [
+    0,
+    1,
+    2,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2023-12-17T20:50:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 498325445,
+  "rule": {
+   "X+": [
+    "2024-01-17"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "*/15 0,12 * * 6",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Antarctica/Vostok",
+   "weekend": [
+    0,
+    1,
+    2,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "NO_DATA",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2023-12-17T09:27:58+00:00",
+   "now": "2023-12-17T20:50:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 498325445,
+  "rule": {
+   "X+": [
+    "2024-01-17"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "*/15 0,12 * * 6",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Antarctica/Vostok",
+   "weekend": [
+    0,
+    1,
+    2,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2017-03-24T10:27:53+00:00",
+   "now": "2017-03-26T04:19:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 8951003,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "2017-03-03",
+   "expr": "*/15 0,12 * * 6",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Asuncion",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2017-03-25T20:24:02+00:00",
+   "now": "2017-03-26T04:19:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 8951003,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "2017-03-03",
+   "expr": "*/15 0,12 * * 6",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Asuncion",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2017-03-25T23:54:13+00:00",
+   "now": "2017-03-26T04:19:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 8951003,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "2017-03-03",
+   "expr": "*/15 0,12 * * 6",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Asuncion",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "t": "2011-12-30T13:07:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 3,
+  "expect": [
+   "2011-12-30T13:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 367549571,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0,30 2 * * *",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    1,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "2011-12-30T13:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": true,
+   "t": "2011-12-30T13:07:00+00:00",
+   "until": "2012-02-06T09:07:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 3,
+  "expect": [
+   "2011-12-30T13:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 367549571,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0,30 2 * * *",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    1,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "2011-12-30T13:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-10-10T13:30:00+00:00",
+   "now": "2011-12-30T13:07:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "OVERDUE",
+   "2011-10-12T13:00:00+00:00",
+   "2011-10-13T13:00:00+00:00",
+   "2011-12-30T13:30:00+00:00",
+   68,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 367549571,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0,30 2 * * *",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    1,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "OVERDUE",
+   "2011-10-12T13:00:00+00:00",
+   "2011-10-13T13:00:00+00:00",
+   "2011-12-30T13:30:00+00:00",
+   68,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-10-16T22:45:29+00:00",
+   "now": "2011-12-30T13:07:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "OVERDUE",
+   "2011-10-17T13:00:00+00:00",
+   "2011-10-18T13:00:00+00:00",
+   "2011-12-30T13:30:00+00:00",
+   64,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 367549571,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0,30 2 * * *",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    1,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "OVERDUE",
+   "2011-10-17T13:00:00+00:00",
+   "2011-10-18T13:00:00+00:00",
+   "2011-12-30T13:30:00+00:00",
+   64,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-11-28T13:00:00.000001+00:00",
+   "now": "2011-12-30T13:07:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "OVERDUE",
+   "2011-11-28T13:30:00+00:00",
+   "2011-11-29T13:30:00+00:00",
+   "2011-12-30T13:30:00+00:00",
+   27,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 367549571,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0,30 2 * * *",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    1,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "OVERDUE",
+   "2011-11-28T13:30:00+00:00",
+   "2011-11-29T13:30:00+00:00",
+   "2011-12-30T13:30:00+00:00",
+   27,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "t": "2011-12-30T12:42:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 0,
+  "expect": [
+   "2011-12-31T03:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 374071859,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2012-02-05"
+   ],
+   "active_from": "2011-12-05",
+   "expr": "*/30 16 30 * 5",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    2
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "2011-12-31T03:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": true,
+   "t": "2011-12-30T12:42:00+00:00",
+   "until": "2011-12-31T03:42:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 0,
+  "expect": [
+   "2011-12-31T03:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 374071859,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2012-02-05"
+   ],
+   "active_from": "2011-12-05",
+   "expr": "*/30 16 30 * 5",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    2
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "2011-12-31T03:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2011-12-30T12:42:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "OVERDUE",
+   "2011-12-10T03:00:00+00:00",
+   "2011-12-10T09:00:00+00:00",
+   "2011-12-31T03:00:00+00:00",
+   6,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 374071859,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2012-02-05"
+   ],
+   "active_from": "2011-12-05",
+   "expr": "*/30 16 30 * 5",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    2
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "OVERDUE",
+   "2011-12-10T03:00:00+00:00",
+   "2011-12-10T09:00:00+00:00",
+   "2011-12-31T03:00:00+00:00",
+   6,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-12-29T17:20:19+00:00",
+   "now": "2011-12-30T12:42:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "ON_TIME",
+   "2011-12-24T03:30:00+00:00",
+   "2011-12-24T09:30:00+00:00",
+   "2011-12-31T03:00:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 374071859,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2012-02-05"
+   ],
+   "active_from": "2011-12-05",
+   "expr": "*/30 16 30 * 5",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    2
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "ON_TIME",
+   "2011-12-24T03:30:00+00:00",
+   "2011-12-24T09:30:00+00:00",
+   "2011-12-31T03:00:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "t": "2011-12-30T14:16:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 10,
+  "expect": [
+   "2011-12-30T14:17:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 909359195,
+  "rule": {
+   "X+": [
+    "2011-12-16",
+    "2012-01-07",
+    "2012-02-06"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "* * * * *",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    2,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "2011-12-30T14:17:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": false,
+   "t": "2011-12-30T14:16:00+00:00",
+   "until": "2011-12-31T04:16:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 10,
+  "expect": [
+   "2011-12-30T14:17:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 909359195,
+  "rule": {
+   "X+": [
+    "2011-12-16",
+    "2012-01-07",
+    "2012-02-06"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "* * * * *",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    2,
+    6
+   ]
+  },
+  "source": "findings_all_14.jsonl",
+  "want": [
+   "2011-12-30T14:17:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2005-12-10T14:15:20+00:00",
+   "now": "2006-02-16T18:53:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 263294681,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2006-02-22"
+   ],
+   "active_from": "None",
+   "expr": "15 9 * * 6",
+   "grace": "1 day, 0:04:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/St_Johns",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2006-02-16T18:53:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 263294681,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2006-02-22"
+   ],
+   "active_from": "None",
+   "expr": "15 9 * * 6",
+   "grace": "1 day, 0:04:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/St_Johns",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "NO_DATA",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2005-11-28T17:17:23+00:00",
+   "now": "2006-02-16T18:53:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 263294681,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2006-02-22"
+   ],
+   "active_from": "None",
+   "expr": "15 9 * * 6",
+   "grace": "1 day, 0:04:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/St_Johns",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2017-10-23T16:06:24+00:00",
+   "now": "2018-01-15T19:20:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 421239086,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2017-12-06",
+    "2018-02-15",
+    "2018-02-21"
+   ],
+   "active_from": "None",
+   "expr": "0,30 2 * * 5",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Caracas",
+   "weekend": [
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2017-11-14T20:30:50+00:00",
+   "now": "2018-01-15T19:20:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 421239086,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2017-12-06",
+    "2018-02-15",
+    "2018-02-21"
+   ],
+   "active_from": "None",
+   "expr": "0,30 2 * * 5",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Caracas",
+   "weekend": [
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2018-01-15T19:20:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 421239086,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2017-12-06",
+    "2018-02-15",
+    "2018-02-21"
+   ],
+   "active_from": "None",
+   "expr": "0,30 2 * * 5",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Caracas",
+   "weekend": [
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "NO_DATA",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2010-08-09T16:39:09+00:00",
+   "now": "2010-10-14T19:50:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 841888188,
+  "rule": {
+   "X+": [
+    "2010-09-21",
+    "2010-10-05",
+    "2010-11-09"
+   ],
+   "X-": [
+    "2010-09-11"
+   ],
+   "active_from": "2010-10-09",
+   "expr": "0 0 29 2 *",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Sao_Paulo",
+   "weekend": [
+    0,
+    2,
+    4,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2010-09-09T02:16:10+00:00",
+   "now": "2010-10-14T19:50:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 841888188,
+  "rule": {
+   "X+": [
+    "2010-09-21",
+    "2010-10-05",
+    "2010-11-09"
+   ],
+   "X-": [
+    "2010-09-11"
+   ],
+   "active_from": "2010-10-09",
+   "expr": "0 0 29 2 *",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Sao_Paulo",
+   "weekend": [
+    0,
+    2,
+    4,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2010-10-09T10:07:01+00:00",
+   "now": "2010-10-14T19:50:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 841888188,
+  "rule": {
+   "X+": [
+    "2010-09-21",
+    "2010-10-05",
+    "2010-11-09"
+   ],
+   "X-": [
+    "2010-09-11"
+   ],
+   "active_from": "2010-10-09",
+   "expr": "0 0 29 2 *",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Sao_Paulo",
+   "weekend": [
+    0,
+    2,
+    4,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2032-11-11T18:52:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 332157257,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "59 1 * 2 0,6",
+   "grace": "18:23:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Santiago",
+   "weekend": [
+    0,
+    2,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "NO_DATA",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2032-10-02T12:47:07+00:00",
+   "now": "2032-11-11T18:52:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 332157257,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "59 1 * 2 0,6",
+   "grace": "18:23:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Santiago",
+   "weekend": [
+    0,
+    2,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2032-10-11T17:19:50+00:00",
+   "now": "2032-11-11T18:52:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 332157257,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "59 1 * 2 0,6",
+   "grace": "18:23:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/Santiago",
+   "weekend": [
+    0,
+    2,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "t": "2011-12-30T14:50:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 20,
+  "expect": [
+   "2011-12-31T03:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 72221913,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2011-11-29",
+    "2011-12-02",
+    "2012-01-09"
+   ],
+   "active_from": "None",
+   "expr": "0,30 16 31 * 5",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "2011-12-31T03:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": false,
+   "t": "2011-12-30T14:50:00+00:00",
+   "until": "2012-01-23T19:50:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 20,
+  "expect": [
+   "2011-12-31T03:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 72221913,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2011-11-29",
+    "2011-12-02",
+    "2012-01-09"
+   ],
+   "active_from": "None",
+   "expr": "0,30 16 31 * 5",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "2011-12-31T03:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-11-25T14:42:15+00:00",
+   "now": "2011-12-30T14:50:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "OVERDUE",
+   "2011-11-26T03:00:00+00:00",
+   "2011-11-29T03:00:00+00:00",
+   "2011-12-31T03:00:00+00:00",
+   8,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 72221913,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2011-11-29",
+    "2011-12-02",
+    "2012-01-09"
+   ],
+   "active_from": "None",
+   "expr": "0,30 16 31 * 5",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "OVERDUE",
+   "2011-11-26T03:00:00+00:00",
+   "2011-11-29T03:00:00+00:00",
+   "2011-12-31T03:00:00+00:00",
+   8,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-11-04T20:45:44+00:00",
+   "now": "2011-12-30T14:50:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "OVERDUE",
+   "2011-11-05T03:00:00+00:00",
+   "2011-11-08T03:00:00+00:00",
+   "2011-12-31T03:00:00+00:00",
+   14,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 72221913,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2011-11-29",
+    "2011-12-02",
+    "2012-01-09"
+   ],
+   "active_from": "None",
+   "expr": "0,30 16 31 * 5",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "OVERDUE",
+   "2011-11-05T03:00:00+00:00",
+   "2011-11-08T03:00:00+00:00",
+   "2011-12-31T03:00:00+00:00",
+   14,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2027-05-25T21:33:08+00:00",
+   "now": "2027-07-31T04:36:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 683924780,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2027-06-22",
+    "2027-08-14",
+    "2027-08-26"
+   ],
+   "active_from": "None",
+   "expr": "10-20/5 3 * 1-6 6",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Europe/Dublin",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2027-05-30T16:14:58+00:00",
+   "now": "2027-07-31T04:36:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 683924780,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2027-06-22",
+    "2027-08-14",
+    "2027-08-26"
+   ],
+   "active_from": "None",
+   "expr": "10-20/5 3 * 1-6 6",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Europe/Dublin",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2027-07-03T22:25:44+00:00",
+   "now": "2027-07-31T04:36:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 683924780,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2027-06-22",
+    "2027-08-14",
+    "2027-08-26"
+   ],
+   "active_from": "None",
+   "expr": "10-20/5 3 * 1-6 6",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Europe/Dublin",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2016-08-06T04:47:25+00:00",
+   "now": "2016-11-01T03:06:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 679618703,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0,30 2 * * 5",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Africa/Casablanca",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2016-09-10T10:08:05+00:00",
+   "now": "2016-11-01T03:06:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 679618703,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0,30 2 * * 5",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Africa/Casablanca",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2016-08-12T18:19:29+00:00",
+   "now": "2016-11-01T03:06:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 679618703,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0,30 2 * * 5",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Africa/Casablanca",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2030-10-05T14:40:16+00:00",
+   "now": "2030-10-27T04:04:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 820890190,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "2030-10-05",
+   "expr": "59 1 * 2 0,6",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Europe/Dublin",
+   "weekend": [
+    2,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2030-09-17T16:34:57+00:00",
+   "now": "2030-10-27T04:04:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 820890190,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "2030-10-05",
+   "expr": "59 1 * 2 0,6",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Europe/Dublin",
+   "weekend": [
+    2,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2030-08-31T22:42:25+00:00",
+   "now": "2030-10-27T04:04:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 820890190,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "2030-10-05",
+   "expr": "59 1 * 2 0,6",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Europe/Dublin",
+   "weekend": [
+    2,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_15.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2000-01-10T19:52:00+00:00",
+   "now": "2000-03-23T21:30:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 340746868,
+  "rule": {
+   "X+": [
+    "2000-03-03",
+    "2000-03-12",
+    "2000-04-28"
+   ],
+   "X-": [
+    "2000-04-05"
+   ],
+   "active_from": "2000-02-23",
+   "expr": "15 2 * * 1",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Europe/Moscow",
+   "weekend": [
+    0
+   ]
+  },
+  "source": "findings_all_16.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2000-01-20T06:59:24+00:00",
+   "now": "2000-03-23T21:30:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 340746868,
+  "rule": {
+   "X+": [
+    "2000-03-03",
+    "2000-03-12",
+    "2000-04-28"
+   ],
+   "X-": [
+    "2000-04-05"
+   ],
+   "active_from": "2000-02-23",
+   "expr": "15 2 * * 1",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Europe/Moscow",
+   "weekend": [
+    0
+   ]
+  },
+  "source": "findings_all_16.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2000-01-12T22:17:56+00:00",
+   "now": "2000-03-23T21:30:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 340746868,
+  "rule": {
+   "X+": [
+    "2000-03-03",
+    "2000-03-12",
+    "2000-04-28"
+   ],
+   "X-": [
+    "2000-04-05"
+   ],
+   "active_from": "2000-02-23",
+   "expr": "15 2 * * 1",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Europe/Moscow",
+   "weekend": [
+    0
+   ]
+  },
+  "source": "findings_all_16.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2023-12-09T19:00:41+00:00",
+   "now": "2023-12-19T00:07:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 974133874,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "15 16 * * 5",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Antarctica/Vostok",
+   "weekend": [
+    1,
+    3,
+    4,
+    5
+   ]
+  },
+  "source": "findings_all_16.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2023-10-26T16:10:40+00:00",
+   "now": "2023-12-19T00:07:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 974133874,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "15 16 * * 5",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Antarctica/Vostok",
+   "weekend": [
+    1,
+    3,
+    4,
+    5
+   ]
+  },
+  "source": "findings_all_16.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2023-12-17T16:00:36+00:00",
+   "now": "2023-12-19T00:07:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 974133874,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "15 16 * * 5",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Antarctica/Vostok",
+   "weekend": [
+    1,
+    3,
+    4,
+    5
+   ]
+  },
+  "source": "findings_all_16.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2017-06-15T08:06:29+00:00",
+   "now": "2017-07-03T09:31:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 302565064,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2017-07-10",
+    "2017-08-02",
+    "2017-08-08"
+   ],
+   "active_from": "None",
+   "expr": "0 16 * * 0,6",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Africa/Casablanca",
+   "weekend": [
+    0,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_16.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2017-05-31T01:32:55+00:00",
+   "now": "2017-07-03T09:31:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 302565064,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2017-07-10",
+    "2017-08-02",
+    "2017-08-08"
+   ],
+   "active_from": "None",
+   "expr": "0 16 * * 0,6",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Africa/Casablanca",
+   "weekend": [
+    0,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_16.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2017-07-03T09:31:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 302565064,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2017-07-10",
+    "2017-08-02",
+    "2017-08-08"
+   ],
+   "active_from": "None",
+   "expr": "0 16 * * 0,6",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Africa/Casablanca",
+   "weekend": [
+    0,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_16.jsonl",
+  "want": [
+   "NO_DATA",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-12-23T06:15:15+00:00",
+   "now": "2011-12-30T14:51:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 544973840,
+  "rule": {
+   "X+": [
+    "2012-02-03"
+   ],
+   "X-": [
+    "2012-01-03",
+    "2012-01-21",
+    "2012-02-07"
+   ],
+   "active_from": "None",
+   "expr": "15 16 * * 1",
+   "grace": "0:30:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    4,
+    5
+   ]
+  },
+  "source": "findings_all_16.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-10-27T03:27:44+00:00",
+   "now": "2011-12-30T14:51:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 544973840,
+  "rule": {
+   "X+": [
+    "2012-02-03"
+   ],
+   "X-": [
+    "2012-01-03",
+    "2012-01-21",
+    "2012-02-07"
+   ],
+   "active_from": "None",
+   "expr": "15 16 * * 1",
+   "grace": "0:30:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    4,
+    5
+   ]
+  },
+  "source": "findings_all_16.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2011-12-30T14:51:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 544973840,
+  "rule": {
+   "X+": [
+    "2012-02-03"
+   ],
+   "X-": [
+    "2012-01-03",
+    "2012-01-21",
+    "2012-02-07"
+   ],
+   "active_from": "None",
+   "expr": "15 16 * * 1",
+   "grace": "0:30:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    4,
+    5
+   ]
+  },
+  "source": "findings_all_16.jsonl",
+  "want": [
+   "NO_DATA",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2029-04-18T21:59:51+00:00",
+   "now": "2029-04-27T09:08:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 131310911,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "59 22 * * 6",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Asia/Kolkata",
+   "weekend": [
+    0,
+    1,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_16.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2029-02-05T03:38:03+00:00",
+   "now": "2029-04-27T09:08:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 131310911,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "59 22 * * 6",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Asia/Kolkata",
+   "weekend": [
+    0,
+    1,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_16.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2029-03-12T23:48:51+00:00",
+   "now": "2029-04-27T09:08:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 131310911,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "59 22 * * 6",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Asia/Kolkata",
+   "weekend": [
+    0,
+    1,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_all_16.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2016-09-19T17:49:45+00:00",
+   "now": "2016-11-06T07:51:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 292022194,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2016-10-20"
+   ],
+   "active_from": "None",
+   "expr": "59 0,12 * * 1",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/St_Johns",
+   "weekend": [
+    0,
+    3,
+    5
+   ]
+  },
+  "source": "findings_all_16.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2016-08-16T04:42:15+00:00",
+   "now": "2016-11-06T07:51:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 292022194,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2016-10-20"
+   ],
+   "active_from": "None",
+   "expr": "59 0,12 * * 1",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/St_Johns",
+   "weekend": [
+    0,
+    3,
+    5
+   ]
+  },
+  "source": "findings_all_16.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2016-09-28T10:12:49+00:00",
+   "now": "2016-11-06T07:51:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "CONFIG_ERROR",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   "E209"
+  ],
+  "oracle_limit": true,
+  "provider_seed": 292022194,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2016-10-20"
+   ],
+   "active_from": "None",
+   "expr": "59 0,12 * * 1",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/St_Johns",
+   "weekend": [
+    0,
+    3,
+    5
+   ]
+  },
+  "source": "findings_all_16.jsonl",
+  "want": [
+   "ON_TIME",
+   null,
+   null,
+   null,
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "t": "2012-09-29T14:06:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 0,
+  "expect": [
+   "2012-09-29T14:45:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 986371492,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "45 1-3 * * *",
+   "grace": "0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Pacific/Apia",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "2012-09-29T14:45:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": true,
+   "t": "2012-09-29T14:06:00+00:00",
+   "until": "2012-09-30T14:06:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 0,
+  "expect": [
+   "2012-09-29T14:45:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 986371492,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "45 1-3 * * *",
+   "grace": "0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Pacific/Apia",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "2012-09-29T14:45:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2012-09-29T13:44:59.999999+00:00",
+   "now": "2012-09-29T14:06:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "OVERDUE",
+   "2012-09-29T13:45:00+00:00",
+   "2012-09-29T13:45:00+00:00",
+   "2012-09-29T14:45:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 986371492,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "45 1-3 * * *",
+   "grace": "0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Pacific/Apia",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "OVERDUE",
+   "2012-09-29T13:45:00+00:00",
+   "2012-09-29T13:45:00+00:00",
+   "2012-09-29T14:45:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2012-09-29T14:06:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "NO_DATA",
+   "2012-09-29T13:45:00+00:00",
+   "2012-09-29T13:45:00+00:00",
+   "2012-09-29T14:45:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 986371492,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "45 1-3 * * *",
+   "grace": "0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Pacific/Apia",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "NO_DATA",
+   "2012-09-29T13:45:00+00:00",
+   "2012-09-29T13:45:00+00:00",
+   "2012-09-29T14:45:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2012-09-28T20:03:14+00:00",
+   "now": "2012-09-29T14:06:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "OVERDUE",
+   "2012-09-29T12:45:00+00:00",
+   "2012-09-29T12:45:00+00:00",
+   "2012-09-29T14:45:00+00:00",
+   2,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 986371492,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "45 1-3 * * *",
+   "grace": "0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Pacific/Apia",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "OVERDUE",
+   "2012-09-29T12:45:00+00:00",
+   "2012-09-29T12:45:00+00:00",
+   "2012-09-29T14:45:00+00:00",
+   2,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "t": "2006-03-25T23:07:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 10,
+  "expect": [
+   "2006-03-25T23:45:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 9004382,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2006-03-07"
+   ],
+   "active_from": "2006-03-23",
+   "expr": "45 1-3 * * *",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Europe/Moscow",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "2006-03-25T23:45:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": false,
+   "t": "2006-03-25T23:07:00+00:00",
+   "until": "2006-03-26T15:07:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 10,
+  "expect": [
+   "2006-03-25T23:45:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 9004382,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2006-03-07"
+   ],
+   "active_from": "2006-03-23",
+   "expr": "45 1-3 * * *",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Europe/Moscow",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "2006-03-25T23:45:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "t": "2018-03-11T05:42:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 3,
+  "expect": [
+   "2018-03-11T06:15:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 598811971,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "45 1-3 * * *",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "America/St_Johns",
+   "weekend": [
+    2,
+    4
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "2018-03-11T06:15:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": true,
+   "t": "2018-03-11T05:42:00+00:00",
+   "until": "2018-03-12T11:42:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 3,
+  "expect": [
+   "2018-03-11T06:15:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 598811971,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "45 1-3 * * *",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "America/St_Johns",
+   "weekend": [
+    2,
+    4
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "2018-03-11T06:15:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2021-10-02T15:59:00+00:00",
+   "now": "2021-10-02T16:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "NOT_DUE",
+   "2021-10-02T16:00:00+00:00",
+   "2021-10-02T16:00:00+00:00",
+   "2021-10-02T16:30:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 338260084,
+  "rule": {
+   "X+": [
+    "2021-09-26"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0,30 2 * * *",
+   "grace": "0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Australia/Sydney",
+   "weekend": [
+    0,
+    1,
+    3,
+    4
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "NOT_DUE",
+   "2021-10-02T16:00:00+00:00",
+   "2021-10-02T16:00:00+00:00",
+   "2021-10-02T16:30:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2021-03-14T07:29:59.999999+00:00",
+   "now": "2021-03-14T08:42:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "NOT_DUE",
+   "2021-03-14T07:30:00+00:00",
+   "2021-03-17T07:30:00+00:00",
+   "2021-03-15T06:00:00+00:00",
+   0,
+   2,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 377640197,
+  "rule": {
+   "X+": [
+    "2021-02-24"
+   ],
+   "X-": [],
+   "active_from": "2021-02-21",
+   "expr": "*/15 2 * * *",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "America/New_York",
+   "weekend": [
+    0,
+    1,
+    2,
+    4,
+    5
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "NOT_DUE",
+   "2021-03-14T07:30:00+00:00",
+   "2021-03-17T07:30:00+00:00",
+   "2021-03-15T06:00:00+00:00",
+   0,
+   2,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "t": "2007-10-27T16:28:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 3,
+  "expect": [
+   "2007-10-27T16:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 826646107,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2007-09-29",
+    "2007-10-26"
+   ],
+   "active_from": "None",
+   "expr": "*/15 2 * * *",
+   "grace": "13:45:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Australia/Sydney",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "2007-10-27T16:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": false,
+   "t": "2007-10-27T16:28:00+00:00",
+   "until": "2007-10-27T17:28:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 3,
+  "expect": [
+   "2007-10-27T16:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 826646107,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2007-09-29",
+    "2007-10-26"
+   ],
+   "active_from": "None",
+   "expr": "*/15 2 * * *",
+   "grace": "13:45:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Australia/Sydney",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "2007-10-27T16:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2007-10-26T00:15:52+00:00",
+   "now": "2007-10-27T16:28:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "OVERDUE",
+   "2007-10-26T16:00:00+00:00",
+   "2007-10-27T05:45:00+00:00",
+   "2007-10-27T16:30:00+00:00",
+   4,
+   2,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 826646107,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2007-09-29",
+    "2007-10-26"
+   ],
+   "active_from": "None",
+   "expr": "*/15 2 * * *",
+   "grace": "13:45:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Australia/Sydney",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "OVERDUE",
+   "2007-10-26T16:00:00+00:00",
+   "2007-10-27T05:45:00+00:00",
+   "2007-10-27T16:30:00+00:00",
+   4,
+   2,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2007-10-27T16:28:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "NO_DATA",
+   "2007-10-27T16:15:00+00:00",
+   "2007-10-28T06:00:00+00:00",
+   "2007-10-27T16:30:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 826646107,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2007-09-29",
+    "2007-10-26"
+   ],
+   "active_from": "None",
+   "expr": "*/15 2 * * *",
+   "grace": "13:45:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Australia/Sydney",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "NO_DATA",
+   "2007-10-27T16:15:00+00:00",
+   "2007-10-28T06:00:00+00:00",
+   "2007-10-27T16:30:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "t": "2011-12-30T13:19:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 3,
+  "expect": [
+   "2011-12-30T13:40:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 567783646,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2011-12-18",
+    "2012-01-02",
+    "2012-01-05"
+   ],
+   "active_from": "None",
+   "expr": "10,40 1,2,3 * * *",
+   "grace": "1 day, 19:09:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Pacific/Fakaofo",
+   "weekend": []
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "2011-12-30T13:40:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": false,
+   "t": "2011-12-30T13:19:00+00:00",
+   "until": "2012-01-03T11:19:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 3,
+  "expect": [
+   "2011-12-30T13:40:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 567783646,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2011-12-18",
+    "2012-01-02",
+    "2012-01-05"
+   ],
+   "active_from": "None",
+   "expr": "10,40 1,2,3 * * *",
+   "grace": "1 day, 19:09:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Pacific/Fakaofo",
+   "weekend": []
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "2011-12-30T13:40:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "t": "2011-12-30T11:26:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 10,
+  "expect": [
+   "2011-12-30T13:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 785137979,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2012-01-24"
+   ],
+   "active_from": "2011-12-20",
+   "expr": "*/15 2 * * *",
+   "grace": "0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    1,
+    5
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "2011-12-30T13:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": false,
+   "t": "2011-12-30T11:26:00+00:00",
+   "until": "2011-12-31T15:26:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 10,
+  "expect": [
+   "2011-12-30T13:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 785137979,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2012-01-24"
+   ],
+   "active_from": "2011-12-20",
+   "expr": "*/15 2 * * *",
+   "grace": "0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    1,
+    5
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "2011-12-30T13:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "t": "2011-12-30T12:34:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 20,
+  "expect": [
+   "2011-12-30T13:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 887547864,
+  "rule": {
+   "X+": [
+    "2011-12-01",
+    "2012-01-07",
+    "2012-01-22"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "30 2 * * *",
+   "grace": "2 days, 10:31:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    1,
+    2,
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "2011-12-30T13:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": true,
+   "t": "2011-12-30T12:34:00+00:00",
+   "until": "2012-01-18T17:34:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 20,
+  "expect": [
+   "2011-12-30T13:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 887547864,
+  "rule": {
+   "X+": [
+    "2011-12-01",
+    "2012-01-07",
+    "2012-01-22"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "30 2 * * *",
+   "grace": "2 days, 10:31:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    1,
+    2,
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "2011-12-30T13:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-12-28T04:40:29+00:00",
+   "now": "2011-12-30T12:34:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "NOT_DUE",
+   "2011-12-29T13:30:00+00:00",
+   "2012-01-01T00:01:00+00:00",
+   "2011-12-30T13:30:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 887547864,
+  "rule": {
+   "X+": [
+    "2011-12-01",
+    "2012-01-07",
+    "2012-01-22"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "30 2 * * *",
+   "grace": "2 days, 10:31:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    1,
+    2,
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "NOT_DUE",
+   "2011-12-29T13:30:00+00:00",
+   "2012-01-01T00:01:00+00:00",
+   "2011-12-30T13:30:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-12-20T07:45:09+00:00",
+   "now": "2011-12-30T12:34:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "OVERDUE",
+   "2011-12-22T13:30:00+00:00",
+   "2011-12-25T00:01:00+00:00",
+   "2011-12-30T13:30:00+00:00",
+   2,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 887547864,
+  "rule": {
+   "X+": [
+    "2011-12-01",
+    "2012-01-07",
+    "2012-01-22"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "30 2 * * *",
+   "grace": "2 days, 10:31:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    1,
+    2,
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "OVERDUE",
+   "2011-12-22T13:30:00+00:00",
+   "2011-12-25T00:01:00+00:00",
+   "2011-12-30T13:30:00+00:00",
+   2,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "t": "2027-03-27T00:16:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 10,
+  "expect": [
+   "2027-03-27T00:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 624638294,
+  "rule": {
+   "X+": [
+    "2027-03-10",
+    "2027-03-28",
+    "2027-05-04"
+   ],
+   "X-": [
+    "2027-03-06",
+    "2027-04-14",
+    "2027-04-27"
+   ],
+   "active_from": "None",
+   "expr": "30 2 * * *",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Asia/Gaza",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "2027-03-27T00:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": false,
+   "t": "2027-03-27T00:16:00+00:00",
+   "until": "2027-04-06T12:16:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 10,
+  "expect": [
+   "2027-03-27T00:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 624638294,
+  "rule": {
+   "X+": [
+    "2027-03-10",
+    "2027-03-28",
+    "2027-05-04"
+   ],
+   "X-": [
+    "2027-03-06",
+    "2027-04-14",
+    "2027-04-27"
+   ],
+   "active_from": "None",
+   "expr": "30 2 * * *",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Asia/Gaza",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "2027-03-27T00:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2027-03-27T00:16:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "NO_DATA",
+   "2027-03-26T00:30:00+00:00",
+   "2027-03-26T00:31:00+00:00",
+   "2027-03-27T00:30:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 624638294,
+  "rule": {
+   "X+": [
+    "2027-03-10",
+    "2027-03-28",
+    "2027-05-04"
+   ],
+   "X-": [
+    "2027-03-06",
+    "2027-04-14",
+    "2027-04-27"
+   ],
+   "active_from": "None",
+   "expr": "30 2 * * *",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Asia/Gaza",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "NO_DATA",
+   "2027-03-26T00:30:00+00:00",
+   "2027-03-26T00:31:00+00:00",
+   "2027-03-27T00:30:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2027-03-24T17:42:44+00:00",
+   "now": "2027-03-27T00:16:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "OVERDUE",
+   "2027-03-25T00:30:00+00:00",
+   "2027-03-25T00:31:00+00:00",
+   "2027-03-27T00:30:00+00:00",
+   2,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 624638294,
+  "rule": {
+   "X+": [
+    "2027-03-10",
+    "2027-03-28",
+    "2027-05-04"
+   ],
+   "X-": [
+    "2027-03-06",
+    "2027-04-14",
+    "2027-04-27"
+   ],
+   "active_from": "None",
+   "expr": "30 2 * * *",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Asia/Gaza",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    4
+   ]
+  },
+  "source": "findings_gap_2.jsonl",
+  "want": [
+   "OVERDUE",
+   "2027-03-25T00:30:00+00:00",
+   "2027-03-25T00:31:00+00:00",
+   "2027-03-27T00:30:00+00:00",
+   2,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-12-30T13:00:00.000001+00:00",
+   "now": "2011-12-30T13:30:01+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "ON_TIME",
+   "2011-12-30T13:00:00+00:00",
+   "2011-12-30T13:30:00+00:00",
+   "2011-12-30T14:00:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 100866052,
+  "rule": {
+   "X+": [
+    "2012-01-12"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 * * * *",
+   "grace": "0:30:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    2,
+    5
+   ]
+  },
+  "source": "findings_gap_21.jsonl",
+  "want": [
+   "ON_TIME",
+   "2011-12-30T13:00:00+00:00",
+   "2011-12-30T13:30:00+00:00",
+   "2011-12-30T14:00:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2011-12-31T02:28:20+00:00",
+   "now": "2012-01-01T05:59:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "OVERDUE",
+   "2011-12-31T03:00:00+00:00",
+   "2011-12-31T03:30:00+00:00",
+   "2012-01-01T06:00:00+00:00",
+   27,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 100866052,
+  "rule": {
+   "X+": [
+    "2012-01-12"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 * * * *",
+   "grace": "0:30:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    2,
+    5
+   ]
+  },
+  "source": "findings_gap_21.jsonl",
+  "want": [
+   "OVERDUE",
+   "2011-12-31T03:00:00+00:00",
+   "2011-12-31T03:30:00+00:00",
+   "2012-01-01T06:00:00+00:00",
+   27,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "t": "2034-03-12T07:02:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 10,
+  "expect": [
+   "2034-03-12T07:10:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 763786036,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2034-03-05",
+    "2034-03-22",
+    "2034-03-25"
+   ],
+   "active_from": "None",
+   "expr": "10,40 1,2,3 * * *",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "America/New_York",
+   "weekend": []
+  },
+  "source": "findings_gap_21.jsonl",
+  "want": [
+   "2034-03-12T07:10:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": true,
+   "t": "2034-03-12T07:02:00+00:00",
+   "until": "2034-03-28T09:02:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 10,
+  "expect": [
+   "2034-03-12T07:10:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 763786036,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2034-03-05",
+    "2034-03-22",
+    "2034-03-25"
+   ],
+   "active_from": "None",
+   "expr": "10,40 1,2,3 * * *",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "America/New_York",
+   "weekend": []
+  },
+  "source": "findings_gap_21.jsonl",
+  "want": [
+   "2034-03-12T07:10:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2013-03-10T06:14:59.999999+00:00",
+   "now": "2013-03-10T07:15:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "NOT_DUE",
+   "2013-03-10T06:15:00+00:00",
+   "2013-03-10T07:15:00+00:00",
+   "2013-03-16T04:30:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 154699855,
+  "rule": {
+   "X+": [
+    "2013-03-16"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "*/15 2 * * *",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "America/St_Johns",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "source": "findings_gap_21.jsonl",
+  "want": [
+   "NOT_DUE",
+   "2013-03-10T06:15:00+00:00",
+   "2013-03-10T07:15:00+00:00",
+   "2013-03-16T04:30:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "t": "2011-12-30T13:16:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 0,
+  "expect": [
+   "2011-12-30T13:40:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 284728181,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2012-01-30"
+   ],
+   "active_from": "None",
+   "expr": "10,40 1,2,3 * * *",
+   "grace": "1 day, 23:58:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Pacific/Fakaofo",
+   "weekend": []
+  },
+  "source": "findings_gap_21.jsonl",
+  "want": [
+   "2011-12-30T13:40:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": true,
+   "t": "2011-12-30T13:16:00+00:00",
+   "until": "2012-01-10T19:16:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 0,
+  "expect": [
+   "2011-12-30T13:40:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 284728181,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2012-01-30"
+   ],
+   "active_from": "None",
+   "expr": "10,40 1,2,3 * * *",
+   "grace": "1 day, 23:58:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Pacific/Fakaofo",
+   "weekend": []
+  },
+  "source": "findings_gap_21.jsonl",
+  "want": [
+   "2011-12-30T13:40:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "t": "2011-12-30T13:14:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 0,
+  "expect": [
+   "2011-12-30T14:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 824415650,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 * * * *",
+   "grace": "0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    2,
+    3
+   ]
+  },
+  "source": "findings_gap_22.jsonl",
+  "want": [
+   "2011-12-30T14:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": false,
+   "t": "2011-12-30T13:14:00+00:00",
+   "until": "2011-12-30T21:14:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 0,
+  "expect": [
+   "2011-12-30T14:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 824415650,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 * * * *",
+   "grace": "0:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    2,
+    3
+   ]
+  },
+  "source": "findings_gap_22.jsonl",
+  "want": [
+   "2011-12-30T14:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2028-03-26T01:00:00+00:00",
+   "now": "2028-03-27T01:00:01+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "NOT_DUE",
+   "2028-03-26T01:15:00+00:00",
+   "2028-03-27T01:15:00+00:00",
+   "2028-03-28T00:00:00+00:00",
+   0,
+   7,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 789649017,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2028-03-02",
+    "2028-03-14",
+    "2028-05-02"
+   ],
+   "active_from": "None",
+   "expr": "*/15 2 * * *",
+   "grace": "1 day, 0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Europe/Berlin",
+   "weekend": [
+    0,
+    6
+   ]
+  },
+  "source": "findings_gap_22.jsonl",
+  "want": [
+   "NOT_DUE",
+   "2028-03-26T01:15:00+00:00",
+   "2028-03-27T01:15:00+00:00",
+   "2028-03-28T00:00:00+00:00",
+   0,
+   7,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "t": "2018-03-25T02:18:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 0,
+  "expect": [
+   "2018-03-25T02:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 18669123,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "30 2 * * *",
+   "grace": "0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Antarctica/Troll",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_22.jsonl",
+  "want": [
+   "2018-03-25T02:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": true,
+   "t": "2018-03-25T02:18:00+00:00",
+   "until": "2018-04-15T19:18:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 0,
+  "expect": [
+   "2018-03-25T02:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 18669123,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "30 2 * * *",
+   "grace": "0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Antarctica/Troll",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_22.jsonl",
+  "want": [
+   "2018-03-25T02:30:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2018-02-23T22:07:20+00:00",
+   "now": "2018-03-25T02:18:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "OVERDUE",
+   "2018-02-24T02:30:00+00:00",
+   "2018-02-24T02:30:00+00:00",
+   "2018-03-25T02:30:00+00:00",
+   29,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 18669123,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "30 2 * * *",
+   "grace": "0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Antarctica/Troll",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_22.jsonl",
+  "want": [
+   "OVERDUE",
+   "2018-02-24T02:30:00+00:00",
+   "2018-02-24T02:30:00+00:00",
+   "2018-03-25T02:30:00+00:00",
+   29,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2017-12-25T02:30:00.000001+00:00",
+   "now": "2018-03-25T02:18:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "OVERDUE",
+   "2017-12-26T02:30:00+00:00",
+   "2017-12-26T02:30:00+00:00",
+   "2018-03-25T02:30:00+00:00",
+   89,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 18669123,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "30 2 * * *",
+   "grace": "0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Antarctica/Troll",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_22.jsonl",
+  "want": [
+   "OVERDUE",
+   "2017-12-26T02:30:00+00:00",
+   "2017-12-26T02:30:00+00:00",
+   "2018-03-25T02:30:00+00:00",
+   89,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "t": "2011-12-30T13:47:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 3,
+  "expect": [
+   "2011-12-30T14:10:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 174275350,
+  "rule": {
+   "X+": [
+    "2011-12-09",
+    "2012-01-05",
+    "2012-02-05"
+   ],
+   "X-": [
+    "2011-11-23"
+   ],
+   "active_from": "None",
+   "expr": "10,40 1,2,3 * * *",
+   "grace": "0:30:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    1,
+    5
+   ]
+  },
+  "source": "findings_gap_22.jsonl",
+  "want": [
+   "2011-12-30T14:10:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": true,
+   "t": "2011-12-30T13:47:00+00:00",
+   "until": "2012-01-03T08:47:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 3,
+  "expect": [
+   "2011-12-30T14:10:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 174275350,
+  "rule": {
+   "X+": [
+    "2011-12-09",
+    "2012-01-05",
+    "2012-02-05"
+   ],
+   "X-": [
+    "2011-11-23"
+   ],
+   "active_from": "None",
+   "expr": "10,40 1,2,3 * * *",
+   "grace": "0:30:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    1,
+    5
+   ]
+  },
+  "source": "findings_gap_22.jsonl",
+  "want": [
+   "2011-12-30T14:10:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "t": "2011-12-30T12:00:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 0,
+  "expect": [
+   "2011-12-30T13:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 609600477,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2012-01-30"
+   ],
+   "active_from": "None",
+   "expr": "0,30 2 * * *",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_22.jsonl",
+  "want": [
+   "2011-12-30T13:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": true,
+   "t": "2011-12-30T12:00:00+00:00",
+   "until": "2012-01-15T11:00:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 0,
+  "expect": [
+   "2011-12-30T13:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 609600477,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2012-01-30"
+   ],
+   "active_from": "None",
+   "expr": "0,30 2 * * *",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_22.jsonl",
+  "want": [
+   "2011-12-30T13:00:00+00:00",
+   "None",
+   "gap",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": null,
+   "now": "2011-12-30T12:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "NO_DATA",
+   "2011-12-23T13:30:00+00:00",
+   "2011-12-23T15:30:00+00:00",
+   "2011-12-30T13:00:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 609600477,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2012-01-30"
+   ],
+   "active_from": "None",
+   "expr": "0,30 2 * * *",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "skip",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_gap_22.jsonl",
+  "want": [
+   "NO_DATA",
+   "2011-12-23T13:30:00+00:00",
+   "2011-12-23T15:30:00+00:00",
+   "2011-12-30T13:00:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2023-10-11T01:59:00+00:00",
+   "now": "2023-10-11T02:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "NOT_DUE",
+   "2023-10-11T02:00:00+00:00",
+   "2023-10-11T08:00:00+00:00",
+   "2023-11-15T02:00:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 362714493,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 15 * *",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "Antarctica/Vostok",
+   "weekend": [
+    0,
+    1,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_rolling_2.jsonl",
+  "want": [
+   "NOT_DUE",
+   "2023-10-11T02:00:00+00:00",
+   "2023-10-11T08:00:00+00:00",
+   "2023-11-15T02:00:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2001-09-25T04:59:00+00:00",
+   "now": "2001-09-25T05:01:01+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "OVERDUE",
+   "2001-09-25T05:00:00+00:00",
+   "2001-09-25T05:01:00+00:00",
+   "2001-10-02T05:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 344484234,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2001-09-28",
+    "2001-10-01",
+    "2001-10-22"
+   ],
+   "active_from": "None",
+   "expr": "0 9 * * 1",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "Europe/Moscow",
+   "weekend": [
+    0,
+    2,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_rolling_2.jsonl",
+  "want": [
+   "OVERDUE",
+   "2001-09-25T05:00:00+00:00",
+   "2001-09-25T05:01:00+00:00",
+   "2001-10-02T05:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2032-03-22T18:50:07+00:00",
+   "now": "2032-03-28T02:16:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "OVERDUE",
+   "2032-03-27T09:00:00+00:00",
+   "2032-03-27T09:01:00+00:00",
+   "2032-05-01T08:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 374726809,
+  "rule": {
+   "X+": [
+    "2032-03-13",
+    "2032-04-04",
+    "2032-04-30"
+   ],
+   "X-": [
+    "2032-02-29",
+    "2032-03-16",
+    "2032-04-19"
+   ],
+   "active_from": "None",
+   "expr": "0 9 1 * *",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "Europe/Dublin",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    6
+   ]
+  },
+  "source": "findings_rolling_2.jsonl",
+  "want": [
+   "OVERDUE",
+   "2032-03-27T09:00:00+00:00",
+   "2032-03-27T09:01:00+00:00",
+   "2032-05-01T08:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2004-12-05T20:59:00+00:00",
+   "now": "2004-12-05T21:01:01+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "OVERDUE",
+   "2004-12-05T21:00:00+00:00",
+   "2004-12-05T21:01:00+00:00",
+   "2004-12-12T21:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 373089324,
+  "rule": {
+   "X+": [
+    "2004-12-25"
+   ],
+   "X-": [
+    "2004-12-30",
+    "2005-01-15",
+    "2005-01-23"
+   ],
+   "active_from": "None",
+   "expr": "0 0 * * 0,6",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "Europe/Moscow",
+   "weekend": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_rolling_2.jsonl",
+  "want": [
+   "OVERDUE",
+   "2004-12-05T21:00:00+00:00",
+   "2004-12-05T21:01:00+00:00",
+   "2004-12-12T21:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2004-09-27T09:59:00+00:00",
+   "now": "2004-09-27T12:00:00.000001+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "OVERDUE",
+   "2004-09-27T10:00:00+00:00",
+   "2004-09-27T12:00:00+00:00",
+   "2004-10-31T09:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 79813379,
+  "rule": {
+   "X+": [
+    "2004-09-10"
+   ],
+   "X-": [
+    "2004-09-29",
+    "2004-11-01",
+    "2004-11-02"
+   ],
+   "active_from": "None",
+   "expr": "0 6 L * *",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "America/Asuncion",
+   "weekend": [
+    1,
+    2,
+    3,
+    4
+   ]
+  },
+  "source": "findings_rolling_2.jsonl",
+  "want": [
+   "OVERDUE",
+   "2004-09-27T10:00:00+00:00",
+   "2004-09-27T12:00:00+00:00",
+   "2004-10-31T09:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "inclusive": false,
+   "t": "2004-09-25T23:55:00+00:00",
+   "until": "2004-10-09T13:55:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 0,
+  "expect": [
+   "2004-10-09T03:30:00+00:00",
+   "2004-10-15",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 509123407,
+  "rule": {
+   "X+": [
+    "2004-09-12"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 15 * *",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "Asia/Kolkata",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    6
+   ]
+  },
+  "source": "findings_rolling_2.jsonl",
+  "want": [
+   "2004-10-09T03:30:00+00:00",
+   "2004-10-15",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2021-07-28T05:59:00+00:00",
+   "now": "2021-07-28T06:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "NOT_DUE",
+   "2021-07-28T06:00:00+00:00",
+   "2021-07-28T06:30:00+00:00",
+   "2021-08-25T06:00:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 77619489,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2021-09-17"
+   ],
+   "active_from": "None",
+   "expr": "0 6 L * *",
+   "grace": "0:30:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "UTC",
+   "weekend": [
+    0,
+    1,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_rolling_2.jsonl",
+  "want": [
+   "NOT_DUE",
+   "2021-07-28T06:00:00+00:00",
+   "2021-07-28T06:30:00+00:00",
+   "2021-08-25T06:00:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "inclusive": true,
+   "t": "2030-10-27T00:23:00+00:00",
+   "until": "2030-11-01T02:23:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 3,
+  "expect": [
+   "2030-10-30T06:00:00+00:00",
+   "2030-11-04",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 946383168,
+  "rule": {
+   "X+": [
+    "2030-09-26",
+    "2030-10-08",
+    "2030-10-25"
+   ],
+   "X-": [
+    "2030-11-03"
+   ],
+   "active_from": "None",
+   "expr": "0 9 * * 1",
+   "grace": "2:00:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "Europe/Moscow",
+   "weekend": [
+    0,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_rolling_31.jsonl",
+  "want": [
+   "2030-10-30T06:00:00+00:00",
+   "2030-11-04",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2037-01-10T11:59:59.999999+00:00",
+   "now": "2037-01-10T13:00:00.000001+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "OVERDUE",
+   "2037-01-10T12:00:00+00:00",
+   "2037-01-10T13:00:00+00:00",
+   "2037-02-14T12:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 448316716,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 15 * *",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "America/Santiago",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    6
+   ]
+  },
+  "source": "findings_rolling_31.jsonl",
+  "want": [
+   "OVERDUE",
+   "2037-01-10T12:00:00+00:00",
+   "2037-01-10T13:00:00+00:00",
+   "2037-02-14T12:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2022-01-11T19:59:00+00:00",
+   "now": "2022-01-11T20:30:00.000001+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "OVERDUE",
+   "2022-01-11T20:00:00+00:00",
+   "2022-01-11T20:30:00+00:00",
+   "2022-02-13T20:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 409667335,
+  "rule": {
+   "X+": [
+    "2022-03-11",
+    "2022-03-26",
+    "2022-04-08"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 15 * *",
+   "grace": "0:30:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "Pacific/Fakaofo",
+   "weekend": [
+    1,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_rolling_31.jsonl",
+  "want": [
+   "OVERDUE",
+   "2022-01-11T20:00:00+00:00",
+   "2022-01-11T20:30:00+00:00",
+   "2022-02-13T20:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2004-01-30T14:59:00+00:00",
+   "now": "2004-01-30T15:01:00.000001+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "OVERDUE",
+   "2004-01-30T15:00:00+00:00",
+   "2004-01-30T15:01:00+00:00",
+   "2004-02-03T06:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 648519397,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9,18 * * 1,3",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "Europe/Moscow",
+   "weekend": [
+    0,
+    2,
+    5,
+    6
+   ]
+  },
+  "source": "findings_rolling_31.jsonl",
+  "want": [
+   "OVERDUE",
+   "2004-01-30T15:00:00+00:00",
+   "2004-01-30T15:01:00+00:00",
+   "2004-02-03T06:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2004-03-12T14:59:59.999999+00:00",
+   "now": "2004-03-12T15:01:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "NOT_DUE",
+   "2004-03-12T15:00:00+00:00",
+   "2004-03-12T15:01:00+00:00",
+   "2004-03-16T06:00:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 648519397,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9,18 * * 1,3",
+   "grace": "0:01:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "Europe/Moscow",
+   "weekend": [
+    0,
+    2,
+    5,
+    6
+   ]
+  },
+  "source": "findings_rolling_31.jsonl",
+  "want": [
+   "NOT_DUE",
+   "2004-03-12T15:00:00+00:00",
+   "2004-03-12T15:01:00+00:00",
+   "2004-03-16T06:00:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2037-08-29T12:59:00+00:00",
+   "now": "2037-08-29T13:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "NOT_DUE",
+   "2037-08-29T13:00:00+00:00",
+   "2037-08-29T19:00:00+00:00",
+   "2037-09-26T13:00:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 608448965,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2037-11-16"
+   ],
+   "active_from": "None",
+   "expr": "0 9 1 * *",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "America/Havana",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    6
+   ]
+  },
+  "source": "findings_rolling_31.jsonl",
+  "want": [
+   "NOT_DUE",
+   "2037-08-29T13:00:00+00:00",
+   "2037-08-29T19:00:00+00:00",
+   "2037-09-26T13:00:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2024-10-11T05:59:00+00:00",
+   "now": "2024-10-11T06:30:00.000001+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "OVERDUE",
+   "2024-10-11T06:00:00+00:00",
+   "2024-10-11T06:30:00+00:00",
+   "2024-10-20T06:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 577661293,
+  "rule": {
+   "X+": [
+    "2024-09-13",
+    "2024-09-29",
+    "2024-10-20"
+   ],
+   "X-": [
+    "2024-10-17"
+   ],
+   "active_from": "2024-09-25",
+   "expr": "0 9 * * 1",
+   "grace": "0:30:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "Asia/Gaza",
+   "weekend": [
+    0,
+    1,
+    2,
+    3,
+    5,
+    6
+   ]
+  },
+  "source": "findings_rolling_31.jsonl",
+  "want": [
+   "OVERDUE",
+   "2024-10-11T06:00:00+00:00",
+   "2024-10-11T06:30:00+00:00",
+   "2024-10-20T06:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2007-09-26T22:29:59.999999+00:00",
+   "now": "2007-09-26T22:30:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "NOT_DUE",
+   "2007-09-26T22:30:00+00:00",
+   "2007-09-29T22:30:00+00:00",
+   "2007-10-31T22:00:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 838695108,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2007-10-09",
+    "2007-11-13",
+    "2007-11-28"
+   ],
+   "active_from": "None",
+   "expr": "0 9 1 * *",
+   "grace": "3 days, 0:00:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "Australia/Lord_Howe",
+   "weekend": [
+    0,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_rolling_31.jsonl",
+  "want": [
+   "NOT_DUE",
+   "2007-09-26T22:30:00+00:00",
+   "2007-09-29T22:30:00+00:00",
+   "2007-10-31T22:00:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2031-05-27T14:29:59.999999+00:00",
+   "now": "2031-05-27T15:30:01+00:00"
+  },
+  "check": "evaluate",
+  "density": 10,
+  "expect": [
+   "OVERDUE",
+   "2031-05-27T14:30:00+00:00",
+   "2031-05-27T15:30:00+00:00",
+   "2031-06-03T14:30:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 721855978,
+  "rule": {
+   "X+": [
+    "2031-07-07"
+   ],
+   "X-": [
+    "2031-04-19",
+    "2031-05-13",
+    "2031-07-03"
+   ],
+   "active_from": "None",
+   "expr": "30 16 * * 5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "Europe/Berlin",
+   "weekend": [
+    0,
+    2,
+    3,
+    4
+   ]
+  },
+  "source": "findings_rolling_32.jsonl",
+  "want": [
+   "OVERDUE",
+   "2031-05-27T14:30:00+00:00",
+   "2031-05-27T15:30:00+00:00",
+   "2031-06-03T14:30:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2009-06-07T18:57:04+00:00",
+   "now": "2009-06-11T13:13:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "NOT_DUE",
+   "2009-06-10T11:30:00+00:00",
+   "2009-06-12T07:50:00+00:00",
+   "2009-07-15T11:30:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 220053050,
+  "rule": {
+   "X+": [
+    "2009-07-01"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 15 * *",
+   "grace": "1 day, 20:20:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "America/St_Johns",
+   "weekend": [
+    0,
+    1,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_rolling_32.jsonl",
+  "want": [
+   "NOT_DUE",
+   "2009-06-10T11:30:00+00:00",
+   "2009-06-12T07:50:00+00:00",
+   "2009-07-15T11:30:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2009-05-13T11:30:00+00:00",
+   "now": "2009-06-11T13:13:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "NOT_DUE",
+   "2009-06-10T11:30:00+00:00",
+   "2009-06-12T07:50:00+00:00",
+   "2009-07-15T11:30:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 220053050,
+  "rule": {
+   "X+": [
+    "2009-07-01"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 15 * *",
+   "grace": "1 day, 20:20:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "America/St_Johns",
+   "weekend": [
+    0,
+    1,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_rolling_32.jsonl",
+  "want": [
+   "NOT_DUE",
+   "2009-06-10T11:30:00+00:00",
+   "2009-06-12T07:50:00+00:00",
+   "2009-07-15T11:30:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "inclusive": true,
+   "t": "2014-03-09T08:39:00+00:00",
+   "until": "2014-03-13T03:39:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 20,
+  "expect": [
+   "2014-03-12T13:00:00+00:00",
+   "2014-03-15",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 291795649,
+  "rule": {
+   "X+": [
+    "2014-03-17"
+   ],
+   "X-": [
+    "2014-02-20"
+   ],
+   "active_from": "None",
+   "expr": "0 9 15 * *",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "America/Havana",
+   "weekend": [
+    0,
+    1,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_rolling_32.jsonl",
+  "want": [
+   "2014-03-12T13:00:00+00:00",
+   "2014-03-15",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2005-02-15T02:59:59.999999+00:00",
+   "now": "2005-02-15T03:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 20,
+  "expect": [
+   "NOT_DUE",
+   "2005-02-15T03:00:00+00:00",
+   "2005-02-15T09:00:00+00:00",
+   "2005-02-20T03:00:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 477437313,
+  "rule": {
+   "X+": [],
+   "X-": [
+    "2005-02-23",
+    "2005-02-26",
+    "2005-03-26"
+   ],
+   "active_from": "None",
+   "expr": "0 0 * * 0,6",
+   "grace": "6:00:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "America/Santiago",
+   "weekend": [
+    0,
+    2,
+    3,
+    4,
+    5
+   ]
+  },
+  "source": "findings_rolling_32.jsonl",
+  "want": [
+   "NOT_DUE",
+   "2005-02-15T03:00:00+00:00",
+   "2005-02-15T09:00:00+00:00",
+   "2005-02-20T03:00:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2029-02-20T04:59:00+00:00",
+   "now": "2029-02-20T05:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 3,
+  "expect": [
+   "NOT_DUE",
+   "2029-02-20T05:00:00+00:00",
+   "2029-02-22T08:24:00+00:00",
+   "2029-02-27T05:00:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 547784544,
+  "rule": {
+   "X+": [
+    "2029-01-30"
+   ],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 0 * * 0,6",
+   "grace": "2 days, 3:24:00",
+   "kind": "cron",
+   "policy": "preceding",
+   "tz": "America/Havana",
+   "weekend": [
+    0,
+    2,
+    3,
+    4,
+    5,
+    6
+   ]
+  },
+  "source": "findings_rolling_32.jsonl",
+  "want": [
+   "NOT_DUE",
+   "2029-02-20T05:00:00+00:00",
+   "2029-02-22T08:24:00+00:00",
+   "2029-02-27T05:00:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ]
+ }
+]

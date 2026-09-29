@@ -121,6 +121,16 @@ class BusinessCalendar:
             )
         )
 
+    def note_horizon(self, local_date: date) -> None:
+        """Record that business-day decisions up to ``local_date`` are in scope.
+
+        ``W005`` must not depend on how far a particular search happens to look, so the
+        evaluation states its notice window explicitly (BLUEPRINT §3.3 as amended by A-9):
+        the dates a rule's horizon reaches are "consulted" even when the exact search never
+        asks about them.
+        """
+        self._note_lookup(local_date)
+
     def check_valid_at(self, local_date: date) -> None:
         """Raise ``E408`` when ``local_date`` is past the calendar's ``valid_until``."""
         valid_until = self._spec.valid_until

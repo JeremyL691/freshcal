@@ -19,7 +19,7 @@ EXPECTED_FIELDS = (
 
 
 def test_scenario_file_holds_every_blueprint_row() -> None:
-    assert len(SCENARIOS) == 40
+    assert len(SCENARIOS) == 44
     assert SCENARIO_IDS == [
         "G01",
         "G02",
@@ -61,6 +61,10 @@ def test_scenario_file_holds_every_blueprint_row() -> None:
         "G35",
         "G36",
         "G37",
+        "G41",
+        "G42",
+        "G43",
+        "G44",
     ]
     for entry in SCENARIOS:
         for field in EXPECTED_FIELDS:

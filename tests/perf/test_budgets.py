@@ -179,3 +179,63 @@ def test_pb_5_property_suite_under_the_ci_profile() -> None:
 
     assert completed.returncode == 0, completed.stdout[-2000:]
     assert elapsed < 180.0, f"PB-5 took {elapsed:.1f}s (budget 180s)"
+
+
+#: The schedule mix of `review/v0.1.0/E-blackbox/perf/small200.yml`, in file order.
+MIXED_SCHEDULES = (
+    'schedule: {kind: business_days, time: "16:00"}',
+    'schedule: {kind: cron, cron: "*/15 * * * *"}',
+    'schedule: {kind: monthly_business_day, business_day: -1, time: "17:00"}',
+    'schedule: {kind: cron, cron: "0 9-17 * * 1-5", on_non_business_day: following}',
+)
+
+
+def mixed_config(count: int) -> str:
+    """A config with ``count`` sources cycling through the auditor's schedule mix."""
+    lines = [
+        "version: 1",
+        "defaults: {timezone: Europe/Berlin, grace: 2h, calendar: target}",
+        "calendars:",
+        "  target: {holidays: [{financial: XECB}]}",
+        "sources:",
+    ]
+    for index in range(count):
+        lines.append(f"  - name: perf.mix{index:04d}")
+        lines.append("    relation: raw.small")
+        lines.append("    loaded_at_field: loaded_at")
+        lines.append(f"    {MIXED_SCHEDULES[index % len(MIXED_SCHEDULES)]}")
+    return "\n".join(lines) + "\n"
+
+
+def test_pb_6_run_validate_for_500_mixed_sources() -> None:
+    """PB-6: `validate` for 500 sources of mixed kinds stays under ten seconds.
+
+    Built from the schedule mix of `review/v0.1.0/E-blackbox/perf/small200.yml` (finding
+    E2E-04 measured `validate` at 36 s for 5 000 such sources). `validate` opens no
+    connection, so no database is involved; the run uses the real loader and the fake
+    calendar provider, which is what the budget is about.
+    """
+    from freshcal.app import run_validate
+    from freshcal.config.loader import load_config
+
+    config = load_config(_write_temp_config(mixed_config(500)))
+    provider = FakeCalendarProvider(ECB_HOLIDAYS)
+    entries = list(config.entries)
+
+    started = time.perf_counter()
+    report = run_validate(entries, provider, NOW)
+    elapsed = time.perf_counter() - started
+
+    assert len(entries) == 500
+    assert report.valid_count == 500, [issue.message for issue in report.errors][:3]
+    assert elapsed < 10.0, f"PB-6 took {elapsed:.2f}s (budget 10s)"
+
+
+def _write_temp_config(text: str) -> Path:
+    import tempfile
+
+    directory = Path(tempfile.mkdtemp(prefix="freshcal_pb6_"))
+    path = directory / "freshcal.yml"
+    path.write_text(text)
+    (directory / "target").mkdir(exist_ok=True)
+    return path

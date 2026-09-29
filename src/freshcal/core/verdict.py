@@ -39,8 +39,10 @@ from freshcal.core.observation import normalize_observed
 from freshcal.core.ports import CalendarProvider
 from freshcal.core.schedule import (
     CHUNK,
+    DATE_PADDING_DAYS,
     MAX_COUNTED_RELEASES,
     SEARCH_HORIZON,
+    consults_calendar,
     iter_releases_in_window,
     next_release_after,
     previous_release_at_or_before,
@@ -116,6 +118,18 @@ def _format(value: datetime) -> str:
     return to_utc(value).isoformat().replace("+00:00", "Z")
 
 
+#: The notice window of W005: releases up to ``now + CHUNK + DATE_PADDING_DAYS`` (34 days)
+#: are in scope, so a calendar whose ``valid_until`` falls inside it earns the warning
+#: whatever shape the search has (BLUEPRINT §3.3 as amended by A-9, finding SEM-04).
+CONSULT_HORIZON = CHUNK + timedelta(days=DATE_PADDING_DAYS)
+
+
+def _note_consult_horizon(rule: SourceRule, calendar: BusinessCalendar, now: datetime) -> None:
+    """Declare which dates the rule's horizon reaches, for W005."""
+    if consults_calendar(rule.schedule):
+        calendar.note_horizon(local_date(now + CONSULT_HORIZON, rule.schedule.timezone))
+
+
 def schedule_context(
     rule: SourceRule, now: datetime, provider: CalendarProvider
 ) -> tuple[Release | None, datetime | None]:
@@ -126,6 +140,7 @@ def schedule_context(
     """
     now = to_utc(now)
     calendar = BusinessCalendar(rule.calendar, provider, source_id=rule.source_id)
+    _note_consult_horizon(rule, calendar, now)
     last = previous_release_at_or_before(rule, now, calendar)
     following = next_release_after(rule, now, calendar)
     if last is None and following is None:
@@ -203,6 +218,7 @@ def evaluate(
     calendar = BusinessCalendar(rule.calendar, calendar_provider, source_id=rule.source_id)
     try:
         calendar.check_valid_at(local_date(now, timezone))  # E408 when past valid_until
+        _note_consult_horizon(rule, calendar, now)
         observation, normalization_warnings = normalize_observed(
             raw,
             rule.observed_timezone,

@@ -61,9 +61,168 @@ def test_orc_02_business_day_kinds_match_the_oracle() -> None:
 
 
 @pytest.mark.oracle
-def test_orc_02_business_day_kinds_full_campaign() -> None:
-    """The full seeded campaign (T-7.1 acceptance: report the seed count and case count)."""
+def test_orc_full_campaign() -> None:
+    """The full seeded campaign behind `-m oracle` (rule P1: >= 20 seeds x 500 cases).
+
+    One campaign over every schedule kind, so the quoted numbers describe a single run:
+    `ORACLE_SEEDS` x `ORACLE_PER_SEED` = 10 000 cases with 0 disagreements.
+    """
     cases = len(ORACLE_SEEDS) * ORACLE_PER_SEED
-    disagreements = _run_campaign(ORACLE_SEEDS, ORACLE_PER_SEED, BUSINESS_KINDS)
+    disagreements = _run_campaign(ORACLE_SEEDS, ORACLE_PER_SEED, ALL_FOCUSES)
     print(f"oracle campaign: {len(ORACLE_SEEDS)} seeds x {ORACLE_PER_SEED} cases = {cases} cases")
     assert disagreements == [], _report(disagreements)
+
+
+CRON_FOCUSES = ("cron", "gap", "rolling")
+ALL_FOCUSES = ("cron", "gap", "rolling", "bd", "monthly")
+
+
+def _replay_regression(case: dict) -> list[object] | None:
+    """Rebuild one recorded finding and return what the implementation answers now."""
+    from datetime import date, datetime, time, timedelta
+    from zoneinfo import ZoneInfo
+
+    from tests.oracle.cases import REF, SeededProvider, release_tuple
+
+    from freshcal.core.calendar import BusinessCalendar
+    from freshcal.core.errors import ConfigError
+    from freshcal.core.model import (
+        BusinessDaysSchedule,
+        CalendarSpec,
+        CronSchedule,
+        FreshnessTarget,
+        MonthlyBusinessDaySchedule,
+        NonBusinessDayPolicy,
+        Origin,
+        RawObservation,
+        SourceRule,
+        Weekday,
+    )
+    from freshcal.core.schedule import (
+        next_release_after,
+        previous_release_at_or_before,
+        releases_between,
+    )
+    from freshcal.core.verdict import evaluate
+
+    description = case["rule"]
+    zone = ZoneInfo(description["tz"])
+    if description["kind"] == "cron":
+        schedule = CronSchedule(
+            description["expr"], zone, NonBusinessDayPolicy(description["policy"])
+        )
+    elif description["kind"] == "business_days":
+        schedule = BusinessDaysSchedule(time.fromisoformat(description["at"]), zone)
+    else:
+        schedule = MonthlyBusinessDaySchedule(
+            description["n"], time.fromisoformat(description["at"]), zone
+        )
+    hours, minutes, seconds = (
+        float(part) for part in description["grace"].split(", ")[-1].split(":")
+    )
+    days = int(description["grace"].split(" day")[0]) if "day" in description["grace"] else 0
+    grace = timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds)
+    spec = CalendarSpec(
+        weekend=frozenset(Weekday(value) for value in description["weekend"]),
+        holiday_calendars=(REF,),
+        extra_working_days=frozenset(date.fromisoformat(x) for x in description["X+"]),
+        extra_non_working_days=frozenset(date.fromisoformat(x) for x in description["X-"]),
+    )
+    active_from = (
+        None
+        if description["active_from"] == "None"
+        else date.fromisoformat(description["active_from"])
+    )
+    rule = SourceRule(
+        source_id="oracle.regression",
+        origin=Origin.CONFIG,
+        schedule=schedule,
+        calendar=spec,
+        grace=grace,
+        target=FreshnessTarget(relation="raw.t", loaded_at_field="_loaded_at"),
+        observed_timezone=None,
+        active_from=active_from,
+    )
+    provider = SeededProvider(case["provider_seed"], case["density"])
+    calendar = BusinessCalendar(rule.calendar, provider)
+    args = case["args"]
+    try:
+        if case["check"] == "evaluate":
+            observed = None if args["O"] is None else datetime.fromisoformat(args["O"])
+            result = evaluate(
+                rule, RawObservation(observed), datetime.fromisoformat(args["now"]), provider
+            )
+            got: list[object] = [
+                result.status.value,
+                result.release and result.release.instant.isoformat(),
+                result.deadline and result.deadline.isoformat(),
+                result.next_expected_arrival and result.next_expected_arrival.isoformat(),
+                result.missed_count,
+                result.pending_count,
+                result.missed_truncated,
+                result.error and result.error.code,
+            ]
+            return got
+        if case["check"] == "next_release_after":
+            return release_tuple(
+                next_release_after(rule, datetime.fromisoformat(args["t"]), calendar)
+            )
+        if case["check"] == "next_release_after_until":
+            return release_tuple(
+                next_release_after(
+                    rule,
+                    datetime.fromisoformat(args["t"]),
+                    calendar,
+                    inclusive=args["inclusive"],
+                    until=datetime.fromisoformat(args["until"]),
+                )
+            )
+        if case["check"] == "previous_release_at_or_before":
+            return release_tuple(
+                previous_release_at_or_before(rule, datetime.fromisoformat(args["t"]), calendar)
+            )
+        if case["check"] == "releases_between":
+            return [
+                release_tuple(release)
+                for release in releases_between(
+                    rule,
+                    datetime.fromisoformat(args["A"]),
+                    datetime.fromisoformat(args["B"]),
+                    calendar,
+                )
+            ][:6]
+    except ConfigError as failure:
+        return ["CONFIG_ERROR", failure.issue.code]
+    raise AssertionError(f"unknown check in the regression file: {case['check']}")
+
+
+def test_orc_03_cron_schedules_match_the_oracle() -> None:
+    """Cron schedules (every policy, gap and rolling focus) agree with the oracle."""
+    disagreements = _run_campaign(DEFAULT_SEEDS, DEFAULT_PER_SEED, CRON_FOCUSES)
+    assert disagreements == [], _report(disagreements)
+
+
+def test_orc_04_recorded_regressions() -> None:
+    """Every disagreement the audit recorded against v0.1.0 is gone (T-7.2 acceptance)."""
+    cases = json.loads(REGRESSIONS.read_text())
+    assert len(cases) >= 100
+    failures = []
+    for case in cases:
+        got = _replay_regression(case)
+        if got != case["expect"]:
+            failures.append(
+                {
+                    "source": case["source"],
+                    "rule": case["rule"],
+                    "check": case["check"],
+                    "args": case["args"],
+                    "got": got,
+                    "expect": case["expect"],
+                    "oracle_limit": case["oracle_limit"],
+                }
+            )
+    print(
+        f"regressions replayed: {len(cases)} "
+        f"({sum(1 for case in cases if case['oracle_limit'])} pinned to the v0.1.0 answer)"
+    )
+    assert failures == [], _report(failures)

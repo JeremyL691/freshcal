@@ -197,7 +197,7 @@ def rand_rule(rng: random.Random, focus: str = "all") -> tuple[object, frozenset
     """A random schedule and weekend set; ``focus`` narrows the family (gap/rolling/bd/monthly)."""
     zone = ZoneInfo(rng.choice(ZONES))
     kinds = ["cron"] * 4 + ["bd", "monthly"]
-    if focus in ("gap", "rolling"):
+    if focus in ("cron", "gap", "rolling"):
         kinds = ["cron"]
     elif focus in ("bd", "monthly"):
         kinds = [focus]
@@ -527,6 +527,11 @@ def compare_case(
     except (ConfigError, CalendarError, oracle.OracleError):
         return differences  # both sides refuse to answer; nothing to compare
 
+    # The oracle searches a bounded look-around for the verdict context (400 days by
+    # default); a dense schedule would enumerate tens of thousands of nominals per case, so
+    # dense rules get a 30-day look-around instead and the comparison falls back to the
+    # `*_known` flags the oracle sets when it could not look far enough.
+    look = timedelta(days=30) if is_dense(rule) else timedelta(days=400)
     for _ in range(2):
         now = instant
         age = timedelta(days=2) if is_dense(rule) else timedelta(days=90)
@@ -542,7 +547,7 @@ def compare_case(
                         [release, release - US, release + US, release - timedelta(minutes=1)]
                     )
         result = evaluate(rule, RawObservation(observed), now, provider)
-        expected_result = oracle.o_evaluate(rule, observed, now, provider)
+        expected_result = oracle.o_evaluate(rule, observed, now, provider, look=look)
         got_value = [
             result.status.value,
             result.release and result.release.instant.isoformat(),
@@ -565,6 +570,18 @@ def compare_case(
         ]
         if not expected_result.next_known and got_value[3] is not None:
             want_value[3] = got_value[3]
+        if (
+            not expected_result.next_known
+            and not expected_result.last_known
+            and got_value[7] == "E209"
+            and want_value[7] is None
+        ):
+            # The oracle looks 400 days around `now`; the implementation looks 1830. When the
+            # oracle could see no release in either direction it reports an empty ON_TIME and
+            # declares the answer unknown (`*_known` False), so the implementation's stricter
+            # "no release at all" (E209) is not a contradiction — it is the more informed
+            # statement. The E209 behaviour itself is pinned by the recorded regressions.
+            continue
         if (
             not expected_result.last_known
             and expected_result.status in ("ON_TIME", "NO_DATA")

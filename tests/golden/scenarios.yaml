@@ -844,3 +844,84 @@
     warning_codes: []
     error_code: E408
     explanation: "Configuration error: E408 calendar cn_workdays is valid until 2026-12-31, but the evaluation date is 2027-01-04; review its holidays and overrides for the next period and extend valid_until"
+
+- id: G41
+  title: A Monday release rolled back over Easter by `preceding` (A-9)
+  rule:
+    schedule: {kind: cron, cron: "0 9 * * 1", timezone: Europe/Berlin, on_non_business_day: preceding}
+    calendar: {holidays: [{country: DE}]}
+    grace: 1h
+  now: 2026-04-02T10:00:00Z
+  observed: 2026-03-30T07:20:00Z
+  expect:
+    status: OVERDUE
+    release: 2026-04-02T07:00:00Z
+    release_adjusted_from: "2026-04-06"
+    deadline: 2026-04-02T08:00:00Z
+    next_expected_arrival: 2026-04-13T07:00:00Z
+    missed_count: 1
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "Overdue: release Thu 2026-04-02 09:00 CEST missed its deadline Thu 2026-04-02 10:00 CEST; 1 release missed; latest data observed Mon 2026-03-30 09:20 CEST."
+
+- id: G42
+  title: A release shifted by the spring-forward gap (Berlin, SEM-02)
+  rule:
+    schedule: {kind: cron, cron: "30 2 * * *", timezone: Europe/Berlin}
+    grace: 1h
+  now: 2027-03-28T03:00:00Z
+  observed: 2027-03-28T01:10:00Z
+  expect:
+    status: OVERDUE
+    release: 2027-03-28T01:30:00Z
+    release_dst: gap
+    deadline: 2027-03-28T02:30:00Z
+    next_expected_arrival: 2027-03-29T00:30:00Z
+    missed_count: 1
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "Overdue: release Sun 2027-03-28 03:30 CEST missed its deadline Sun 2027-03-28 04:30 CEST; 1 release missed; latest data observed Sun 2027-03-28 03:10 CEST."
+
+- id: G43
+  title: ON_TIME whose next expected arrival sits inside the gap (Berlin, SEM-02)
+  rule:
+    schedule: {kind: cron, cron: "30 2 * * *", timezone: Europe/Berlin}
+    grace: 1h
+  now: 2027-03-28T01:15:00Z
+  observed: 2027-03-27T01:35:00Z
+  expect:
+    status: ON_TIME
+    release: 2027-03-27T01:30:00Z
+    deadline: 2027-03-27T02:30:00Z
+    next_expected_arrival: 2027-03-28T01:30:00Z
+    next_dst: gap
+    missed_count: 0
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "On time: latest release Sat 2027-03-27 02:30 CET arrived (observed Sat 2027-03-27 02:35 CET); next release Sun 2027-03-28 03:30 CEST."
+
+- id: G44
+  title: A half-hour gap at Lord Howe with two daily fires (SEM-02)
+  rule:
+    schedule: {kind: cron, cron: "10,30 2 * * *", timezone: Australia/Lord_Howe}
+    grace: 30m
+  now: 2026-10-03T16:30:00Z
+  observed: 2026-10-03T15:35:00Z
+  expect:
+    status: OVERDUE
+    release: 2026-10-03T15:40:00Z
+    release_dst: gap
+    deadline: 2026-10-03T16:10:00Z
+    next_expected_arrival: 2026-10-04T15:10:00Z
+    missed_count: 1
+    missed_truncated: false
+    pending_count: 0
+    warning_codes: []
+    error_code: null
+    explanation: "Overdue: release Sun 2026-10-04 02:40 +11 missed its deadline Sun 2026-10-04 03:10 +11; 1 release missed; latest data observed Sun 2026-10-04 02:35 +11."
