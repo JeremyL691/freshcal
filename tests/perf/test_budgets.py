@@ -178,7 +178,9 @@ def test_pb_5_property_suite_under_the_ci_profile() -> None:
     elapsed = time.perf_counter() - started
 
     assert completed.returncode == 0, completed.stdout[-2000:]
-    assert elapsed < 180.0, f"PB-5 took {elapsed:.1f}s (budget 180s)"
+    # 420 s since A-10: the suite really runs 300 examples per test now (253 s measured);
+    # the old 180 s had never been reached because every test pinned max_examples=50.
+    assert elapsed < 420.0, f"PB-5 took {elapsed:.1f}s (budget 420s)"
 
 
 #: The schedule mix of `review/v0.1.0/E-blackbox/perf/small200.yml`, in file order.

@@ -9,17 +9,28 @@ concluded from a complete search.
 
 from __future__ import annotations
 
-from datetime import UTC, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
-from hypothesis import assume, given, settings
+from hypothesis import assume, given
 from hypothesis import strategies as st
 from tests.conftest import FakeCalendarProvider
-from tests.property.strategies import verdict_inputs
+from tests.property.strategies import rules, verdict_inputs, windows
 
 from freshcal.core.calendar import BusinessCalendar
 from freshcal.core.errors import ConfigError
-from freshcal.core.model import RawObservation, SourceRule, Status
+from freshcal.core.model import (
+    CalendarSpec,
+    CronSchedule,
+    FreshnessTarget,
+    MonthlyBusinessDaySchedule,
+    NonBusinessDayPolicy,
+    Origin,
+    RawObservation,
+    SourceRule,
+    Status,
+    Weekday,
+)
 from freshcal.core.schedule import releases_between
 from freshcal.core.timeutil import resolve_local
 from freshcal.core.verdict import evaluate, find_first_unarrived
@@ -39,7 +50,6 @@ def evaluate_inputs(
 
 
 @given(verdict_inputs())
-@settings(max_examples=50)
 def test_p1_next_expected_arrival_is_in_the_future(
     inputs: tuple[SourceRule, object, FakeCalendarProvider, datetime, RawObservation],
 ) -> None:
@@ -52,10 +62,17 @@ def test_p1_next_expected_arrival_is_in_the_future(
 @given(
     verdict_inputs(),
     st.sampled_from(
-        ["Europe/Berlin", "Pacific/Kiritimati", "America/Adak", "Asia/Kathmandu", "UTC"]
+        [
+            "Europe/Berlin",
+            "Pacific/Kiritimati",
+            "America/Adak",
+            "Asia/Kathmandu",
+            "UTC",
+            "America/Phoenix",  # a fixed offset with no DST
+            "Asia/Kolkata",  # a fixed +05:30 offset
+        ]
     ),
 )
-@settings(max_examples=50)
 def test_p2_results_do_not_depend_on_the_representation_of_instants(
     inputs: tuple[SourceRule, object, FakeCalendarProvider, datetime, RawObservation],
     timezone_name: str,
@@ -78,7 +95,6 @@ def test_p2_results_do_not_depend_on_the_representation_of_instants(
 
 
 @given(verdict_inputs(), st.integers(min_value=1, max_value=30 * 24 * 60))
-@settings(max_examples=50)
 def test_p3_monotone_in_observed(
     inputs: tuple[SourceRule, object, FakeCalendarProvider, datetime, RawObservation],
     later_minutes: int,
@@ -96,7 +112,6 @@ def test_p3_monotone_in_observed(
 
 
 @given(verdict_inputs(), st.integers(min_value=1, max_value=7 * 24 * 60))
-@settings(max_examples=50)
 def test_p4_monotone_in_grace(
     inputs: tuple[SourceRule, object, FakeCalendarProvider, datetime, RawObservation],
     extra_minutes: int,
@@ -121,7 +136,6 @@ def test_p4_monotone_in_grace(
 
 
 @given(verdict_inputs(), st.integers(min_value=1, max_value=30 * 24 * 60))
-@settings(max_examples=50)
 def test_p5_monotone_in_time(
     inputs: tuple[SourceRule, object, FakeCalendarProvider, datetime, RawObservation],
     later_minutes: int,
@@ -138,7 +152,6 @@ def test_p5_monotone_in_time(
 
 
 @given(verdict_inputs())
-@settings(max_examples=50)
 def test_p6_status_consistency(
     inputs: tuple[SourceRule, object, FakeCalendarProvider, datetime, RawObservation],
 ) -> None:
@@ -180,7 +193,6 @@ def test_p6_status_consistency(
 
 
 @given(verdict_inputs())
-@settings(max_examples=50)
 def test_p7_deadline_minus_release_equals_grace(
     inputs: tuple[SourceRule, object, FakeCalendarProvider, datetime, RawObservation],
 ) -> None:
@@ -191,7 +203,6 @@ def test_p7_deadline_minus_release_equals_grace(
 
 
 @given(verdict_inputs(), st.integers(min_value=0, max_value=48 * 60))
-@settings(max_examples=50)
 def test_p8_observed_at_or_after_now_is_on_time(
     inputs: tuple[SourceRule, object, FakeCalendarProvider, datetime, RawObservation],
     future_minutes: int,
@@ -206,7 +217,6 @@ def test_p8_observed_at_or_after_now_is_on_time(
 
 
 @given(verdict_inputs())
-@settings(max_examples=50)
 def test_p9_evaluation_is_deterministic(
     inputs: tuple[SourceRule, object, FakeCalendarProvider, datetime, RawObservation],
 ) -> None:
@@ -217,7 +227,6 @@ def test_p9_evaluation_is_deterministic(
 
 
 @given(verdict_inputs(), st.integers(min_value=1, max_value=60))
-@settings(max_examples=50)
 def test_p17_find_first_unarrived_only_returns_none_after_a_complete_search(
     inputs: tuple[SourceRule, object, FakeCalendarProvider, datetime, RawObservation],
     window_days: int,
@@ -235,4 +244,125 @@ def test_p17_find_first_unarrived_only_returns_none_after_a_complete_search(
     if found is None:
         assert direct == [], (rule.schedule, start, now, direct[:3])
     else:
+        # P17 (TEST-08): not just "some release exists" — the *same* first release, which is
+        # what "the search agrees with direct enumeration" means.
         assert direct, "a found release must also be visible to direct enumeration"
+        assert found == direct[0], (rule.schedule, start, now, found, direct[0])
+
+
+@given(rules(), windows(max_days=30))
+def test_p18_searches_and_verdicts_match_the_oracle(
+    rule_and_calendar: tuple[SourceRule, object, FakeCalendarProvider],
+    window: tuple[datetime, datetime],
+) -> None:
+    """P18 (rule P1): the drawn inputs are answered exactly as the independent oracle does.
+
+    This is the property form of `tests/oracle/test_differential.py`: the same strategies
+    the other properties use, compared against the brute-force reference for
+    `releases_between`, `next_release_after` (strict and bounded), `previous_release_at_or_before`
+    and `evaluate`.
+    """
+    import random
+
+    from tests.oracle import oracle
+    from tests.oracle.cases import compare_case
+
+    rule, _spec, provider = rule_and_calendar
+    start, _end = window
+    disagreements = compare_case(rule, provider, start, random.Random(0), oracle)
+    assert disagreements == [], disagreements[:2]
+
+
+def test_p18_recorded_counterexamples_stay_fixed() -> None:
+    """The inputs that once broke a property are pinned as fixed cases (rule P7).
+
+    T-2.5's two counterexamples: P13 must not require business-day dates for cron with
+    policy `none` (the calendar is never consulted), and P16 must not require a month that
+    a window starting before `active_from` legitimately drops. G41-G44's inputs are pinned
+    by the golden rows themselves.
+    """
+    zone = ZoneInfo("UTC")
+    weekend_rule = SourceRule(
+        source_id="property.counterexample",
+        origin=Origin.CONFIG,
+        schedule=CronSchedule("0 12 * * 6", zone, NonBusinessDayPolicy.NONE),
+        calendar=CalendarSpec(weekend=frozenset({Weekday.SAT, Weekday.SUN})),
+        grace=timedelta(hours=1),
+        target=FreshnessTarget(relation="raw.t", loaded_at_field="_loaded_at"),
+    )
+    calendar = BusinessCalendar(weekend_rule.calendar, FakeCalendarProvider())
+    releases = releases_between(
+        weekend_rule,
+        datetime(2026, 1, 3, tzinfo=UTC),
+        datetime(2026, 1, 4, tzinfo=UTC),
+        calendar,
+    )
+    assert [release.instant for release in releases] == [datetime(2026, 1, 3, 12, tzinfo=UTC)]
+    assert not calendar.is_business_day(date(2026, 1, 3))
+
+    floor_rule = SourceRule(
+        source_id="property.counterexample",
+        origin=Origin.CONFIG,
+        schedule=MonthlyBusinessDaySchedule(1, time(9, 0), zone),
+        calendar=CalendarSpec(),
+        grace=timedelta(hours=1),
+        target=FreshnessTarget(relation="raw.t", loaded_at_field="_loaded_at"),
+        active_from=date(2026, 2, 10),
+    )
+    releases = releases_between(
+        floor_rule,
+        datetime(2026, 1, 1, tzinfo=UTC),
+        datetime(2026, 3, 31, tzinfo=UTC),
+        calendar,
+    )
+    assert [release.local.date().isoformat() for release in releases] == ["2026-03-02"]
+
+
+def test_verdict_input_distribution_is_wide_enough() -> None:
+    """TEST-04 probe: the widened strategies really reach the states the audit found missing.
+
+    A seeded draw of 600 verdict inputs (the same choices the strategies make) must produce
+    at least 10 % NOT_DUE verdicts - the audit measured 1/600 before T-7.3 - and at least one
+    release whose DST classification is not `normal` (0/600 before).
+    """
+    import random
+    from collections import Counter
+
+    from tests.property.strategies import sample_verdict_inputs
+
+    statuses: Counter[str] = Counter()
+    annotated = 0
+    for rule, _spec, provider, now, raw in sample_verdict_inputs(random.Random(20260929), 600):
+        result = evaluate(rule, raw, now, provider)
+        statuses[result.status.value] += 1
+        if result.release is not None and result.release.dst != "normal":
+            annotated += 1
+    assert statuses["NOT_DUE"] >= 60, statuses
+    assert annotated >= 1, statuses
+
+    # The drawn sample reaches a DST-annotated release about once in 300 cases, so the two
+    # golden rules that pin the gap class (G42, G44) are checked here as well: the probe
+    # must show DST coverage deterministically, not by luck.
+    provider = FakeCalendarProvider()
+    gap_rules = (
+        (
+            CronSchedule("30 2 * * *", ZoneInfo("Europe/Berlin")),
+            datetime(2027, 3, 28, 3, tzinfo=UTC),
+        ),
+        (
+            CronSchedule("10,30 2 * * *", ZoneInfo("Australia/Lord_Howe")),
+            datetime(2026, 10, 3, 16, 30, tzinfo=UTC),
+        ),
+    )
+    for schedule, now in gap_rules:
+        rule = SourceRule(
+            source_id="property.gap",
+            origin=Origin.CONFIG,
+            schedule=schedule,
+            calendar=CalendarSpec(),
+            grace=timedelta(hours=1),
+            target=FreshnessTarget(relation="raw.t", loaded_at_field="_loaded_at"),
+        )
+        result = evaluate(rule, RawObservation(None), now, provider)
+        assert result.release is not None
+        assert result.release.dst == "gap", (schedule, result.release)

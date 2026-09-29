@@ -7,7 +7,9 @@
 
 from __future__ import annotations
 
+import os
 import time
+from collections.abc import Iterator
 from datetime import datetime
 from typing import Any
 
@@ -25,6 +27,23 @@ from freshcal.adapters.holidays_provider import HolidaysCalendarProvider
 from freshcal.core.calendar import BusinessCalendar
 from freshcal.core.schedule import next_release_after
 from freshcal.core.verdict import evaluate
+
+
+@pytest.fixture(autouse=True)
+def _restore_process_timezone() -> Iterator[None]:
+    """Put the process time zone back after each run (TEST-08: the tests leaked it).
+
+    Every case sets ``TZ`` and calls ``time.tzset()``; without this teardown the last case's
+    zone stays active for the rest of the session, which makes any later test that reads the
+    process zone order-dependent.
+    """
+    original = os.environ.get("TZ")
+    yield
+    if original is None:
+        os.environ.pop("TZ", None)
+    else:
+        os.environ["TZ"] = original
+    time.tzset()
 
 
 @pytest.mark.parametrize("process_timezone", PROCESS_TIME_ZONES)
