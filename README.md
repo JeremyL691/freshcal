@@ -13,14 +13,21 @@ ordinary business days. FreshCal models the schedule the publisher actually foll
 ECB publishes on TARGET business days at around 16:00 CET, so Friday's data present on
 Monday morning is *not* an alert, while a missing 16:00 release is.
 
-## 30-second quickstart
+## Install
 
-FreshCal v0.1 is not on PyPI; run it from a clone:
+FreshCal v0.1 is not published on PyPI. Install it from a clone:
 
 ```bash
 git clone <repository-url> && cd freshcal
-uv sync --extra duckdb
+uv sync --extra duckdb     # or --all-extras for the PostgreSQL adapter too
+uv run freshcal --version  # freshcal 0.1.0
 ```
+
+`freshcal` needs Python 3.11 or newer; `uv` fetches it if necessary. The `duckdb` extra
+adds DuckDB support, the `postgres` extra adds PostgreSQL, and `--all-extras` adds both.
+To use the CLI without `uv run`, activate the environment (`source .venv/bin/activate`).
+
+## 30-second quickstart
 
 The example config reads a small CSV with DuckDB, applies the ECB's schedule (business
 days at 16:00 Europe/Berlin, TARGET holidays, 2 h grace) and is evaluated three times on
