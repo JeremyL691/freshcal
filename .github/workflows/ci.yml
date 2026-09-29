@@ -39,6 +39,27 @@ jobs:
       - run: uv run pytest --cov --cov-report=term-missing
       - run: uv run coverage report --include="*/freshcal/core/*" --fail-under=95
       - run: uv run coverage report --omit="*/adapters/postgres_reader.py" --fail-under=85
+  postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      FRESHCAL_TEST_PG_DSN: postgresql://postgres:postgres@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with: { python-version: "3.14", enable-cache: true }
+      - run: uv sync --locked --all-extras
+      - run: uv run pytest -m postgres --cov --cov-report=term-missing
+      - run: uv run coverage report --include="*/adapters/postgres_reader.py" --fail-under=80
   build:
     runs-on: ubuntu-latest
     steps:
