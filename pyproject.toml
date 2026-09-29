@@ -61,7 +61,9 @@ target-version = "py311"
 src = ["src", "tests"]
 # Markdown files contain normative code blocks quoted verbatim (BLUEPRINT.md §4.4
 # and §8.1 are drift-guarded by tests); ruff must never reformat them.
-extend-exclude = ["*.md"]
+# review/ holds the owner-issued audit evidence (reviewer scripts and reproducers):
+# reference material, not product code (IMPROVEMENT_PLAN.md T-7.0).
+extend-exclude = ["*.md", "review"]
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I", "B", "UP", "SIM", "C4", "RUF", "TID", "PT", "N"]
