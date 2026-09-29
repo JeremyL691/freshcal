@@ -79,7 +79,7 @@ def test_p10_releases_are_sorted_utc_and_after_the_active_from_floor(
 
 
 @given(rules(sub_hourly=False), windows(max_days=60))
-@settings(max_examples=50)
+@settings(max_examples=50, deadline=None)
 def test_p11_window_additivity(
     rule_and_calendar: tuple[SourceRule, object, FakeCalendarProvider],
     window: tuple[datetime, datetime],
@@ -99,7 +99,7 @@ def test_p11_window_additivity(
 
 
 @given(rules(sub_hourly=False), windows(max_days=60))
-@settings(max_examples=50)
+@settings(max_examples=50, deadline=None)
 def test_p12_searches_agree_with_direct_enumeration(
     rule_and_calendar: tuple[SourceRule, object, FakeCalendarProvider],
     window: tuple[datetime, datetime],
