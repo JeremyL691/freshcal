@@ -28,7 +28,9 @@ from croniter import CroniterBadDateError, croniter
 from freshcal.core.calendar import MAX_ROLL_DAYS, BusinessCalendar
 from freshcal.core.errors import ConfigError, Issue
 from freshcal.core.model import (
+    BusinessDaysSchedule,
     CronSchedule,
+    MonthlyBusinessDaySchedule,
     NonBusinessDayPolicy,
     Release,
     Schedule,
@@ -45,8 +47,10 @@ __all__ = [
     "Nominal",
     "apply_policy",
     "is_rolling",
+    "next_release_after",
     "no_release_issue",
     "nominal_releases",
+    "previous_release_at_or_before",
     "releases_between",
 ]
 
@@ -121,14 +125,71 @@ def _cron_nominals(
         yield from apply_policy(nominal, schedule.on_non_business_day, calendar)
 
 
+def _dates(d0: date, d1: date) -> Iterator[date]:
+    day = d0
+    while day <= d1:
+        yield day
+        day += timedelta(days=1)
+
+
+def _months_touching(d0: date, d1: date) -> Iterator[tuple[int, int]]:
+    year, month = d0.year, d0.month
+    while (year, month) <= (d1.year, d1.month):
+        yield year, month
+        year, month = (year + 1, 1) if month == 12 else (year, month + 1)
+
+
+def _dates_of_month(year: int, month: int) -> Iterator[date]:
+    day = date(year, month, 1)
+    while day.month == month:
+        yield day
+        day += timedelta(days=1)
+
+
+def _business_day_nominals(
+    schedule: BusinessDaysSchedule, calendar: BusinessCalendar, d0: date, d1: date
+) -> Iterator[Nominal]:
+    for day in _dates(d0, d1):
+        if calendar.is_business_day(day):
+            yield Nominal(local=datetime.combine(day, schedule.at))
+
+
+def _monthly_nominals(
+    schedule: MonthlyBusinessDaySchedule, calendar: BusinessCalendar, d0: date, d1: date
+) -> Iterator[Nominal]:
+    """The Nth (or Nth-from-last) business day of every month touching the window.
+
+    A month with fewer than ``|N|`` business days is clamped to its last (``N > 0``) or
+    first (``N < 0``) business day and flagged, because a monthly publisher still
+    publishes that month; a month with no business day at all produces no release.
+    """
+    for year, month in _months_touching(d0, d1):
+        business_days = [
+            day for day in _dates_of_month(year, month) if calendar.is_business_day(day)
+        ]
+        if not business_days:
+            continue
+        if schedule.business_day > 0:
+            index = min(schedule.business_day, len(business_days)) - 1
+            clamped = schedule.business_day > len(business_days)
+        else:
+            index = max(schedule.business_day, -len(business_days))
+            clamped = -schedule.business_day > len(business_days)
+        day = business_days[index]
+        if d0 <= day <= d1:
+            yield Nominal(local=datetime.combine(day, schedule.at), clamped=clamped)
+
+
 def nominal_releases(
     schedule: Schedule, calendar: BusinessCalendar, d0: date, d1: date
 ) -> Iterator[Nominal]:
     """Nominal releases for local dates in ``[d0, d1]``, inclusive."""
     if isinstance(schedule, CronSchedule):
         yield from _cron_nominals(schedule, calendar, d0, d1)
-        return
-    raise NotImplementedError(f"{type(schedule).__name__} generation is implemented in T-2.4")
+    elif isinstance(schedule, BusinessDaysSchedule):
+        yield from _business_day_nominals(schedule, calendar, d0, d1)
+    else:
+        yield from _monthly_nominals(schedule, calendar, d0, d1)
 
 
 def releases_between(
@@ -160,3 +221,47 @@ def releases_between(
                 clamped=nominal.clamped,
             )
     return [by_instant[key] for key in sorted(by_instant)]
+
+
+def next_release_after(
+    rule: SourceRule,
+    t: datetime,
+    calendar: BusinessCalendar,
+    *,
+    inclusive: bool = False,
+    until: datetime | None = None,
+) -> Release | None:
+    """The earliest release strictly after ``t`` (or at ``t`` when ``inclusive``).
+
+    Searches forward in ``CHUNK``-sized windows, never further than ``until``
+    (default ``t + SEARCH_HORIZON``). Returns ``None`` when the whole range was
+    searched and contained no release.
+    """
+    t = to_utc(t)
+    limit = to_utc(until) if until is not None else t + SEARCH_HORIZON
+    lo = t
+    while lo <= limit:
+        hi = min(lo + CHUNK, limit)
+        for release in releases_between(rule, lo, hi, calendar):
+            if release.instant > t or (inclusive and release.instant == t):
+                return release
+        lo = hi + timedelta(microseconds=1)
+    return None
+
+
+def previous_release_at_or_before(
+    rule: SourceRule, t: datetime, calendar: BusinessCalendar
+) -> Release | None:
+    """The latest release at or before ``t``, searching back at most ``SEARCH_HORIZON``."""
+    t = to_utc(t)
+    limit = t - SEARCH_HORIZON
+    hi = t
+    while hi >= limit:
+        lo = max(hi - CHUNK, limit)
+        found = releases_between(rule, lo, hi, calendar)
+        if found:
+            return found[-1]
+        if lo == limit:
+            return None
+        hi = lo - timedelta(microseconds=1)
+    return None
