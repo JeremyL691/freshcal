@@ -1,0 +1,5 @@
+description: >-
+  Extra working and non-working days used by the calendar tests. Source: fictional
+  test data.
+working_days: ["2026-01-10", "2026-01-11"]
+non_working_days: ["2026-03-02"]

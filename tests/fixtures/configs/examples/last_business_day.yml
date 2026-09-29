@@ -1,0 +1,10 @@
+version: 1
+sources:
+  - name: finance.month_end_close
+    relation: raw.month_end_close
+    loaded_at_field: inserted_at
+    schedule: {kind: monthly_business_day, business_day: -1, time: "17:00", timezone: America/New_York}
+    calendar:
+      holidays:
+        - country: US
+    grace: 3h

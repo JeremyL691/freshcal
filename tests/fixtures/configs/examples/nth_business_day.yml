@@ -1,0 +1,11 @@
+version: 1
+sources:
+  - name: stats.monthly_report
+    relation: raw.monthly_report
+    loaded_at_field: loaded_at
+    schedule: {kind: monthly_business_day, business_day: 3, time: "09:00", timezone: Europe/Berlin}
+    calendar:
+      holidays:
+        - country: DE
+          subdivision: BY
+    grace: 4h

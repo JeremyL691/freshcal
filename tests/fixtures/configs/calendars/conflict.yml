@@ -1,0 +1,13 @@
+version: 1
+calendars:
+  conflicting:
+    overrides:
+      - working_days: ["2026-06-12"]
+      - non_working_days: ["2026-06-12"]
+sources:
+  - name: acme.timesheets
+    relation: raw.timesheets
+    loaded_at_field: synced_at
+    schedule: {kind: business_days, time: "20:00", timezone: Europe/Berlin}
+    calendar: conflicting
+    grace: 2h

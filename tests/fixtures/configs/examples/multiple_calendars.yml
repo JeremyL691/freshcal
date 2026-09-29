@@ -1,0 +1,15 @@
+version: 1
+calendars:
+  london_and_target:
+    weekend: [sat, sun]
+    holidays:
+      - country: GB
+        subdivision: ENG
+      - financial: XECB
+sources:
+  - name: markets.settlement_file
+    relation: raw.settlement_file
+    loaded_at_field: _loaded_at
+    schedule: {kind: cron, cron: "30 7 * * 1,3,5", timezone: Europe/London, on_non_business_day: following}
+    calendar: london_and_target
+    grace: 90m
