@@ -11,21 +11,47 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping, Sequence
-from datetime import date
+from dataclasses import dataclass
+from datetime import date, time, timedelta
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+
+from croniter import CroniterBadCronError, CroniterBadDateError, croniter
 
 from freshcal.adapters.holidays_provider import validate_ref
-from freshcal.config.schema import validate_override_file
-from freshcal.config.yaml_loader import load_yaml
+from freshcal.config.schema import validate_document, validate_override_file, validate_source
+from freshcal.config.yaml_loader import load_yaml, load_yaml_file
 from freshcal.core.errors import ConfigError, Issue
-from freshcal.core.model import CalendarSpec, HolidayCalendarRef, Weekday
+from freshcal.core.model import (
+    BusinessDaysSchedule,
+    CalendarSpec,
+    CronSchedule,
+    FreshnessTarget,
+    HolidayCalendarRef,
+    MonthlyBusinessDaySchedule,
+    NonBusinessDayPolicy,
+    Origin,
+    Schedule,
+    SourceEntry,
+    SourceRule,
+    Weekday,
+)
 
 __all__ = [
+    "AppConfig",
+    "Defaults",
+    "DuckDBConnection",
+    "PostgresConnection",
+    "build_rule",
     "calendar_label",
     "calendar_warnings",
+    "load_config",
     "parse_calendar",
+    "parse_duration",
     "parse_named_calendars",
+    "parse_timezone",
     "parse_weekend",
+    "validate_cron",
 ]
 
 _WEEKDAYS: dict[str, Weekday] = {
@@ -259,3 +285,457 @@ def calendar_warnings(
             ),
         )
     return ()
+
+
+# --------------------------------------------------------------------------
+# Rules, defaults, connection, and the top-level loader (T-1.5)
+# --------------------------------------------------------------------------
+
+_DURATION_RE = re.compile(r"^(?:([0-9]+)d)?(?:([0-9]+)h)?(?:([0-9]+)m)?$")
+_CRON_EXTENSION_RE = re.compile(r"^[HR](\(.*\))?(/\d+)?$")
+MAX_DURATION = timedelta(days=366)
+DEFAULT_STATEMENT_TIMEOUT_SECONDS = 30
+DBS = "duckdb", "postgres"
+
+
+@dataclass(frozen=True, slots=True)
+class DuckDBConnection:
+    """DuckDB connection settings; ``path`` is absolute or ``:memory:``."""
+
+    path: str
+
+
+@dataclass(frozen=True, slots=True)
+class PostgresConnection:
+    """PostgreSQL connection settings; the DSN itself never appears in config."""
+
+    dsn_env: str | None = None
+    statement_timeout_seconds: int = DEFAULT_STATEMENT_TIMEOUT_SECONDS
+
+
+@dataclass(frozen=True, slots=True)
+class Defaults:
+    """The ``defaults`` section, resolved: everything is optional."""
+
+    timezone: ZoneInfo | None = None
+    grace: timedelta | None = None
+    calendar: CalendarSpec | None = None
+    observed_timezone: ZoneInfo | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class AppConfig:
+    """Everything ``load_config`` produces."""
+
+    path: Path
+    directory: Path
+    connection: DuckDBConnection | PostgresConnection | None
+    dbt_manifest: Path | None
+    defaults: Defaults
+    named_calendars: Mapping[str, CalendarSpec]
+    entries: tuple[SourceEntry, ...]
+
+
+def parse_duration(value: object, location: str) -> timedelta:
+    """Parse ``30m``/``2h``/``1d6h`` (``d`` = 24 elapsed hours) or raise ``E203``/``E106``."""
+    if not isinstance(value, str) or not _DURATION_RE.match(value) or value == "":
+        raise ConfigError(
+            _issue(
+                "E106",
+                location,
+                f'invalid value {value!r}: expected a duration such as "90m", "2h", "1d6h"',
+            )
+        )
+    match = _DURATION_RE.match(value)
+    assert match is not None  # the pattern was checked above
+    days, hours, minutes = (int(part) if part else 0 for part in match.groups())
+    total = timedelta(days=days, hours=hours, minutes=minutes)
+    if total > MAX_DURATION:
+        raise ConfigError(
+            _issue("E203", location, f"duration '{value}' exceeds the maximum of 366d")
+        )
+    return total
+
+
+def parse_timezone(value: object, location: str) -> ZoneInfo:
+    """Return the IANA zone or raise ``E201``."""
+    if not isinstance(value, str) or not value:
+        raise ConfigError(_issue("E201", location, f"unknown time zone '{value}'"))
+    try:
+        return ZoneInfo(value)
+    except (ZoneInfoNotFoundError, ValueError) as error:
+        raise ConfigError(_issue("E201", location, f"unknown time zone '{value}'")) from error
+
+
+def validate_cron(expression: object, location: str) -> str:
+    """Validate a 5-field cron expression and return it; failures are ``E202``."""
+    if not isinstance(expression, str):
+        raise ConfigError(
+            _issue("E202", location, f"invalid cron expression {expression!r}: expected a string")
+        )
+
+    def invalid(reason: str) -> ConfigError:
+        return ConfigError(
+            _issue("E202", location, f"invalid cron expression '{expression}': {reason}")
+        )
+
+    fields = expression.split()
+    if len(fields) != 5:
+        raise invalid(f"expected 5 fields, got {len(fields)}")
+    for field in fields:
+        for element in field.split(","):
+            if _CRON_EXTENSION_RE.match(element):
+                raise invalid("hashed (H) and random (R) fields are not supported")
+    try:
+        croniter(expression)
+    except (CroniterBadCronError, CroniterBadDateError, ValueError) as error:
+        raise invalid(str(error)) from error
+    return expression
+
+
+def _parse_time_of_day(value: object, location: str) -> time:
+    if not isinstance(value, str):
+        raise ConfigError(
+            _issue(
+                "E103",
+                location,
+                f'expected a quoted time such as "16:00", got {type(value).__name__}',
+            )
+        )
+    try:
+        return time.fromisoformat(value)
+    except ValueError as error:
+        raise ConfigError(
+            _issue(
+                "E106",
+                location,
+                f'invalid value {value!r}: expected "HH:MM" (24-hour), e.g. "16:00"',
+            )
+        ) from error
+
+
+def _required(mapping: Mapping[str, object], field: str, location: str) -> object:
+    value = mapping.get(field)
+    if value is None:
+        raise ConfigError(
+            _issue(
+                "E208", location, f"'{field}' is required; set it on the source or under defaults"
+            )
+        )
+    return value
+
+
+def _parse_schedule(value: object, defaults: Defaults, location: str) -> Schedule:
+    if not isinstance(value, Mapping):
+        raise ConfigError(_issue("E102", location, "missing required field 'schedule'"))
+    kind = value.get("kind")
+    timezone_value = value.get("timezone")
+    timezone = (
+        parse_timezone(timezone_value, f"{location}.timezone")
+        if timezone_value is not None
+        else defaults.timezone
+    )
+    if timezone is None:
+        raise ConfigError(
+            _issue(
+                "E208",
+                f"{location}.timezone",
+                "'timezone' is required; set it on the source or under defaults",
+            )
+        )
+    if kind == "cron":
+        expression = validate_cron(_required(value, "cron", f"{location}.cron"), f"{location}.cron")
+        policy_value = value.get("on_non_business_day")
+        policy = (
+            NonBusinessDayPolicy(str(policy_value))
+            if policy_value is not None
+            else NonBusinessDayPolicy.NONE
+        )
+        return CronSchedule(expression=expression, timezone=timezone, on_non_business_day=policy)
+    if kind == "business_days":
+        return BusinessDaysSchedule(
+            at=_parse_time_of_day(_required(value, "time", f"{location}.time"), f"{location}.time"),
+            timezone=timezone,
+        )
+    if kind == "monthly_business_day":
+        business_day = _required(value, "business_day", f"{location}.business_day")
+        if not isinstance(business_day, int) or isinstance(business_day, bool):
+            raise ConfigError(
+                _issue(
+                    "E204",
+                    f"{location}.business_day",
+                    f"business_day must be an integer between -23 and 23, excluding 0; "
+                    f"got {business_day}",
+                )
+            )
+        return MonthlyBusinessDaySchedule(
+            business_day=business_day,
+            at=_parse_time_of_day(_required(value, "time", f"{location}.time"), f"{location}.time"),
+            timezone=timezone,
+        )
+    raise ConfigError(
+        _issue(
+            "E104",
+            f"{location}.kind",
+            f"'{kind}' is not one of: cron, business_days, monthly_business_day",
+        )
+    )
+
+
+def build_rule(
+    mapping: Mapping[str, object],
+    *,
+    source_id: str,
+    origin: Origin,
+    relation: str,
+    loaded_at_field: str,
+    filter: str | None,
+    defaults: Defaults,
+    named_calendars: Mapping[str, CalendarSpec],
+    location: str,
+    config_dir: Path,
+) -> SourceRule:
+    """Resolve one source's rule: schedule, calendar, grace, zones, ``active_from``.
+
+    Used for standalone sources and for ``meta.freshcal`` rules from a dbt manifest.
+    """
+    schedule = _parse_schedule(mapping.get("schedule"), defaults, f"{location}.schedule")
+    calendar_value = mapping.get("calendar")
+    if calendar_value is None:
+        calendar = defaults.calendar if defaults.calendar is not None else CalendarSpec()
+    else:
+        calendar = parse_calendar(
+            calendar_value, named_calendars, f"{location}.calendar", config_dir
+        )
+
+    grace_value = mapping.get("grace")
+    if grace_value is not None:
+        grace = parse_duration(grace_value, f"{location}.grace")
+    elif defaults.grace is not None:
+        grace = defaults.grace
+    else:
+        raise ConfigError(
+            _issue(
+                "E208",
+                f"{location}.grace",
+                "'grace' is required; set it on the source or under defaults",
+            )
+        )
+
+    observed_timezone_value = mapping.get("observed_timezone")
+    observed_timezone = (
+        parse_timezone(observed_timezone_value, f"{location}.observed_timezone")
+        if observed_timezone_value is not None
+        else defaults.observed_timezone
+    )
+
+    active_from_value = mapping.get("active_from")
+    active_from = (
+        parse_date(active_from_value, f"{location}.active_from")
+        if active_from_value is not None
+        else None
+    )
+
+    return SourceRule(
+        source_id=source_id,
+        origin=origin,
+        schedule=schedule,
+        calendar=calendar,
+        grace=grace,
+        target=FreshnessTarget(relation=relation, loaded_at_field=loaded_at_field, filter=filter),
+        observed_timezone=observed_timezone,
+        active_from=active_from,
+    )
+
+
+def _parse_connection(
+    value: object, directory: Path, location: str
+) -> DuckDBConnection | PostgresConnection | None:
+    if value is None:
+        return None
+    if not isinstance(value, Mapping):
+        raise ConfigError(_issue("E103", location, f"expected object, got {type(value).__name__}"))
+    kind = value.get("type")
+    if kind == "duckdb":
+        path = str(_required(value, "path", f"{location}.path"))
+        if path == ":memory:":
+            return DuckDBConnection(path=path)
+        candidate = Path(path)
+        resolved = candidate if candidate.is_absolute() else directory / candidate
+        return DuckDBConnection(path=str(resolved.resolve()))
+    if kind == "postgres":
+        dsn_env = value.get("dsn_env")
+        timeout = value.get("statement_timeout_seconds")
+        return PostgresConnection(
+            dsn_env=str(dsn_env) if dsn_env is not None else None,
+            statement_timeout_seconds=(
+                int(timeout) if timeout is not None else DEFAULT_STATEMENT_TIMEOUT_SECONDS
+            ),
+        )
+    raise ConfigError(
+        _issue("E104", f"{location}.type", f"'{kind}' is not one of: duckdb, postgres")
+    )
+
+
+def _parse_defaults(value: object, named: Mapping[str, CalendarSpec], directory: Path) -> Defaults:
+    if value is None:
+        return Defaults()
+    if not isinstance(value, Mapping):
+        raise ConfigError(
+            _issue("E103", "defaults", f"expected object, got {type(value).__name__}")
+        )
+    timezone_value = value.get("timezone")
+    grace_value = value.get("grace")
+    calendar_value = value.get("calendar")
+    observed_value = value.get("observed_timezone")
+    return Defaults(
+        timezone=parse_timezone(timezone_value, "defaults.timezone")
+        if timezone_value is not None
+        else None,
+        grace=parse_duration(grace_value, "defaults.grace") if grace_value is not None else None,
+        calendar=(
+            parse_calendar(calendar_value, named, "defaults.calendar", directory)
+            if calendar_value is not None
+            else None
+        ),
+        observed_timezone=(
+            parse_timezone(observed_value, "defaults.observed_timezone")
+            if observed_value is not None
+            else None
+        ),
+    )
+
+
+def _source_id_of(entry: Mapping[str, object], index: int) -> str:
+    name = entry.get("name")
+    return str(name) if name is not None else f"sources[{index}]"
+
+
+def _parse_source_entry(
+    entry: object,
+    index: int,
+    *,
+    defaults: Defaults,
+    named: Mapping[str, CalendarSpec],
+    directory: Path,
+) -> SourceEntry:
+    location = f"sources[{index}]"
+    if not isinstance(entry, Mapping):
+        return SourceEntry(
+            source_id=location,
+            origin=Origin.CONFIG,
+            rule=None,
+            errors=(_issue("E103", location, f"expected object, got {type(entry).__name__}"),),
+            location=location,
+        )
+    source_id = _source_id_of(entry, index)
+    issues = validate_source(entry, index)
+    if issues:
+        return SourceEntry(
+            source_id=source_id,
+            origin=Origin.CONFIG,
+            rule=None,
+            errors=tuple(issues),
+            location=location,
+        )
+    try:
+        rule = build_rule(
+            entry,
+            source_id=source_id,
+            origin=Origin.CONFIG,
+            relation=str(entry["relation"]),
+            loaded_at_field=str(entry["loaded_at_field"]),
+            filter=str(entry["filter"]) if entry.get("filter") is not None else None,
+            defaults=defaults,
+            named_calendars=named,
+            location=location,
+            config_dir=directory,
+        )
+    except ConfigError as error:
+        return SourceEntry(
+            source_id=source_id,
+            origin=Origin.CONFIG,
+            rule=None,
+            errors=(error.issue,),
+            location=location,
+        )
+    warnings = calendar_warnings(rule.calendar, source_id=source_id, location=source_id)
+    return SourceEntry(
+        source_id=source_id,
+        origin=Origin.CONFIG,
+        rule=rule,
+        warnings=warnings,
+        location=location,
+    )
+
+
+def _mark_duplicates(entries: list[SourceEntry]) -> list[SourceEntry]:
+    """Give every repeated source ID an ``E206``; the first occurrence stays usable."""
+    first_location: dict[str, str] = {}
+    marked: list[SourceEntry] = []
+    for entry in entries:
+        location = first_location.get(entry.source_id)
+        if location is None:
+            first_location[entry.source_id] = entry.location
+        else:
+            # E206's template names both locations, so it has no location prefix.
+            issue = Issue(
+                "E206",
+                f"duplicate source id '{entry.source_id}' at {location} and {entry.location}",
+                entry.location,
+            )
+            entry = SourceEntry(
+                source_id=entry.source_id,
+                origin=entry.origin,
+                rule=None,
+                errors=(issue,),
+                warnings=entry.warnings,
+                location=entry.location,
+            )
+        marked.append(entry)
+    return marked
+
+
+def load_config(path: Path) -> AppConfig:
+    """Load a FreshCal config file into an :class:`AppConfig`.
+
+    Top-level problems (YAML, unknown fields, ``connection``, ``defaults``,
+    ``calendars``, ``dbt``) raise :class:`ConfigError` and abort the command; problems
+    attributable to one source mark that entry and leave the others usable.
+    """
+    document = load_yaml_file(path)
+    if not isinstance(document, Mapping):
+        raise ConfigError(_issue("E103", "", f"expected object, got {type(document).__name__}"))
+    top_level_issues = validate_document(document)
+    if top_level_issues:
+        raise ConfigError(top_level_issues[0])
+
+    directory = path.parent
+    named = parse_named_calendars(document, "", directory)
+    connection = _parse_connection(document.get("connection"), directory, "connection")
+    dbt_section = document.get("dbt")
+    dbt_manifest: Path | None = None
+    if isinstance(dbt_section, Mapping) and dbt_section.get("manifest") is not None:
+        candidate = Path(str(dbt_section["manifest"]))
+        dbt_manifest = candidate if candidate.is_absolute() else (directory / candidate).resolve()
+    defaults = _parse_defaults(document.get("defaults"), named, directory)
+
+    raw_sources = document.get("sources") or []
+    if not isinstance(raw_sources, Sequence) or isinstance(raw_sources, str):
+        raise ConfigError(
+            _issue("E103", "sources", f"expected array, got {type(raw_sources).__name__}")
+        )
+    entries = [
+        _parse_source_entry(entry, index, defaults=defaults, named=named, directory=directory)
+        for index, entry in enumerate(raw_sources)
+    ]
+
+    return AppConfig(
+        path=path,
+        directory=directory,
+        connection=connection,
+        dbt_manifest=dbt_manifest,
+        defaults=defaults,
+        named_calendars=named,
+        entries=tuple(_mark_duplicates(entries)),
+    )
