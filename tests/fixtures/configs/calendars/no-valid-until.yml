@@ -1,0 +1,14 @@
+version: 1
+calendars:
+  yearly:
+    holidays:
+      - country: DE
+    overrides:
+      - non_working_days: ["2026-12-24"]
+sources:
+  - name: acme.timesheets
+    relation: raw.timesheets
+    loaded_at_field: synced_at
+    schedule: {kind: business_days, time: "20:00", timezone: Europe/Berlin}
+    calendar: yearly
+    grace: 2h

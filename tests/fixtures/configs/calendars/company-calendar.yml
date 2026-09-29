@@ -1,0 +1,15 @@
+version: 1
+calendars:
+  company:
+    holidays:
+      - country: DE
+    overrides:
+      - file: extra-days.yml
+    valid_until: "2026-12-31"
+sources:
+  - name: acme.timesheets
+    relation: raw.timesheets
+    loaded_at_field: synced_at
+    schedule: {kind: business_days, time: "20:00", timezone: Europe/Berlin}
+    calendar: company
+    grace: 2h
