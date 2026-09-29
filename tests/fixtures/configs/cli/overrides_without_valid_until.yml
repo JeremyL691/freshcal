@@ -1,0 +1,15 @@
+version: 1
+connection: {type: duckdb, path: ":memory:"}
+calendars:
+  company:
+    holidays: [{country: DE}]
+    overrides:
+      - non_working_days: ["2026-12-24"]
+sources:
+  - name: acme.timesheets
+    relation: "read_csv('../integration/fx_rates.csv')"
+    loaded_at_field: _loaded_at
+    schedule: {kind: business_days, time: "20:00", timezone: Europe/Berlin}
+    calendar: company
+    grace: 2h
+    observed_timezone: UTC

@@ -47,6 +47,7 @@ __all__ = [
     "ValidateReport",
     "exit_code_for",
     "merge_entries",
+    "query_error_result",
     "run_check",
     "run_explain",
     "run_next",
@@ -178,7 +179,7 @@ def _config_error_result(
     )
 
 
-def _query_error_result(
+def query_error_result(
     entry: SourceEntry, now: datetime, provider: CalendarProvider, issue: Issue
 ) -> EvaluationResult:
     """A ``QUERY_ERROR`` result, with the schedule context when the rule is valid."""
@@ -245,7 +246,7 @@ def run_check(
         if entry.rule is None:
             result = _config_error_result(entry, now, provider)
         elif reader is None:
-            result = _query_error_result(
+            result = query_error_result(
                 entry,
                 now,
                 provider,
@@ -255,7 +256,7 @@ def run_check(
             try:
                 raw = reader.read_latest(entry.rule.target)
             except QueryError as error:
-                result = _query_error_result(entry, now, provider, error.issue)
+                result = query_error_result(entry, now, provider, error.issue)
             else:
                 result = evaluate(entry.rule, raw, now, provider)
         result = _with_warnings(result, entry.warnings)

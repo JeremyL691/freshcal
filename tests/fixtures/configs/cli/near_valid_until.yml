@@ -1,0 +1,15 @@
+version: 1
+connection: {type: duckdb, path: ":memory:"}
+calendars:
+  cn_workdays:
+    weekend: [sat, sun]
+    holidays: [{country: CN}]
+    valid_until: "2026-12-31"
+sources:
+  - name: cn.daily_sales
+    relation: "read_csv('../integration/fx_rates.csv')"
+    loaded_at_field: _loaded_at
+    schedule: {kind: business_days, time: "15:00", timezone: Asia/Shanghai}
+    calendar: cn_workdays
+    grace: 2h
+    observed_timezone: UTC
