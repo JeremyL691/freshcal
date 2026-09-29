@@ -668,3 +668,26 @@ def test_u_sch_20_rolled_release_at_a_window_edge() -> None:
     assert found is not None
     assert found.instant == expected
     assert previous_release_at_or_before(rule, expected, calendar) == found
+
+
+def test_s6_s7_equal_to_the_business_day_count_is_not_clamped() -> None:
+    """Kills mutants S6 and S7: ``clamped`` needs N to *exceed* the business-day count.
+
+    February 2026 has exactly 20 business days, so ``business_day: 20`` selects the last
+    one (2026-02-27) and ``business_day: -20`` the first (2026-02-02) as exact matches;
+    only 21 / -21 clamp. The ``>=`` mutants flag the exact matches as clamped, which
+    would present a regular release as a short-month fallback in reports and traces.
+    """
+    calendar = make_calendar()
+    window_start = datetime(2026, 2, 1, tzinfo=UTC_ZONE)
+    window_end = datetime(2026, 2, 28, 23, 59, 59, tzinfo=UTC_ZONE)
+
+    for index, expected in ((20, "2026-02-27"), (-20, "2026-02-02")):
+        releases = releases_between(monthly_rule(index), window_start, window_end, calendar)
+        assert [release.local.date().isoformat() for release in releases] == [expected]
+        assert releases[0].clamped is False, index
+
+    for index, expected in ((21, "2026-02-27"), (-21, "2026-02-02")):
+        releases = releases_between(monthly_rule(index), window_start, window_end, calendar)
+        assert [release.local.date().isoformat() for release in releases] == [expected]
+        assert releases[0].clamped is True, index

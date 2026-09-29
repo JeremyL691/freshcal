@@ -569,3 +569,25 @@ def test_run_check_attaches_merge_and_entry_warnings() -> None:
     )
     codes = [issue.code for issue in report.results[0].warnings]
     assert codes == ["W006", "W004"]
+
+
+def test_a4_warning_without_location_reaches_every_result() -> None:
+    """Kills mutant A4: ``_with_warnings`` keeps warnings whose location is ``None``.
+
+    A warning that names no source belongs to every source (the run-level warnings the CLI
+    passes in), so ``location in (None, source_id)`` must match; the ``== source_id``
+    mutant silently drops it from every result and the operator never sees it.
+    """
+    entries = [source_entry("a.b"), source_entry("c.d")]
+    global_warning = Issue("W004", "manifest v12 is deprecated; regenerate it", None)
+    report = run_check(
+        entries,
+        FakeReader({"raw.a.b": FRIDAY_DATA, "raw.c.d": FRIDAY_DATA}),
+        FakeCalendarProvider(),
+        ECB_NOW,
+        extra_warnings=[global_warning],
+    )
+    assert [result.source_id for result in report.results] == ["a.b", "c.d"]
+    for result in report.results:
+        assert [issue.code for issue in result.warnings] == ["W004"]
+        assert result.warnings[0].location is None

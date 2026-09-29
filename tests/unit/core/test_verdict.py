@@ -20,7 +20,7 @@ from freshcal.core.model import (
     SourceRule,
     Status,
 )
-from freshcal.core.schedule import MAX_COUNTED_RELEASES
+from freshcal.core.schedule import MAX_COUNTED_RELEASES, SEARCH_HORIZON
 from freshcal.core.verdict import evaluate, schedule_context
 
 BERLIN = ZoneInfo("Europe/Berlin")
@@ -452,3 +452,114 @@ def test_warnings_and_errors_carry_the_source_id() -> None:
     assert [issue.code for issue in result.warnings] == ["W002", "W003"]
     assert {issue.location for issue in result.warnings} == {"ecb.fx_rates"}
     assert result.status is Status.ON_TIME
+
+
+def leap_rule() -> SourceRule:
+    """The G33/v1_demo rule: 29 February only, UTC, one day of grace."""
+    return SourceRule(
+        source_id="vendor.leap",
+        origin=Origin.CONFIG,
+        schedule=CronSchedule("0 0 29 2 *", UTC_ZONE, NonBusinessDayPolicy.NONE),
+        calendar=CalendarSpec(),
+        grace=timedelta(days=1),
+        target=FreshnessTarget(relation="raw.leap", loaded_at_field="_loaded_at"),
+        observed_timezone=UTC_ZONE,
+    )
+
+
+def test_v1_step_one_requires_now_past_the_deadline() -> None:
+    """Kills mutant V1: step 1 must not count ``now == deadline`` as missed.
+
+    ``review/v0.1.0/D-process-tests/v1_demo.py``: with data of 2092-03-01 and now exactly
+    2104-03-01 the 2104-02-29 release's deadline *is* now (release + 1 day), so the recent
+    window proves nothing and step 2 must find the 2096-02-29 miss. The ``>=`` mutant
+    returns NOT_DUE for the 2104 release, truncating away the real OVERDUE; the boundary
+    is the closed grace window, which must not flip OVERDUE to NOT_DUE.
+    """
+    result = evaluate(
+        leap_rule(),
+        RawObservation(naive("2092-03-01 00:00:00")),
+        aware("2104-03-01T00:00:00Z"),
+        provider(),
+    )
+    assert result.status is Status.OVERDUE
+    assert result.release is not None
+    assert result.release.instant == datetime(2096, 2, 29, tzinfo=UTC)
+    assert result.missed_count == 1
+    assert result.pending_count == 1
+    assert result.missed_truncated is False
+
+
+def test_v5_horizon_start_equality_is_a_complete_search() -> None:
+    """Kills mutant V5: an observation exactly at ``now - SEARCH_HORIZON`` is not stale.
+
+    The release at the observed instant has arrived, so the first unarrived release is the
+    next day's. The ``>`` mutant sends the equality case through the stale branch, whose
+    step 1 treats that already-arrived release as unarrived and returns
+    ``missed_truncated=True``; the boundary decides whether the count is a complete one.
+    """
+    now = datetime(2030, 1, 1, 0, 0, tzinfo=UTC)
+    start = now - SEARCH_HORIZON  # 2024-12-28T00:00:00Z, also a release instant
+    rule = SourceRule(
+        source_id="vendor.daily",
+        origin=Origin.CONFIG,
+        schedule=CronSchedule("0 0 * * *", UTC_ZONE, NonBusinessDayPolicy.NONE),
+        calendar=CalendarSpec(),
+        grace=timedelta(hours=1),
+        target=FreshnessTarget(relation="raw.daily", loaded_at_field="_loaded_at"),
+        observed_timezone=UTC_ZONE,
+    )
+    result = evaluate(rule, RawObservation(start.replace(tzinfo=None)), now, provider())
+    assert result.status is Status.OVERDUE
+    assert result.release is not None
+    assert result.release.instant == start + timedelta(days=1)
+    assert result.missed_count == 1829
+    assert result.pending_count == 1
+    assert result.missed_truncated is False
+
+
+def test_v7_release_at_the_local_midnight_of_active_from() -> None:
+    """Kills mutant V7: the ``active_from`` floor is inclusive when the table is empty.
+
+    A ``business_days`` release at exactly local midnight of ``active_from`` (here Monday
+    2026-09-28 00:00 UTC) is the first obligation. The ``inclusive = False`` mutant skips
+    it, finds no release at all within ``(start, now]`` and returns ON_TIME instead of
+    OVERDUE; the boundary is the floor itself, which belongs to the schedule.
+    """
+    rule = SourceRule(
+        source_id="vendor.midnight",
+        origin=Origin.CONFIG,
+        schedule=BusinessDaysSchedule(at=time(0, 0), timezone=UTC_ZONE),
+        calendar=CalendarSpec(),
+        grace=timedelta(hours=1),
+        target=FreshnessTarget(relation="raw.midnight", loaded_at_field="_loaded_at"),
+        observed_timezone=UTC_ZONE,
+        active_from=date(2026, 9, 28),
+    )
+    result = evaluate(rule, RawObservation(None), aware("2026-09-28T02:00:00Z"), provider())
+    assert result.status is Status.OVERDUE
+    assert result.release is not None
+    assert result.release.instant == datetime(2026, 9, 28, 0, 0, tzinfo=UTC)
+    assert result.missed_count == 1
+    assert result.pending_count == 0
+
+
+def test_v9_step_two_is_bounded_by_the_start_horizon() -> None:
+    """Kills mutant V9: step 2 stops at ``start + SEARCH_HORIZON``.
+
+    2100 is not a leap year, so no release follows 2096-02-29 for 2922 days — longer than
+    the horizon. The ``until=now`` mutant searches past the rule's own horizon, finds the
+    pending 2104-02-29 release and answers NOT_DUE where the honest answer is E215
+    ("cannot decide"); the boundary is what separates a verdict from a guess.
+    """
+    result = evaluate(
+        leap_rule(),
+        RawObservation(naive("2096-03-01 00:00:00")),
+        aware("2104-03-01T00:00:00Z"),
+        provider(),
+    )
+    assert result.status is Status.CONFIG_ERROR
+    assert result.error is not None
+    assert result.error.code == "E215"
+    assert result.release is None
+    assert result.next_expected_arrival is None

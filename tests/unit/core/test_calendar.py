@@ -181,6 +181,45 @@ def test_labels_for_inline_and_named_calendars() -> None:
     assert calendar().label == "inline"
 
 
+def test_c2_roll_reaches_exactly_max_roll_days() -> None:
+    """Kills mutant C2: a business day exactly ``MAX_ROLL_DAYS`` away is reachable.
+
+    With the first 30 days blocked the next business day is 31 days out, and §3.4.3
+    allows the roll; the ``range(1, MAX_ROLL_DAYS)`` mutant stops one day short and
+    raises E407. With 31 days blocked (32 away) E407 is the correct answer, so the test
+    pins both sides of the boundary.
+    """
+    start = date(2026, 9, 1)
+    blocked_30 = frozenset(start + timedelta(days=offset) for offset in range(1, 31))
+    cal = calendar(CalendarSpec(extra_non_working_days=blocked_30))
+    assert cal.roll(start, 1) == start + timedelta(days=MAX_ROLL_DAYS)
+
+    blocked_31 = frozenset(start + timedelta(days=offset) for offset in range(1, 32))
+    cal = calendar(CalendarSpec(extra_non_working_days=blocked_31))
+    with pytest.raises(CalendarError) as excinfo:
+        cal.roll(start, 1)
+    assert excinfo.value.issue.code == "E407"
+
+
+def test_c4_lookup_equal_to_valid_until_is_not_w005() -> None:
+    """Kills mutant C4: ``max_date_looked_up == valid_until`` is still inside the calendar.
+
+    The last valid day is part of the calendar; only a lookup strictly after
+    ``valid_until`` is consulted past it. The ``>=`` mutant reports W005 one day early,
+    so every rule would warn on its calendar's last valid day.
+    """
+    cal = calendar(
+        CalendarSpec(valid_until=date(2026, 12, 31), name="cn_workdays"),
+        source_id="cn.daily_sales",
+    )
+    cal.is_business_day(date(2026, 12, 31))
+    assert cal.max_date_looked_up == date(2026, 12, 31)
+    assert cal.consulted_past_valid_until() is None
+
+    cal.is_business_day(date(2027, 1, 1))
+    assert cal.consulted_past_valid_until() == date(2027, 1, 1)
+
+
 def test_holiday_lookup_caches_by_year_per_ref() -> None:
     # Two refs that both list the same date: the first one wins in the merged name.
     day = date(2026, 5, 1)
