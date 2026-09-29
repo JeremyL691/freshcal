@@ -1,0 +1,32 @@
+name: Feature request
+description: Propose a rule, schedule kind, or integration.
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        FreshCal v0.1 is deliberately small; the roadmap (BLUEPRINT.md §15)
+        lists what is already planned. A concrete schedule that FreshCal
+        cannot express today is the most useful form of request.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What freshness rule can you not express, and what goes wrong without it?
+    validations:
+      required: true
+  - type: textarea
+    id: schedule
+    attributes:
+      label: The schedule you want to express
+      description: In words, and ideally as the FreshCal YAML you wish worked.
+      render: yaml
+    validations:
+      required: true
+  - type: textarea
+    id: alternative
+    attributes:
+      label: What you do today
+      description: Current workaround (a fixed threshold, an extra dbt test, a manual check), and why it is not enough.
+    validations:
+      required: false

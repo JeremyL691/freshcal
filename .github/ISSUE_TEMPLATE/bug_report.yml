@@ -1,0 +1,63 @@
+name: Bug report
+description: Something FreshCal reported is wrong, or it crashed.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. Please include enough to reproduce: a wrong or
+        missing verdict cannot be investigated without the rule, the instant,
+        and the observed value.
+  - type: input
+    id: freshcal-version
+    attributes:
+      label: FreshCal version
+      description: Output of `freshcal --version`.
+      placeholder: freshcal 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version and operating system
+      placeholder: Python 3.13.5 on macOS 15.3
+    validations:
+      required: true
+  - type: input
+    id: command
+    attributes:
+      label: Command and flags
+      description: The exact command line, including `--now` if used.
+      placeholder: freshcal check -c freshcal.yml --now 2026-09-28T07:30:00+02:00
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Configuration excerpt
+      description: The `source` entry (and the calendar it uses), with secrets removed.
+      render: yaml
+    validations:
+      required: true
+  - type: textarea
+    id: explain
+    attributes:
+      label: Output of `freshcal explain <source_id>`
+      description: Include the full output; it shows the releases, the comparison, and the verdict.
+      render: text
+    validations:
+      required: false
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result, actual result
+      description: What you expected (and why) versus what FreshCal reported.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Warehouse and adapters
+      description: DuckDB or PostgreSQL version, timestamp type of the `loaded_at_field` column, and whether `observed_timezone` is set.
+    validations:
+      required: false
