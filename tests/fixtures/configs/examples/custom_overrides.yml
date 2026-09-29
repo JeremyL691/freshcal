@@ -1,0 +1,16 @@
+version: 1
+calendars:
+  acme_de:
+    holidays:
+      - country: DE
+    overrides:
+      - file: calendars/acme-company-days.yml
+      - non_working_days: ["2026-06-12"]
+    valid_until: "2026-12-31"
+sources:
+  - name: acme.timesheets
+    relation: raw.timesheets
+    loaded_at_field: synced_at
+    schedule: {kind: business_days, time: "20:00", timezone: Europe/Berlin}
+    calendar: acme_de
+    grace: 2h

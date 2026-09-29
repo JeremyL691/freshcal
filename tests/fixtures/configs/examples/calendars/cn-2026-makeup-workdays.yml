@@ -1,0 +1,5 @@
+description: >-
+  China 2026 make-up workdays. Source: State Council holiday notice for 2026.
+  Cross-checked against holidays 0.105 China().weekend_workdays on 2026-09-28.
+working_days: ["2026-01-04", "2026-02-14", "2026-02-28", "2026-05-09", "2026-09-20", "2026-10-10"]
+non_working_days: []

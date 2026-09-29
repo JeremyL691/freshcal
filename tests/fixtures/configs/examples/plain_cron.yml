@@ -1,0 +1,8 @@
+version: 1
+sources:
+  - name: vendor.daily_prices
+    relation: raw.vendor_prices
+    loaded_at_field: _loaded_at
+    schedule: {kind: cron, cron: "0 6 * * *", timezone: UTC}
+    grace: 1h
+    observed_timezone: UTC

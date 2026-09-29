@@ -1,0 +1,17 @@
+version: 1
+calendars:
+  cn_workdays:
+    weekend: [sat, sun]
+    holidays:
+      - country: CN
+    overrides:
+      - file: calendars/cn-2026-makeup-workdays.yml
+    valid_until: "2026-12-31"
+sources:
+  - name: cn.daily_sales
+    relation: raw.cn_daily_sales
+    loaded_at_field: etl_loaded_at
+    schedule: {kind: business_days, time: "15:00", timezone: Asia/Shanghai}
+    calendar: cn_workdays
+    grace: 2h
+    observed_timezone: Asia/Shanghai
