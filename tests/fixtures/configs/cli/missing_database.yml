@@ -1,0 +1,9 @@
+version: 1
+connection: {type: duckdb, path: ./no-such-file.duckdb}
+sources:
+  - name: vendor.daily
+    relation: raw.daily
+    loaded_at_field: _loaded_at
+    schedule: {kind: business_days, time: "16:00", timezone: UTC}
+    grace: 2h
+    observed_timezone: UTC

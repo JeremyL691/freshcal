@@ -1,0 +1,10 @@
+version: 1
+connection: {type: duckdb, path: ":memory:"}
+sources:
+  - name: vendor.daily_prices
+    relation: "read_csv('../integration/fx_rates.csv')"
+    loaded_at_field: _loaded_at
+    filter: "rate_date = '1999-01-01'"
+    schedule: {kind: cron, cron: "0 6 * * *", timezone: UTC}
+    grace: 1h
+    observed_timezone: UTC

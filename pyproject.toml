@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "freshcal"
-version = "0.1.0.dev0"
+version = "0.1.0"
 description = "Business-calendar-aware data freshness checks: schedules, holidays, grace windows, verdicts."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -76,6 +76,9 @@ select = ["E", "W", "F", "I", "B", "UP", "SIM", "C4", "RUF", "TID", "PT", "N"]
 
 [tool.ruff.lint.per-file-ignores]
 "src/freshcal/adapters/clock.py" = ["TID251"]
+# The replay report records the date it was produced; it is a validation report, not
+# FreshCal's engine, so reading the wall clock for its header is intended.
+"validation/replay_ecb.py" = ["TID251"]
 
 [tool.mypy]
 python_version = "3.11"

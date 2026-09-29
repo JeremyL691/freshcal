@@ -1,0 +1,14 @@
+version: 1
+connection: {type: duckdb, path: ":memory:"}
+sources:
+  - name: ecb.fx_rates
+    relation: "read_csv('../integration/fx_rates.csv')"
+    loaded_at_field: _loaded_at
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    grace: 2h
+    observed_timezone: UTC
+  - name: broken.timezone
+    relation: raw.whatever
+    loaded_at_field: _loaded_at
+    schedule: {kind: business_days, time: "16:00", timezone: Mars/Olympus}
+    grace: 2h

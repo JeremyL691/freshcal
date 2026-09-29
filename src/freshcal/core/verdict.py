@@ -41,9 +41,9 @@ from freshcal.core.schedule import (
     CHUNK,
     MAX_COUNTED_RELEASES,
     SEARCH_HORIZON,
+    iter_releases_in_window,
     next_release_after,
     previous_release_at_or_before,
-    releases_between,
 )
 from freshcal.core.timeutil import local_date, resolve_local, to_utc
 
@@ -58,7 +58,7 @@ def iter_releases(
     limit = to_utc(end)
     while lo <= limit:
         hi = min(lo + CHUNK, limit)
-        yield from releases_between(rule, lo, hi, calendar)
+        yield from iter_releases_in_window(rule, lo, hi, calendar)
         lo = hi + timedelta(microseconds=1)
 
 
