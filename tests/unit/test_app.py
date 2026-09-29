@@ -2,20 +2,35 @@
 
 from __future__ import annotations
 
-from datetime import time, timedelta
+from collections.abc import Mapping
+from dataclasses import replace
+from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 import pytest
+from tests.conftest import FakeCalendarProvider
 
-from freshcal.app import merge_entries, select_entries
-from freshcal.core.errors import ConfigError, Issue
+from freshcal.app import (
+    exit_code_for,
+    merge_entries,
+    run_check,
+    run_explain,
+    run_next,
+    run_validate,
+    select_entries,
+)
+from freshcal.core.errors import ConfigError, Issue, QueryError
 from freshcal.core.model import (
     BusinessDaysSchedule,
     CalendarSpec,
+    CronSchedule,
     FreshnessTarget,
+    HolidayCalendarRef,
     Origin,
+    RawObservation,
     SourceEntry,
     SourceRule,
+    Status,
 )
 
 
@@ -194,3 +209,363 @@ def test_merge_keeps_erroring_entries() -> None:
     assert len(merged) == 1
     assert merged[0].rule is None
     assert [issue.code for issue in merged[0].errors] == ["E303"]
+
+
+# --------------------------------------------------------------------------
+# Use cases and exit codes (T-6.1)
+# --------------------------------------------------------------------------
+
+
+class FakeReader:
+    """A ``FreshnessReader`` that returns per-target values or raises."""
+
+    def __init__(
+        self, values: Mapping[str, RawObservation], failure: Exception | None = None
+    ) -> None:
+        self._values = values
+        self._failure = failure
+        self.closed = False
+
+    def read_latest(self, target: FreshnessTarget) -> RawObservation:
+        if self._failure is not None:
+            raise self._failure
+        return self._values.get(target.relation, RawObservation(None))
+
+    def close(self) -> None:
+        self.closed = True
+
+
+def source_entry(
+    source_id: str,
+    *,
+    relation: str | None = None,
+    grace: timedelta = timedelta(hours=2),
+    calendar: CalendarSpec | None = None,
+    valid_until: date | None = None,
+    active_from: date | None = None,
+    origin: Origin = Origin.CONFIG,
+) -> SourceEntry:
+    spec = calendar or CalendarSpec()
+    if valid_until is not None:
+        spec = replace(spec, valid_until=valid_until)
+    rule = SourceRule(
+        source_id=source_id,
+        origin=origin,
+        schedule=BusinessDaysSchedule(at=time(16, 0), timezone=ZoneInfo("Europe/Berlin")),
+        calendar=spec,
+        grace=grace,
+        target=FreshnessTarget(
+            relation=relation or f"raw.{source_id}", loaded_at_field="_loaded_at"
+        ),
+        observed_timezone=ZoneInfo("UTC"),
+        active_from=active_from,
+    )
+    return SourceEntry(source_id=source_id, origin=origin, rule=rule, location="sources[0]")
+
+
+ECB_NOW = datetime(2026, 9, 28, 5, 30, tzinfo=UTC)
+FRIDAY_DATA = RawObservation(datetime(2026, 9, 25, 14, 7))
+
+
+def test_u_app_06_run_check_covers_every_status() -> None:
+    entries = [
+        source_entry("a.on_time", relation="raw.on_time"),
+        source_entry("b.not_due", relation="raw.not_due"),
+        source_entry("c.overdue", relation="raw.overdue"),
+        source_entry("d.no_data", relation="raw.no_data"),
+        SourceEntry(
+            source_id="e.config_error",
+            origin=Origin.CONFIG,
+            rule=None,
+            errors=(
+                Issue("E201", "sources[4].schedule.timezone: unknown time zone 'Mars/Olympus'"),
+            ),
+            location="sources[4]",
+        ),
+        source_entry("f.active_from", relation="raw.active_from", active_from=date(2026, 10, 1)),
+    ]
+    reader = FakeReader(
+        {
+            # Monday's release arrived exactly at its instant.
+            "raw.on_time": RawObservation(datetime(2026, 9, 28, 14, 0)),
+            # Friday's data: Monday's release is unarrived but inside its grace window.
+            "raw.not_due": FRIDAY_DATA,
+            # Thursday's data: Friday's release is past its deadline.
+            "raw.overdue": RawObservation(datetime(2026, 9, 24, 14, 0)),
+            "raw.no_data": RawObservation(None),
+        }
+    )
+    now = datetime(2026, 9, 28, 14, 30, tzinfo=UTC)  # 16:30 CEST, inside the grace window
+    report = run_check(entries, reader, FakeCalendarProvider(), now)
+
+    assert [result.source_id for result in report.results] == sorted(
+        entry.source_id for entry in entries
+    )
+    statuses = {result.source_id: result.status for result in report.results}
+    assert statuses["a.on_time"] is Status.ON_TIME
+    assert statuses["b.not_due"] is Status.NOT_DUE
+    assert statuses["c.overdue"] is Status.OVERDUE
+    assert statuses["d.no_data"] is Status.NO_DATA
+    assert statuses["e.config_error"] is Status.CONFIG_ERROR
+    assert statuses["f.active_from"] is Status.ON_TIME  # nothing is due before the floor
+    assert report.exit_code == 2  # a CONFIG_ERROR result outranks everything
+    assert report.evaluated_at == now
+    for result in report.results:
+        assert result.explanation
+
+
+def test_u_app_07_reader_creation_failure_marks_every_valid_source() -> None:
+    entries = [
+        source_entry("a.b"),
+        source_entry("c.d"),
+        SourceEntry(
+            source_id="e.f",
+            origin=Origin.CONFIG,
+            rule=None,
+            errors=(Issue("E208", "sources[2]: 'grace' is required"),),
+            location="sources[2]",
+        ),
+    ]
+    issue = Issue("E501", "cannot connect to duckdb: file is not a database")
+    report = run_check(entries, None, FakeCalendarProvider(), ECB_NOW, reader_error=issue)
+
+    by_id = {result.source_id: result for result in report.results}
+    for source_id in ("a.b", "c.d"):
+        result = by_id[source_id]
+        assert result.status is Status.QUERY_ERROR
+        assert result.error == issue
+        # The schedule context is still filled in for a valid rule.
+        assert result.release is not None
+        assert result.next_expected_arrival is not None
+        assert result.deadline == result.release.instant + timedelta(hours=2)
+    assert by_id["e.f"].status is Status.CONFIG_ERROR
+    assert report.exit_code == 2  # a config error still outranks the runtime error
+
+
+def test_u_app_07_query_error_during_a_read() -> None:
+    entries = [source_entry("a.b")]
+    reader = FakeReader({}, failure=QueryError(Issue("E502", "query failed: no such table")))
+    report = run_check(entries, reader, FakeCalendarProvider(), ECB_NOW)
+    result = report.results[0]
+    assert result.status is Status.QUERY_ERROR
+    assert result.error is not None
+    assert result.error.code == "E502"
+    assert result.release is not None
+    assert result.next_expected_arrival is not None
+    assert report.exit_code == 3
+
+
+def test_u_app_07_query_error_with_a_rule_that_has_no_releases() -> None:
+    """A rule that cannot be evaluated is a CONFIG_ERROR, even on the query path."""
+    broken = source_entry("a.b")
+    rule = broken.rule
+    assert rule is not None
+    impossible = replace(rule, schedule=CronSchedule("0 0 30 2 *", ZoneInfo("UTC")))
+    entry = replace(broken, rule=impossible)
+    report = run_check([entry], None, FakeCalendarProvider(), ECB_NOW)
+    assert report.results[0].status is Status.CONFIG_ERROR
+    assert report.results[0].error is not None
+    assert report.results[0].error.code == "E209"
+
+
+@pytest.mark.parametrize(
+    ("statuses", "fatal", "internal", "expected"),
+    [
+        ([], False, False, 0),
+        ([Status.ON_TIME, Status.NOT_DUE], False, False, 0),
+        ([Status.ON_TIME, Status.OVERDUE], False, False, 1),
+        ([Status.NO_DATA], False, False, 1),
+        ([Status.OVERDUE, Status.NO_DATA], False, False, 1),
+        ([Status.OVERDUE, Status.QUERY_ERROR], False, False, 3),
+        ([Status.QUERY_ERROR], False, False, 3),
+        ([Status.OVERDUE, Status.CONFIG_ERROR], False, False, 2),
+        ([Status.CONFIG_ERROR], False, False, 2),
+        ([], True, False, 2),
+        ([], False, True, 3),
+        ([Status.CONFIG_ERROR, Status.QUERY_ERROR, Status.OVERDUE], False, False, 2),
+        ([Status.QUERY_ERROR, Status.OVERDUE], False, True, 3),  # an internal error outranks 1
+        ([], True, True, 2),
+    ],
+)
+def test_u_app_08_exit_code_precedence(
+    statuses: list[Status], fatal: bool, internal: bool, expected: int
+) -> None:
+    assert exit_code_for(statuses, fatal, internal) == expected
+
+
+def test_u_app_09_run_next_count_and_order() -> None:
+    entries = [source_entry("b.second"), source_entry("a.first")]
+    provider = FakeCalendarProvider()
+    report = run_next(entries, provider, ECB_NOW, count=3)
+
+    assert [entry.source_id for entry in report.sources] == ["a.first", "b.second"]
+    first = report.sources[0]
+    assert [release.local.strftime("%Y-%m-%d %H:%M") for release in first.releases] == [
+        "2026-09-28 16:00",
+        "2026-09-29 16:00",
+        "2026-09-30 16:00",
+    ]
+    assert all(
+        release.deadline == release.instant + timedelta(hours=2) for release in first.releases
+    )
+    assert first.schedule_timezone == "Europe/Berlin"
+    assert first.error is None
+
+    # count=1 yields a single release, and count=0 yields none.
+    assert len(run_next(entries, provider, ECB_NOW, count=1).sources[0].releases) == 1
+    assert run_next(entries, provider, ECB_NOW, count=0).sources[0].releases == ()
+
+
+def test_u_app_09_run_next_reports_a_broken_rule_as_an_error() -> None:
+    entries = [
+        SourceEntry(
+            source_id="a.b",
+            origin=Origin.CONFIG,
+            rule=None,
+            errors=(Issue("E303", "dbt:source.proj.a.b: no loaded_at_field"),),
+            location="dbt:source.proj.a.b",
+        )
+    ]
+    report = run_next(entries, FakeCalendarProvider(), ECB_NOW)
+    entry = report.sources[0]
+    assert entry.releases == ()
+    assert entry.error is not None
+    assert entry.error.code == "E303"
+    assert entry.schedule_timezone is None
+
+
+def test_u_app_10_run_validate_finds_schedule_calendar_and_warning_problems() -> None:
+    expired = source_entry(
+        "a.expired", calendar=CalendarSpec(name="cn_workdays"), valid_until=date(2026, 12, 31)
+    )
+    impossible = source_entry("b.impossible")
+    rule = impossible.rule
+    assert rule is not None
+    impossible = replace(
+        impossible, rule=replace(rule, schedule=CronSchedule("0 0 30 2 *", ZoneInfo("UTC")))
+    )
+    valid_second = source_entry("c.valid_second")
+    good = source_entry("d.good")
+    unloaded = SourceEntry(
+        source_id="e.unloaded",
+        origin=Origin.CONFIG,
+        rule=None,
+        errors=(Issue("E201", "sources[5].schedule.timezone: unknown time zone 'Mars/Olympus'"),),
+        warnings=(
+            Issue("W006", "calendar of e.unloaded has overrides but no valid_until", "e.unloaded"),
+        ),
+        location="sources[5]",
+    )
+
+    eventually = datetime(2027, 1, 4, 2, 0, tzinfo=UTC)
+    report = run_validate(
+        [expired, impossible, valid_second, good, unloaded],
+        FakeCalendarProvider(start_year=1999),
+        eventually,
+    )
+
+    codes = [issue.code for issue in report.issues]
+    assert "E408" in codes  # a.expired: past valid_until
+    assert "E209" in codes  # b.impossible: no release in the horizon
+    assert "E201" in codes  # e.unloaded: carried from loading
+    assert "W006" in codes
+    # errors come first, warnings after
+    first_warning = next(index for index, code in enumerate(codes) if code.startswith("W"))
+    assert all(code.startswith("E") for code in codes[:first_warning])
+    assert report.error_count == 3  # expired, impossible, unloaded
+    assert report.valid_count == 2
+    assert report.warning_count == 1
+
+
+def test_u_app_10_run_validate_reports_the_horizon_and_calendar_range_errors() -> None:
+    entry = source_entry(
+        "a.b",
+        calendar=CalendarSpec(holiday_calendars=(HolidayCalendarRef("financial", "XECB"),)),
+    )
+    rule = entry.rule
+    assert rule is not None
+    # A provider whose range excludes the evaluation year: E405 (the calendar must
+    # reference the provider for it to be consulted at all).
+    report = run_validate([entry], FakeCalendarProvider(start_year=2030, end_year=2100), ECB_NOW)
+    assert [issue.code for issue in report.issues] == ["E405"]
+    assert report.error_count == 1
+
+
+def test_u_app_11_run_next_reports_w005_near_valid_until() -> None:
+    """The CN calendar's valid_until is 2026-12-31; at 2026-12-30 the next release is 2027."""
+    cn_calendar = CalendarSpec(
+        name="cn_workdays",
+        holiday_calendars=(HolidayCalendarRef("country", "CN"),),
+        valid_until=date(2026, 12, 31),
+    )
+    entry = source_entry("cn.daily_sales", calendar=cn_calendar)
+    rule = entry.rule
+    assert rule is not None
+    shanghai = ZoneInfo("Asia/Shanghai")
+    entry = replace(entry, rule=replace(rule, schedule=BusinessDaysSchedule(time(15, 0), shanghai)))
+
+    report = run_next(
+        [entry], FakeCalendarProvider(), datetime(2026, 12, 30, 2, 0, tzinfo=UTC), count=3
+    )
+    entry_result = report.sources[0]
+    assert entry_result.error is None
+    # With the fake provider there are no CN holidays, so 2027-01-01 is a business day;
+    # what matters here is that the search consulted dates past valid_until (W005).
+    assert [release.local.strftime("%Y-%m-%d") for release in entry_result.releases] == [
+        "2026-12-30",
+        "2026-12-31",
+        "2027-01-01",
+    ]
+    assert [issue.code for issue in entry_result.warnings] == ["W005"]
+    assert "was consulted for 2027-" in entry_result.warnings[0].message
+    assert entry_result.warnings[0].location == "cn.daily_sales"
+
+
+def test_run_explain_returns_the_result_and_the_trace() -> None:
+    entry = source_entry("ecb.fx_rates")
+    result, lines = run_explain(
+        entry,
+        FRIDAY_DATA,
+        ECB_NOW,
+        FakeCalendarProvider(),
+        origin_label="config freshcal.yml, sources[0]",
+        query_text="SELECT max(_loaded_at) AS observed FROM raw.ecb.fx_rates",
+    )
+    assert result.status is Status.ON_TIME
+    text = "\n".join(lines)
+    assert "Source    ecb.fx_rates (config freshcal.yml, sources[0])" in text
+    assert text.rstrip().endswith(result.explanation)
+
+
+def test_run_explain_for_a_rule_that_did_not_load() -> None:
+    entry = SourceEntry(
+        source_id="a.b",
+        origin=Origin.CONFIG,
+        rule=None,
+        errors=(Issue("E208", "sources[0].grace: 'grace' is required"),),
+        location="sources[0]",
+    )
+    result, lines = run_explain(entry, RawObservation(None), ECB_NOW, FakeCalendarProvider())
+    assert result.status is Status.CONFIG_ERROR
+    assert lines == [f"Result    CONFIG_ERROR: {result.explanation}"]
+
+
+def test_run_check_attaches_merge_and_entry_warnings() -> None:
+    entry = source_entry("a.b")
+    w004 = Issue(
+        "W004",
+        "'a.b' is defined in both freshcal.yml and the dbt manifest; using the config file "
+        "definition",
+        "a.b",
+    )
+    w006 = Issue("W006", "calendar of a.b has overrides but no valid_until", "a.b")
+    entry = replace(entry, warnings=(w006,))
+    report = run_check(
+        [entry],
+        FakeReader({"raw.a.b": FRIDAY_DATA}),
+        FakeCalendarProvider(),
+        ECB_NOW,
+        extra_warnings=[w004],
+    )
+    codes = [issue.code for issue in report.results[0].warnings]
+    assert codes == ["W006", "W004"]

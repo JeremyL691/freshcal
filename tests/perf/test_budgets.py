@@ -20,6 +20,7 @@ from zoneinfo import ZoneInfo
 
 from tests.conftest import FakeCalendarProvider
 
+from freshcal.app import run_next
 from freshcal.core.model import (
     BusinessDaysSchedule,
     CalendarSpec,
@@ -29,6 +30,7 @@ from freshcal.core.model import (
     NonBusinessDayPolicy,
     Origin,
     RawObservation,
+    SourceEntry,
     SourceRule,
 )
 from freshcal.core.verdict import evaluate
@@ -72,6 +74,19 @@ def minutes_rule() -> SourceRule:
     )
 
 
+def _next_entry(index: int) -> SourceEntry:
+    rule = SourceRule(
+        source_id=f"perf.next_{index}",
+        origin=Origin.CONFIG,
+        schedule=CronSchedule("* * * * *", UTC_ZONE, NonBusinessDayPolicy.NONE),
+        calendar=CalendarSpec(),
+        grace=timedelta(hours=1),
+        target=FreshnessTarget(relation="raw.t", loaded_at_field="_loaded_at"),
+        observed_timezone=UTC_ZONE,
+    )
+    return SourceEntry(source_id=rule.source_id, origin=Origin.CONFIG, rule=rule)
+
+
 def daily_rule() -> SourceRule:
     return SourceRule(
         source_id="perf.daily",
@@ -108,11 +123,10 @@ def test_pb_2_per_minute_rule_with_thirty_day_old_data() -> None:
 
     assert result.missed_count == 10_000
     assert result.missed_truncated is True
-    # Budget raised from 2 s to 12 s by Blueprint Amendment A-5: the specified chunked
-    # search materialises a 32-day window per search (~46 000 croniter calls for a
-    # per-minute schedule). Measured 2.3 s plain and 5.5-6.1 s under `pytest --cov`, which
-    # is how CI runs it.
-    assert elapsed < 12.0, f"PB-2 took {elapsed:.2f}s (budget 12s, Amendment A-5)"
+    # The blueprint's 2 s budget holds because the search streams releases and stops at
+    # the counting cap instead of materialising a 32-day window (Amendment A-5 records the
+    # investigation: 2.29 s before the fix, ~0.3 s after).
+    assert elapsed < 2.0, f"PB-2 took {elapsed:.2f}s (budget 2s)"
 
 
 def test_pb_3_daily_rule_with_a_sentinel_observed_timestamp() -> None:
@@ -128,10 +142,30 @@ def test_pb_3_daily_rule_with_a_sentinel_observed_timestamp() -> None:
     assert elapsed < 1.0, f"PB-3 took {elapsed:.2f}s (budget 1s)"
 
 
+def test_pb_4_run_next_with_count_100_for_50_minute_rules() -> None:
+    """PB-4: 50 per-minute sources, 100 upcoming releases each."""
+    provider = FakeCalendarProvider()
+    entries = [_next_entry(index) for index in range(50)]
+
+    started = time.perf_counter()
+    report = run_next(entries, provider, NOW, count=100)
+    elapsed = time.perf_counter() - started
+
+    assert len(report.sources) == 50
+    assert all(len(entry.releases) == 100 for entry in report.sources)
+    assert elapsed < 2.0, f"PB-4 took {elapsed:.2f}s (budget 2s)"
+
+
 def test_pb_5_property_suite_under_the_ci_profile() -> None:
     """The whole property directory, as CI runs it, stays inside the PB-5 budget."""
     environment = dict(os.environ)
     environment["HYPOTHESIS_PROFILE"] = "ci"
+    # Import the package from the source tree as well: the subprocess must not depend on
+    # the venv's editable-install .pth being readable.
+    source_path = str(REPOSITORY_ROOT / "src")
+    environment["PYTHONPATH"] = os.pathsep.join(
+        [source_path, environment.get("PYTHONPATH", "")]
+    ).rstrip(os.pathsep)
     started = time.perf_counter()
     completed = subprocess.run(
         [sys.executable, "-m", "pytest", "tests/property", "-q", "-p", "no:cacheprovider"],

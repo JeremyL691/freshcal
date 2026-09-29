@@ -27,6 +27,9 @@ __all__ = [
     "FreshnessTarget",
     "HolidayCalendarRef",
     "MonthlyBusinessDaySchedule",
+    "NextEntry",
+    "NextRelease",
+    "NextReport",
     "NonBusinessDayPolicy",
     "Observation",
     "Origin",
@@ -245,6 +248,38 @@ class CheckReport:
     evaluated_at: datetime
     results: tuple[EvaluationResult, ...]
     exit_code: int
+
+
+@dataclass(frozen=True, slots=True)
+class NextRelease:
+    """One upcoming release, as ``freshcal next`` reports it."""
+
+    instant: datetime  # aware UTC
+    local: datetime  # aware, schedule time zone
+    deadline: datetime  # aware UTC
+
+
+@dataclass(frozen=True, slots=True)
+class NextEntry:
+    """The upcoming releases of one source (``freshcal next``).
+
+    ``warnings`` is required by the JSON report contract (§8.1): a calendar consulted
+    past its ``valid_until`` produces ``W005`` on the entry whose releases depend on it.
+    """
+
+    source_id: str
+    schedule_timezone: str | None
+    releases: tuple[NextRelease, ...] = ()
+    warnings: tuple[Issue, ...] = ()
+    error: Issue | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class NextReport:
+    """All upcoming releases of one ``next`` run, sorted by ``source_id``."""
+
+    evaluated_at: datetime
+    sources: tuple[NextEntry, ...]
 
 
 def mark_duplicate_source_ids(entries: Sequence[SourceEntry]) -> list[SourceEntry]:

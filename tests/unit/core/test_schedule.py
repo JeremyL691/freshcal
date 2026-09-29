@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import UTC, date, datetime, time, timedelta
+from itertools import pairwise
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -22,6 +23,7 @@ from freshcal.core.model import (
     SourceRule,
 )
 from freshcal.core.schedule import (
+    HOLD_BACK,
     MAX_ROLL_DAYS,
     next_release_after,
     previous_release_at_or_before,
@@ -509,3 +511,39 @@ def test_business_day_releases_never_visit_non_business_days() -> None:
         "2026-10-01",
         "2026-10-02",
     ]
+
+
+def test_dst_transitions_are_further_apart_than_the_hold_back() -> None:
+    """The search's transition guard assumes no zone changes offset twice within HOLD_BACK.
+
+    Sampling every six hours across 2026 for the zones the tests use: consecutive offset
+    changes are months or years apart, never hours. (The same check over every tzdata zone
+    from 1900 to 2100 gives six days as the smallest gap; see Amendment A-5.)
+    """
+    zone_names = (
+        "UTC",
+        "Europe/Berlin",
+        "America/New_York",
+        "America/Santiago",
+        "Australia/Lord_Howe",
+        "Asia/Kathmandu",
+        "Pacific/Chatham",
+        "Asia/Shanghai",
+        "Pacific/Kiritimati",
+    )
+    step = timedelta(hours=6)
+    start = datetime(2026, 1, 1)
+    end = datetime(2027, 1, 1)
+    for name in zone_names:
+        tz = ZoneInfo(name)
+        transitions: list[datetime] = []
+        cursor = start
+        previous_offset = tz.utcoffset(cursor)
+        while cursor < end:
+            cursor += step
+            offset = tz.utcoffset(cursor)
+            if offset != previous_offset:
+                transitions.append(cursor)
+            previous_offset = offset
+        for earlier, later in pairwise(transitions):
+            assert later - earlier > HOLD_BACK, (name, earlier, later)
