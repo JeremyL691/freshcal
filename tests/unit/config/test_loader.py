@@ -270,11 +270,14 @@ sources:
 """,
     )
     first, second = load_config(config).entries
-    assert first.rule is not None
-    assert first.errors == ()
-    assert second.rule is None
-    assert [issue.code for issue in second.errors] == ["E206"]
-    assert second.errors[0].message == ("duplicate source id 'a.b' at sources[0] and sources[1]")
+    # Both members are marked: with two definitions of one source, neither can be
+    # trusted to be the intended one (BLUEPRINT.md §4.8: "E206 for every duplicate").
+    for duplicate_entry in (first, second):
+        assert duplicate_entry.rule is None
+        assert [issue.code for issue in duplicate_entry.errors] == ["E206"]
+        assert duplicate_entry.errors[0].message == (
+            "duplicate source id 'a.b' at sources[0] and sources[1]"
+        )
 
 
 def test_u_load_09_connection_parsing(tmp_path: Path) -> None:

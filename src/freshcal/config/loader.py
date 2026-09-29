@@ -35,6 +35,7 @@ from freshcal.core.model import (
     SourceEntry,
     SourceRule,
     Weekday,
+    mark_duplicate_source_ids,
 )
 
 __all__ = [
@@ -669,33 +670,6 @@ def _parse_source_entry(
     )
 
 
-def _mark_duplicates(entries: list[SourceEntry]) -> list[SourceEntry]:
-    """Give every repeated source ID an ``E206``; the first occurrence stays usable."""
-    first_location: dict[str, str] = {}
-    marked: list[SourceEntry] = []
-    for entry in entries:
-        location = first_location.get(entry.source_id)
-        if location is None:
-            first_location[entry.source_id] = entry.location
-        else:
-            # E206's template names both locations, so it has no location prefix.
-            issue = Issue(
-                "E206",
-                f"duplicate source id '{entry.source_id}' at {location} and {entry.location}",
-                entry.location,
-            )
-            entry = SourceEntry(
-                source_id=entry.source_id,
-                origin=entry.origin,
-                rule=None,
-                errors=(issue,),
-                warnings=entry.warnings,
-                location=entry.location,
-            )
-        marked.append(entry)
-    return marked
-
-
 def load_config(path: Path) -> AppConfig:
     """Load a FreshCal config file into an :class:`AppConfig`.
 
@@ -737,5 +711,5 @@ def load_config(path: Path) -> AppConfig:
         dbt_manifest=dbt_manifest,
         defaults=defaults,
         named_calendars=named,
-        entries=tuple(_mark_duplicates(entries)),
+        entries=tuple(mark_duplicate_source_ids(entries)),
     )

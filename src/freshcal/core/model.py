@@ -9,6 +9,7 @@ built by adapters and the application layer (``Observation`` and
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date, datetime, time, timedelta
 from enum import IntEnum, StrEnum
@@ -36,6 +37,7 @@ __all__ = [
     "SourceRule",
     "Status",
     "Weekday",
+    "mark_duplicate_source_ids",
 ]
 
 
@@ -243,6 +245,41 @@ class CheckReport:
     evaluated_at: datetime
     results: tuple[EvaluationResult, ...]
     exit_code: int
+
+
+def mark_duplicate_source_ids(entries: Sequence[SourceEntry]) -> list[SourceEntry]:
+    """Mark every entry whose source ID occurs more than once with ``E206``.
+
+    Both the duplicate and the entry it duplicates are marked: with two definitions of
+    the same source, neither can be trusted to be the one the operator meant. The message
+    names the two locations of the conflict and is identical for every member.
+    """
+    locations: dict[str, list[str]] = {}
+    for entry in entries:
+        locations.setdefault(entry.source_id, []).append(entry.location)
+
+    marked: list[SourceEntry] = []
+    for entry in entries:
+        group = locations[entry.source_id]
+        if len(group) < 2:
+            marked.append(entry)
+            continue
+        issue = Issue(
+            "E206",
+            f"duplicate source id '{entry.source_id}' at {group[0]} and {group[1]}",
+            entry.location,
+        )
+        marked.append(
+            SourceEntry(
+                source_id=entry.source_id,
+                origin=entry.origin,
+                rule=None,
+                errors=(issue,),
+                warnings=entry.warnings,
+                location=entry.location,
+            )
+        )
+    return marked
 
 
 def _require_aware(name: str, value: datetime) -> None:

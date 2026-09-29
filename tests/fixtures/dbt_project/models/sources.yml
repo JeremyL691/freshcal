@@ -1,0 +1,76 @@
+version: 2
+
+sources:
+  - name: ecb
+    schema: raw_ecb
+    tables:
+      # dbt >= 1.10 style: the rule sits under config.meta.
+      - name: fx_rates
+        loaded_at_field: _loaded_at
+        config:
+          meta:
+            freshcal:
+              schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+              calendar: target
+              grace: 2h
+              observed_timezone: UTC
+      # Older style: the rule sits under top-level meta.
+      - name: legacy_meta
+        loaded_at_field: _loaded_at
+        meta:
+          freshcal:
+            schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+            calendar: target
+            grace: 2h
+  - name: stats
+    schema: raw_stats
+    # A source-level rule, inherited by every table below.
+    meta:
+      freshcal:
+        schedule: {kind: monthly_business_day, business_day: 3, time: "09:00", timezone: Europe/Berlin}
+        calendar:
+          holidays:
+            - country: DE
+              subdivision: BY
+        grace: 4h
+    tables:
+      - name: inherits
+        loaded_at_field: loaded_at
+      # A table-level rule replaces the source-level one entirely (shallow merge).
+      - name: overrides
+        loaded_at_field: loaded_at
+        config:
+          meta:
+            freshcal:
+              schedule: {kind: monthly_business_day, business_day: -1, time: "17:00", timezone: America/New_York}
+              grace: 3h
+  - name: misc
+    schema: raw_misc
+    tables:
+      - name: no_rules
+        loaded_at_field: _loaded_at
+      # Unquoted 16:00 is YAML 1.1's base-60 integer 960 by the time FreshCal sees it.
+      - name: unquoted_time
+        loaded_at_field: _loaded_at
+        config:
+          meta:
+            freshcal:
+              schedule: {kind: business_days, time: 16:00, timezone: Europe/Berlin}
+              grace: 2h
+      # loaded_at_query without loaded_at_field is not supported in v0.1 (E303).
+      - name: query_based
+        loaded_at_query: "select max(loaded_at) from {{ this }}"
+        config:
+          meta:
+            freshcal:
+              schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+              grace: 2h
+      # name and relation cannot be set in meta.freshcal (E304).
+      - name: forbidden_relation
+        loaded_at_field: _loaded_at
+        config:
+          meta:
+            freshcal:
+              relation: raw.misc_forbidden
+              schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+              grace: 2h

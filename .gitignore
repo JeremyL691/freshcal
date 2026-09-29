@@ -22,9 +22,11 @@ coverage.xml
 *.duckdb
 *.duckdb.wal
 
-# dbt fixture build output
+# dbt fixture build output and state
 tests/fixtures/dbt_project/target/
 tests/fixtures/dbt_project/logs/
+tests/fixtures/dbt_project/.user.yml
+tests/fixtures/dbt_project/*.duckdb
 
 # Editors and OS
 .DS_Store

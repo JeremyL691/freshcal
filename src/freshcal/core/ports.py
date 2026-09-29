@@ -7,13 +7,18 @@ that need them arrive.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import date
 from typing import Protocol
 
-from freshcal.core.model import FreshnessTarget, HolidayCalendarRef, RawObservation
+from freshcal.core.model import (
+    FreshnessTarget,
+    HolidayCalendarRef,
+    RawObservation,
+    SourceEntry,
+)
 
-__all__ = ["CalendarProvider", "FreshnessReader"]
+__all__ = ["CalendarProvider", "FreshnessReader", "SourceCatalog"]
 
 
 class CalendarProvider(Protocol):
@@ -43,4 +48,12 @@ class FreshnessReader(Protocol):
 
     def close(self) -> None:
         """Release the connection."""
+        ...
+
+
+class SourceCatalog(Protocol):
+    """A source of :class:`SourceEntry` objects: a config file or a dbt manifest."""
+
+    def entries(self) -> Sequence[SourceEntry]:
+        """Every source the catalog defines, including the ones that failed to load."""
         ...

@@ -1,0 +1,877 @@
+{
+  "metadata": {
+    "adapter_type": "duckdb",
+    "dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v12.json",
+    "dbt_version": "1.12.5",
+    "project_name": "freshcal_fixture"
+  },
+  "sources": {
+    "source.freshcal_fixture.ecb.fx_rates": {
+      "columns": {},
+      "config": {
+        "enabled": true,
+        "event_time": null,
+        "freshness": {
+          "error_after": {
+            "count": null,
+            "period": null
+          },
+          "filter": null,
+          "warn_after": {
+            "count": null,
+            "period": null
+          }
+        },
+        "loaded_at_field": "_loaded_at",
+        "loaded_at_query": null,
+        "meta": {
+          "freshcal": {
+            "calendar": "target",
+            "grace": "2h",
+            "observed_timezone": "UTC",
+            "schedule": {
+              "kind": "business_days",
+              "time": "16:00",
+              "timezone": "Europe/Berlin"
+            }
+          }
+        },
+        "static_analysis": null,
+        "tags": []
+      },
+      "database": "fixture",
+      "description": "",
+      "doc_blocks": [],
+      "external": null,
+      "fqn": [
+        "freshcal_fixture",
+        "ecb",
+        "fx_rates"
+      ],
+      "freshness": {
+        "error_after": {
+          "count": null,
+          "period": null
+        },
+        "filter": null,
+        "warn_after": {
+          "count": null,
+          "period": null
+        }
+      },
+      "identifier": "fx_rates",
+      "loaded_at_field": "_loaded_at",
+      "loaded_at_query": null,
+      "loader": "",
+      "meta": {
+        "freshcal": {
+          "calendar": "target",
+          "grace": "2h",
+          "observed_timezone": "UTC",
+          "schedule": {
+            "kind": "business_days",
+            "time": "16:00",
+            "timezone": "Europe/Berlin"
+          }
+        }
+      },
+      "name": "fx_rates",
+      "original_file_path": "models/sources.yml",
+      "package_name": "freshcal_fixture",
+      "patch_path": null,
+      "path": "models/sources.yml",
+      "quoting": {
+        "column": null,
+        "database": null,
+        "identifier": null,
+        "schema": null
+      },
+      "relation_name": "\"fixture\".\"raw_ecb\".\"fx_rates\"",
+      "resource_type": "source",
+      "schema": "raw_ecb",
+      "source_description": "",
+      "source_meta": {},
+      "source_name": "ecb",
+      "tags": [],
+      "unique_id": "source.freshcal_fixture.ecb.fx_rates",
+      "unrendered_config": {
+        "loaded_at_field": "_loaded_at",
+        "loaded_at_query": null,
+        "meta": {
+          "freshcal": {
+            "calendar": "target",
+            "grace": "2h",
+            "observed_timezone": "UTC",
+            "schedule": {
+              "kind": "business_days",
+              "time": "16:00",
+              "timezone": "Europe/Berlin"
+            }
+          }
+        },
+        "tags": []
+      },
+      "unrendered_database": null,
+      "unrendered_schema": "raw_ecb"
+    },
+    "source.freshcal_fixture.ecb.legacy_meta": {
+      "columns": {},
+      "config": {
+        "enabled": true,
+        "event_time": null,
+        "freshness": {
+          "error_after": {
+            "count": null,
+            "period": null
+          },
+          "filter": null,
+          "warn_after": {
+            "count": null,
+            "period": null
+          }
+        },
+        "loaded_at_field": "_loaded_at",
+        "loaded_at_query": null,
+        "meta": {
+          "freshcal": {
+            "calendar": "target",
+            "grace": "2h",
+            "schedule": {
+              "kind": "business_days",
+              "time": "16:00",
+              "timezone": "Europe/Berlin"
+            }
+          }
+        },
+        "static_analysis": null,
+        "tags": []
+      },
+      "database": "fixture",
+      "description": "",
+      "doc_blocks": [],
+      "external": null,
+      "fqn": [
+        "freshcal_fixture",
+        "ecb",
+        "legacy_meta"
+      ],
+      "freshness": {
+        "error_after": {
+          "count": null,
+          "period": null
+        },
+        "filter": null,
+        "warn_after": {
+          "count": null,
+          "period": null
+        }
+      },
+      "identifier": "legacy_meta",
+      "loaded_at_field": "_loaded_at",
+      "loaded_at_query": null,
+      "loader": "",
+      "meta": {
+        "freshcal": {
+          "calendar": "target",
+          "grace": "2h",
+          "schedule": {
+            "kind": "business_days",
+            "time": "16:00",
+            "timezone": "Europe/Berlin"
+          }
+        }
+      },
+      "name": "legacy_meta",
+      "original_file_path": "models/sources.yml",
+      "package_name": "freshcal_fixture",
+      "patch_path": null,
+      "path": "models/sources.yml",
+      "quoting": {
+        "column": null,
+        "database": null,
+        "identifier": null,
+        "schema": null
+      },
+      "relation_name": "\"fixture\".\"raw_ecb\".\"legacy_meta\"",
+      "resource_type": "source",
+      "schema": "raw_ecb",
+      "source_description": "",
+      "source_meta": {},
+      "source_name": "ecb",
+      "tags": [],
+      "unique_id": "source.freshcal_fixture.ecb.legacy_meta",
+      "unrendered_config": {
+        "loaded_at_field": "_loaded_at",
+        "loaded_at_query": null,
+        "meta": {
+          "freshcal": {
+            "calendar": "target",
+            "grace": "2h",
+            "schedule": {
+              "kind": "business_days",
+              "time": "16:00",
+              "timezone": "Europe/Berlin"
+            }
+          }
+        },
+        "tags": []
+      },
+      "unrendered_database": null,
+      "unrendered_schema": "raw_ecb"
+    },
+    "source.freshcal_fixture.misc.forbidden_relation": {
+      "columns": {},
+      "config": {
+        "enabled": true,
+        "event_time": null,
+        "freshness": {
+          "error_after": {
+            "count": null,
+            "period": null
+          },
+          "filter": null,
+          "warn_after": {
+            "count": null,
+            "period": null
+          }
+        },
+        "loaded_at_field": "_loaded_at",
+        "loaded_at_query": null,
+        "meta": {
+          "freshcal": {
+            "grace": "2h",
+            "relation": "raw.misc_forbidden",
+            "schedule": {
+              "kind": "business_days",
+              "time": "16:00",
+              "timezone": "Europe/Berlin"
+            }
+          }
+        },
+        "static_analysis": null,
+        "tags": []
+      },
+      "database": "fixture",
+      "description": "",
+      "doc_blocks": [],
+      "external": null,
+      "fqn": [
+        "freshcal_fixture",
+        "misc",
+        "forbidden_relation"
+      ],
+      "freshness": {
+        "error_after": {
+          "count": null,
+          "period": null
+        },
+        "filter": null,
+        "warn_after": {
+          "count": null,
+          "period": null
+        }
+      },
+      "identifier": "forbidden_relation",
+      "loaded_at_field": "_loaded_at",
+      "loaded_at_query": null,
+      "loader": "",
+      "meta": {
+        "freshcal": {
+          "grace": "2h",
+          "relation": "raw.misc_forbidden",
+          "schedule": {
+            "kind": "business_days",
+            "time": "16:00",
+            "timezone": "Europe/Berlin"
+          }
+        }
+      },
+      "name": "forbidden_relation",
+      "original_file_path": "models/sources.yml",
+      "package_name": "freshcal_fixture",
+      "patch_path": null,
+      "path": "models/sources.yml",
+      "quoting": {
+        "column": null,
+        "database": null,
+        "identifier": null,
+        "schema": null
+      },
+      "relation_name": "\"fixture\".\"raw_misc\".\"forbidden_relation\"",
+      "resource_type": "source",
+      "schema": "raw_misc",
+      "source_description": "",
+      "source_meta": {},
+      "source_name": "misc",
+      "tags": [],
+      "unique_id": "source.freshcal_fixture.misc.forbidden_relation",
+      "unrendered_config": {
+        "loaded_at_field": "_loaded_at",
+        "loaded_at_query": null,
+        "meta": {
+          "freshcal": {
+            "grace": "2h",
+            "relation": "raw.misc_forbidden",
+            "schedule": {
+              "kind": "business_days",
+              "time": "16:00",
+              "timezone": "Europe/Berlin"
+            }
+          }
+        },
+        "tags": []
+      },
+      "unrendered_database": null,
+      "unrendered_schema": "raw_misc"
+    },
+    "source.freshcal_fixture.misc.no_rules": {
+      "columns": {},
+      "config": {
+        "enabled": true,
+        "event_time": null,
+        "freshness": {
+          "error_after": {
+            "count": null,
+            "period": null
+          },
+          "filter": null,
+          "warn_after": {
+            "count": null,
+            "period": null
+          }
+        },
+        "loaded_at_field": "_loaded_at",
+        "loaded_at_query": null,
+        "meta": {},
+        "static_analysis": null,
+        "tags": []
+      },
+      "database": "fixture",
+      "description": "",
+      "doc_blocks": [],
+      "external": null,
+      "fqn": [
+        "freshcal_fixture",
+        "misc",
+        "no_rules"
+      ],
+      "freshness": {
+        "error_after": {
+          "count": null,
+          "period": null
+        },
+        "filter": null,
+        "warn_after": {
+          "count": null,
+          "period": null
+        }
+      },
+      "identifier": "no_rules",
+      "loaded_at_field": "_loaded_at",
+      "loaded_at_query": null,
+      "loader": "",
+      "meta": {},
+      "name": "no_rules",
+      "original_file_path": "models/sources.yml",
+      "package_name": "freshcal_fixture",
+      "patch_path": null,
+      "path": "models/sources.yml",
+      "quoting": {
+        "column": null,
+        "database": null,
+        "identifier": null,
+        "schema": null
+      },
+      "relation_name": "\"fixture\".\"raw_misc\".\"no_rules\"",
+      "resource_type": "source",
+      "schema": "raw_misc",
+      "source_description": "",
+      "source_meta": {},
+      "source_name": "misc",
+      "tags": [],
+      "unique_id": "source.freshcal_fixture.misc.no_rules",
+      "unrendered_config": {
+        "loaded_at_field": "_loaded_at",
+        "loaded_at_query": null,
+        "meta": {},
+        "tags": []
+      },
+      "unrendered_database": null,
+      "unrendered_schema": "raw_misc"
+    },
+    "source.freshcal_fixture.misc.query_based": {
+      "columns": {},
+      "config": {
+        "enabled": true,
+        "event_time": null,
+        "freshness": {
+          "error_after": {
+            "count": null,
+            "period": null
+          },
+          "filter": null,
+          "warn_after": {
+            "count": null,
+            "period": null
+          }
+        },
+        "loaded_at_field": null,
+        "loaded_at_query": "select max(loaded_at) from {{ this }}",
+        "meta": {
+          "freshcal": {
+            "grace": "2h",
+            "schedule": {
+              "kind": "business_days",
+              "time": "16:00",
+              "timezone": "Europe/Berlin"
+            }
+          }
+        },
+        "static_analysis": null,
+        "tags": []
+      },
+      "database": "fixture",
+      "description": "",
+      "doc_blocks": [],
+      "external": null,
+      "fqn": [
+        "freshcal_fixture",
+        "misc",
+        "query_based"
+      ],
+      "freshness": {
+        "error_after": {
+          "count": null,
+          "period": null
+        },
+        "filter": null,
+        "warn_after": {
+          "count": null,
+          "period": null
+        }
+      },
+      "identifier": "query_based",
+      "loaded_at_field": null,
+      "loaded_at_query": "select max(loaded_at) from {{ this }}",
+      "loader": "",
+      "meta": {
+        "freshcal": {
+          "grace": "2h",
+          "schedule": {
+            "kind": "business_days",
+            "time": "16:00",
+            "timezone": "Europe/Berlin"
+          }
+        }
+      },
+      "name": "query_based",
+      "original_file_path": "models/sources.yml",
+      "package_name": "freshcal_fixture",
+      "patch_path": null,
+      "path": "models/sources.yml",
+      "quoting": {
+        "column": null,
+        "database": null,
+        "identifier": null,
+        "schema": null
+      },
+      "relation_name": "\"fixture\".\"raw_misc\".\"query_based\"",
+      "resource_type": "source",
+      "schema": "raw_misc",
+      "source_description": "",
+      "source_meta": {},
+      "source_name": "misc",
+      "tags": [],
+      "unique_id": "source.freshcal_fixture.misc.query_based",
+      "unrendered_config": {
+        "loaded_at_field": null,
+        "loaded_at_query": "select max(loaded_at) from {{ this }}",
+        "meta": {
+          "freshcal": {
+            "grace": "2h",
+            "schedule": {
+              "kind": "business_days",
+              "time": "16:00",
+              "timezone": "Europe/Berlin"
+            }
+          }
+        },
+        "tags": []
+      },
+      "unrendered_database": null,
+      "unrendered_schema": "raw_misc"
+    },
+    "source.freshcal_fixture.misc.unquoted_time": {
+      "columns": {},
+      "config": {
+        "enabled": true,
+        "event_time": null,
+        "freshness": {
+          "error_after": {
+            "count": null,
+            "period": null
+          },
+          "filter": null,
+          "warn_after": {
+            "count": null,
+            "period": null
+          }
+        },
+        "loaded_at_field": "_loaded_at",
+        "loaded_at_query": null,
+        "meta": {
+          "freshcal": {
+            "grace": "2h",
+            "schedule": {
+              "kind": "business_days",
+              "time": 960,
+              "timezone": "Europe/Berlin"
+            }
+          }
+        },
+        "static_analysis": null,
+        "tags": []
+      },
+      "database": "fixture",
+      "description": "",
+      "doc_blocks": [],
+      "external": null,
+      "fqn": [
+        "freshcal_fixture",
+        "misc",
+        "unquoted_time"
+      ],
+      "freshness": {
+        "error_after": {
+          "count": null,
+          "period": null
+        },
+        "filter": null,
+        "warn_after": {
+          "count": null,
+          "period": null
+        }
+      },
+      "identifier": "unquoted_time",
+      "loaded_at_field": "_loaded_at",
+      "loaded_at_query": null,
+      "loader": "",
+      "meta": {
+        "freshcal": {
+          "grace": "2h",
+          "schedule": {
+            "kind": "business_days",
+            "time": 960,
+            "timezone": "Europe/Berlin"
+          }
+        }
+      },
+      "name": "unquoted_time",
+      "original_file_path": "models/sources.yml",
+      "package_name": "freshcal_fixture",
+      "patch_path": null,
+      "path": "models/sources.yml",
+      "quoting": {
+        "column": null,
+        "database": null,
+        "identifier": null,
+        "schema": null
+      },
+      "relation_name": "\"fixture\".\"raw_misc\".\"unquoted_time\"",
+      "resource_type": "source",
+      "schema": "raw_misc",
+      "source_description": "",
+      "source_meta": {},
+      "source_name": "misc",
+      "tags": [],
+      "unique_id": "source.freshcal_fixture.misc.unquoted_time",
+      "unrendered_config": {
+        "loaded_at_field": "_loaded_at",
+        "loaded_at_query": null,
+        "meta": {
+          "freshcal": {
+            "grace": "2h",
+            "schedule": {
+              "kind": "business_days",
+              "time": 960,
+              "timezone": "Europe/Berlin"
+            }
+          }
+        },
+        "tags": []
+      },
+      "unrendered_database": null,
+      "unrendered_schema": "raw_misc"
+    },
+    "source.freshcal_fixture.stats.inherits": {
+      "columns": {},
+      "config": {
+        "enabled": true,
+        "event_time": null,
+        "freshness": {
+          "error_after": {
+            "count": null,
+            "period": null
+          },
+          "filter": null,
+          "warn_after": {
+            "count": null,
+            "period": null
+          }
+        },
+        "loaded_at_field": "loaded_at",
+        "loaded_at_query": null,
+        "meta": {
+          "freshcal": {
+            "calendar": {
+              "holidays": [
+                {
+                  "country": "DE",
+                  "subdivision": "BY"
+                }
+              ]
+            },
+            "grace": "4h",
+            "schedule": {
+              "business_day": 3,
+              "kind": "monthly_business_day",
+              "time": "09:00",
+              "timezone": "Europe/Berlin"
+            }
+          }
+        },
+        "static_analysis": null,
+        "tags": []
+      },
+      "database": "fixture",
+      "description": "",
+      "doc_blocks": [],
+      "external": null,
+      "fqn": [
+        "freshcal_fixture",
+        "stats",
+        "inherits"
+      ],
+      "freshness": {
+        "error_after": {
+          "count": null,
+          "period": null
+        },
+        "filter": null,
+        "warn_after": {
+          "count": null,
+          "period": null
+        }
+      },
+      "identifier": "inherits",
+      "loaded_at_field": "loaded_at",
+      "loaded_at_query": null,
+      "loader": "",
+      "meta": {
+        "freshcal": {
+          "calendar": {
+            "holidays": [
+              {
+                "country": "DE",
+                "subdivision": "BY"
+              }
+            ]
+          },
+          "grace": "4h",
+          "schedule": {
+            "business_day": 3,
+            "kind": "monthly_business_day",
+            "time": "09:00",
+            "timezone": "Europe/Berlin"
+          }
+        }
+      },
+      "name": "inherits",
+      "original_file_path": "models/sources.yml",
+      "package_name": "freshcal_fixture",
+      "patch_path": null,
+      "path": "models/sources.yml",
+      "quoting": {
+        "column": null,
+        "database": null,
+        "identifier": null,
+        "schema": null
+      },
+      "relation_name": "\"fixture\".\"raw_stats\".\"inherits\"",
+      "resource_type": "source",
+      "schema": "raw_stats",
+      "source_description": "",
+      "source_meta": {
+        "freshcal": {
+          "calendar": {
+            "holidays": [
+              {
+                "country": "DE",
+                "subdivision": "BY"
+              }
+            ]
+          },
+          "grace": "4h",
+          "schedule": {
+            "business_day": 3,
+            "kind": "monthly_business_day",
+            "time": "09:00",
+            "timezone": "Europe/Berlin"
+          }
+        }
+      },
+      "source_name": "stats",
+      "tags": [],
+      "unique_id": "source.freshcal_fixture.stats.inherits",
+      "unrendered_config": {
+        "loaded_at_field": "loaded_at",
+        "loaded_at_query": null,
+        "meta": {
+          "freshcal": {
+            "calendar": {
+              "holidays": [
+                {
+                  "country": "DE",
+                  "subdivision": "BY"
+                }
+              ]
+            },
+            "grace": "4h",
+            "schedule": {
+              "business_day": 3,
+              "kind": "monthly_business_day",
+              "time": "09:00",
+              "timezone": "Europe/Berlin"
+            }
+          }
+        },
+        "tags": []
+      },
+      "unrendered_database": null,
+      "unrendered_schema": "raw_stats"
+    },
+    "source.freshcal_fixture.stats.overrides": {
+      "columns": {},
+      "config": {
+        "enabled": true,
+        "event_time": null,
+        "freshness": {
+          "error_after": {
+            "count": null,
+            "period": null
+          },
+          "filter": null,
+          "warn_after": {
+            "count": null,
+            "period": null
+          }
+        },
+        "loaded_at_field": "loaded_at",
+        "loaded_at_query": null,
+        "meta": {
+          "freshcal": {
+            "grace": "3h",
+            "schedule": {
+              "business_day": -1,
+              "kind": "monthly_business_day",
+              "time": "17:00",
+              "timezone": "America/New_York"
+            }
+          }
+        },
+        "static_analysis": null,
+        "tags": []
+      },
+      "database": "fixture",
+      "description": "",
+      "doc_blocks": [],
+      "external": null,
+      "fqn": [
+        "freshcal_fixture",
+        "stats",
+        "overrides"
+      ],
+      "freshness": {
+        "error_after": {
+          "count": null,
+          "period": null
+        },
+        "filter": null,
+        "warn_after": {
+          "count": null,
+          "period": null
+        }
+      },
+      "identifier": "overrides",
+      "loaded_at_field": "loaded_at",
+      "loaded_at_query": null,
+      "loader": "",
+      "meta": {
+        "freshcal": {
+          "grace": "3h",
+          "schedule": {
+            "business_day": -1,
+            "kind": "monthly_business_day",
+            "time": "17:00",
+            "timezone": "America/New_York"
+          }
+        }
+      },
+      "name": "overrides",
+      "original_file_path": "models/sources.yml",
+      "package_name": "freshcal_fixture",
+      "patch_path": null,
+      "path": "models/sources.yml",
+      "quoting": {
+        "column": null,
+        "database": null,
+        "identifier": null,
+        "schema": null
+      },
+      "relation_name": "\"fixture\".\"raw_stats\".\"overrides\"",
+      "resource_type": "source",
+      "schema": "raw_stats",
+      "source_description": "",
+      "source_meta": {
+        "freshcal": {
+          "calendar": {
+            "holidays": [
+              {
+                "country": "DE",
+                "subdivision": "BY"
+              }
+            ]
+          },
+          "grace": "4h",
+          "schedule": {
+            "business_day": 3,
+            "kind": "monthly_business_day",
+            "time": "09:00",
+            "timezone": "Europe/Berlin"
+          }
+        }
+      },
+      "source_name": "stats",
+      "tags": [],
+      "unique_id": "source.freshcal_fixture.stats.overrides",
+      "unrendered_config": {
+        "loaded_at_field": "loaded_at",
+        "loaded_at_query": null,
+        "meta": {
+          "freshcal": {
+            "grace": "3h",
+            "schedule": {
+              "business_day": -1,
+              "kind": "monthly_business_day",
+              "time": "17:00",
+              "timezone": "America/New_York"
+            }
+          }
+        },
+        "tags": []
+      },
+      "unrendered_database": null,
+      "unrendered_schema": "raw_stats"
+    }
+  }
+}
