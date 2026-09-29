@@ -66,11 +66,46 @@ sources. They say nothing about a user's own pipelines.
 
 ## Section B — Arrival times against the ECB publication proxy
 
-Not yet run. `validation/ecb/collect.py` (T-0.5) has recorded one publication-time proxy
-row so far (rate date 2026-09-28, `Last-Modified` 2026-09-28T13:56:44Z, first seen
-2026-09-29T08:19:25Z), and the replay needs at least 20 collected business days before
-any statement is made (T-6.7). Until then the README makes no timing claim.
+`validation/ecb/collect.py` records two headers of the ECB's daily file whenever it runs:
+`Last-Modified` (the origin server's belief about when the representation was last
+modified — a *proxy* for publication time) and the `Date` of the first response that
+showed that pair (an upper bound on when the file was observably available). The replay
+below simulates two loaders from those proxy times, evaluates the ECB rule every 15
+minutes with FreshCal's own core, and compares each verdict with a proxy reference. It is
+reproduced verbatim from `uv run python validation/replay_ecb.py`; the committed data
+file — not this document — is the evidence.
 
-When it runs, this section will report agreement with the `Last-Modified` publication
-proxy, list every disagreement with its explanation, and state that the results measure
-agreement with a proxy rather than arrival accuracy.
+### Agreement with the `Last-Modified` publication proxy
+
+Produced by `uv run python validation/replay_ecb.py` on 2026-09-29.
+
+These results measure agreement with the Last-Modified publication proxy, not arrival accuracy.
+
+- Collected business days: **1** (rate dates in the file: 1, span 2026-09-28 … 2026-09-28).
+- Same-day revisions: none collected.
+- Publication-proxy local times (Europe/Berlin): 15:56 (x1).
+- `first_seen - last_modified` gap: min 1103 min, max 1103 min (1 observations).
+
+**Insufficient data (1 business days).** Fewer than 20 collected business days cannot support any statement about arrival-time agreement, so the README makes no timing claim. The matrices below are printed for completeness only.
+
+| Model                                          | Agree: overdue | False alarms | Missed catch-up | Agree: nothing due |
+|------------------------------------------------|----------------|--------------|-----------------|--------------------|
+| FreshCal, immediate loader                     | 0              | 24           | 0               | 9                  |
+| FreshCal, hourly loader (first HH:05)          | 0              | 0            | 0               | 32                 |
+| dbt-style fixed threshold (`error_after: 26h`) | 0              | 0            | 0               | 97                 |
+
+*Agree: overdue* = both the model and the proxy reference report a missing release; *false alarms* = the model alerts while the proxy says the data was published; *missed catch-up* = the proxy says the data is late while the model stays quiet.
+
+**Every disagreement, with its explanation:**
+
+- FreshCal, immediate loader: 24 false alarm(s) — the file for 2026-09-28 was observably available before the configured release time (proxy 15:56 CEST vs release 16:00 CEST), so an immediate loader's timestamp predates the release and the release looks missing (BLUEPRINT.md §3.6). Sampled instants: 2026-09-28 18:15 CEST, 2026-09-28 18:30 CEST, 2026-09-28 18:45 CEST, 2026-09-28 19:00 CEST, 2026-09-28 19:15 CEST, 2026-09-28 19:30 CEST, 2026-09-28 19:45 CEST, 2026-09-28 20:00 CEST, 2026-09-28 20:15 CEST, 2026-09-28 20:30 CEST, 2026-09-28 20:45 CEST, 2026-09-28 21:00 CEST, 2026-09-28 21:15 CEST, 2026-09-28 21:30 CEST, 2026-09-28 21:45 CEST, 2026-09-28 22:00 CEST, 2026-09-28 22:15 CEST, 2026-09-28 22:30 CEST, 2026-09-28 22:45 CEST, 2026-09-28 23:00 CEST, 2026-09-28 23:15 CEST, 2026-09-28 23:30 CEST, 2026-09-28 23:45 CEST, 2026-09-29 00:00 CEST.
+
+### Why the example config still uses 16:00
+
+The one collected proxy time (15:56 CEST) is earlier than the example's configured 16:00
+release time, which is exactly the early-publication effect the replay reports above. With
+a single observation there is no distribution to derive a time from, so
+`examples/ecb/freshcal.yml` keeps the illustrative 16:00 and this document records the
+observation instead. T-6.7's criterion is conditional on the collected data: once at least
+20 business days exist, the example's time is set from the observed proxy distribution and
+the README gains a timing statement.

@@ -217,9 +217,11 @@ FreshCal's calendar model is checked against real publication histories: the ECB
 reference rates for every publication day from 1999-01-04 to 2026-09-28 (7,102 dates) with
 the `financial: XECB` calendar match exactly, and the US Treasury daily par yield curve for
 2023–2025 (749 dates) matches exactly once two Good Fridays are added as non-working days
-and Veterans Day 2023-11-10 as a working day. Arrival-time validation against the ECB
-`Last-Modified` publication proxy has not been run yet. Details, including the
-disagreements that library calendars produce, are in [docs/validation.md](docs/validation.md).
+and Veterans Day 2023-11-10 as a working day. Arrival-time validation has not been done: the
+ECB publication-time proxy has too few collected business days (1 of the 20 needed), so no
+statement about arrival times is made. Details, including the disagreements that library
+calendars produce and the replay's "insufficient data" report, are in
+[docs/validation.md](docs/validation.md).
 
 Public sources say nothing about your own pipelines: run FreshCal in **shadow mode** next
 to your existing checks until you have seen it agree with reality for a few weeks.
