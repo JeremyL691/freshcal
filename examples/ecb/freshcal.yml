@@ -1,0 +1,19 @@
+version: 1
+
+# The 30-second quickstart: a DuckDB in-memory database that reads a CSV file sitting
+# next to this config. fx_rates.csv is synthetic sample data, not the ECB's real rates.
+connection:
+  type: duckdb
+  path: ":memory:"
+
+sources:
+  - name: ecb.fx_rates
+    relation: "read_csv('fx_rates.csv')"
+    loaded_at_field: _loaded_at
+    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    calendar:
+      weekend: [sat, sun]
+      holidays:
+        - financial: XECB          # TARGET closing days
+    grace: 2h
+    observed_timezone: UTC         # the sample column stores naive UTC timestamps
