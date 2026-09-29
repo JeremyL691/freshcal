@@ -81,6 +81,10 @@ select = ["E", "W", "F", "I", "B", "UP", "SIM", "C4", "RUF", "TID", "PT", "N"]
 # The replay report records the date it was produced; it is a validation report, not
 # FreshCal's engine, so reading the wall clock for its header is intended.
 "validation/replay_ecb.py" = ["TID251"]
+# tests/oracle/oracle.py is the reviewer's independent reference implementation, ported by
+# T-7.1 and kept as close to the audit's `review/v0.1.0/A-semantics/oracle.py` as possible so
+# a reader can diff the two. Its W/A/B/U locals and long lines are part of that fidelity.
+"tests/oracle/oracle.py" = ["N803", "N806", "C408", "E501"]
 
 [tool.mypy]
 python_version = "3.11"
@@ -95,8 +99,11 @@ testpaths = ["tests"]
 # sys.path lets test modules import it as `tests.conftest` without adding
 # __init__.py files to the test tree.
 pythonpath = ["."]
-addopts = ["-ra", "--strict-markers", "--strict-config", "-m", "not postgres"]
-markers = ["postgres: PostgreSQL integration tests (need FRESHCAL_TEST_PG_DSN)"]
+addopts = ["-ra", "--strict-markers", "--strict-config", "-m", "not postgres and not oracle"]
+markers = [
+  "postgres: PostgreSQL integration tests (need FRESHCAL_TEST_PG_DSN)",
+  "oracle: large seeded oracle-differential campaign (rule P1; CI and every close-out)",
+]
 xfail_strict = true
 
 [tool.coverage.run]
