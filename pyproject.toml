@@ -54,3 +54,71 @@ dev = [
   "types-jsonschema>=4.26",
   "types-pytz>=2026.4",
 ]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+src = ["src", "tests"]
+# Markdown files contain normative code blocks quoted verbatim (BLUEPRINT.md §4.4
+# and §8.1 are drift-guarded by tests); ruff must never reformat them.
+extend-exclude = ["*.md"]
+
+[tool.ruff.lint]
+select = ["E", "W", "F", "I", "B", "UP", "SIM", "C4", "RUF", "TID", "PT", "N"]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"datetime.datetime.now".msg = "Inject a Clock (freshcal.core.ports.Clock); only adapters/clock.py reads the system clock."
+"datetime.datetime.utcnow".msg = "Inject a Clock; only adapters/clock.py reads the system clock."
+"datetime.datetime.today".msg = "Inject a Clock; only adapters/clock.py reads the system clock."
+"datetime.date.today".msg = "Inject a Clock; only adapters/clock.py reads the system clock."
+"time.time".msg = "Inject a Clock; only adapters/clock.py reads the system clock."
+"time.localtime".msg = "FreshCal never uses the machine time zone."
+
+[tool.ruff.lint.per-file-ignores]
+"src/freshcal/adapters/clock.py" = ["TID251"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+files = ["src"]
+
+[tool.pytest.ini_options]
+minversion = "9.0"
+testpaths = ["tests"]
+addopts = ["-ra", "--strict-markers", "--strict-config", "-m", "not postgres"]
+markers = ["postgres: PostgreSQL integration tests (need FRESHCAL_TEST_PG_DSN)"]
+xfail_strict = true
+
+[tool.coverage.run]
+source = ["freshcal"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+exclude_also = ["if TYPE_CHECKING:", "raise NotImplementedError", "@overload"]
+
+[tool.importlinter]
+root_package = "freshcal"
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "Core is pure"
+type = "forbidden"
+source_modules = ["freshcal.core"]
+forbidden_modules = ["freshcal.app", "freshcal.config", "freshcal.adapters", "freshcal.cli",
+                     "holidays", "duckdb", "psycopg", "yaml", "jsonschema", "pytz"]
+
+[[tool.importlinter.contracts]]
+name = "Application layer depends only on core"
+type = "forbidden"
+source_modules = ["freshcal.app"]
+forbidden_modules = ["freshcal.config", "freshcal.adapters", "freshcal.cli",
+                     "holidays", "duckdb", "psycopg", "yaml", "jsonschema"]
+
+[[tool.importlinter.contracts]]
+name = "Adapters do not depend on the application or CLI"
+type = "forbidden"
+source_modules = ["freshcal.config", "freshcal.adapters"]
+forbidden_modules = ["freshcal.app", "freshcal.cli"]
