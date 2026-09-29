@@ -21,10 +21,12 @@ Two properties are worth stating because the code is arranged around them:
 from __future__ import annotations
 
 from collections.abc import Iterator
+from dataclasses import replace
 from datetime import datetime, time, timedelta
 
 from freshcal.core.calendar import BusinessCalendar
 from freshcal.core.errors import CalendarError, ConfigError, Issue
+from freshcal.core.explain import explanation
 from freshcal.core.model import (
     EvaluationResult,
     Observation,
@@ -166,7 +168,7 @@ def _result(
                 rule.source_id,
             ),
         )
-    return EvaluationResult(
+    result = EvaluationResult(
         source_id=rule.source_id,
         origin=rule.origin,
         status=status,
@@ -179,9 +181,13 @@ def _result(
         missed_count=missed_count,
         missed_truncated=missed_truncated,
         pending_count=pending_count,
-        explanation="",  # filled by freshcal.core.explain (T-3.3)
+        explanation="",
         warnings=warnings,
         error=error,
+    )
+    return replace(
+        result,
+        explanation=explanation(result, loaded_at_field=rule.target.loaded_at_field),
     )
 
 
