@@ -335,3 +335,22 @@ def test_holiday_lookup_caches_by_year_per_ref() -> None:
     assert cal.non_business_reason(day) == "holiday: Labour Day (country DE)"
     assert cal.non_business_reason(date(2027, 5, 1)) == "weekend"
     assert ZoneInfo("UTC") is not None
+
+
+def test_c5_is_business_day_records_the_holiday_lookup() -> None:
+    """C5: the holiday branch of `is_business_day` is still a recorded lookup.
+
+    T-7.4's campaign killed the mutant that replaces `self.holiday_name(day) is None` with a
+    direct dictionary test, because the replacement silently stops recording the lookup.
+    W005's notice window no longer depends on that recording (A-11 declares it), so this
+    test pins the documented contract directly: the calendar records the latest date anyone
+    looked up, and a holiday answer is a lookup.
+    """
+    holiday = date(2026, 4, 3)
+    cal = calendar(
+        CalendarSpec(holiday_calendars=(XECB,)),
+        {("financial XECB", 2026): {holiday: "Good Friday"}},
+    )
+    assert cal.max_date_looked_up is None
+    assert cal.is_business_day(holiday) is False
+    assert cal.max_date_looked_up == holiday

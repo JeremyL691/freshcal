@@ -170,8 +170,11 @@ def test_p6_status_consistency(
         )
         later = lambda release: release >= reference  # noqa: E731
     else:
-        # An empty table without a floor has no releases to be later than.
-        assert result.status is Status.NO_DATA, result.status
+        # An empty table without a floor has no releases to be later than. TEST-07's
+        # "flakiness" was this assumption being too strong: a schedule that produces no
+        # release at all (every fire is skipped as a non-business day) is E209, which is a
+        # CONFIG_ERROR and not a verdict, so the property accepts both.
+        assert result.status in (Status.NO_DATA, Status.CONFIG_ERROR), result.status
         return
 
     if result.status is Status.ON_TIME:

@@ -9,6 +9,7 @@ venv/
 .eggs/
 
 # Test and tool caches
+.import_linter_cache/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/

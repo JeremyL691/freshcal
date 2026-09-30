@@ -20,7 +20,7 @@ FreshCal v0.1 is not published on PyPI. Install it from a clone:
 ```bash
 git clone <repository-url> && cd freshcal
 uv sync --extra duckdb --no-dev     # or --all-extras --no-dev for the PostgreSQL adapter too
-uv run freshcal --version  # freshcal 0.1.0
+uv run freshcal --version  # freshcal 0.1.1
 ```
 
 `freshcal` needs Python 3.11 or newer; `uv` fetches it if necessary. The `duckdb` extra
@@ -29,9 +29,9 @@ adds DuckDB support, the `postgres` extra adds PostgreSQL, and `--all-extras` ad
 without `uv run`, activate the environment (`source .venv/bin/activate`).
 
 Or build the wheel and install it into another environment: `uv build` inside the clone,
-then `uv pip install "dist/freshcal-0.1.0-py3-none-any.whl[duckdb]"` in that environment
-(the wheel brings its dependencies, not the development tools; verified for v0.1.0 —
-`freshcal --version` prints `freshcal 0.1.0` and the first quickstart command exits 0).
+then `uv pip install "dist/freshcal-0.1.1-py3-none-any.whl[duckdb]"` in that environment
+(the wheel brings its dependencies, not the development tools; verified for v0.1.1 —
+`freshcal --version` prints `freshcal 0.1.1` and the first quickstart command exits 0).
 
 ## 30-second quickstart
 
@@ -49,7 +49,7 @@ uv run freshcal check -c examples/ecb/freshcal.yml --now 2026-09-28T07:30:00+02:
 ```
 <!-- quickstart:output:1 -->
 ```text
-FreshCal 0.1.0 | evaluated at 2026-09-28T05:30:00Z | 1 source
+FreshCal 0.1.1 | evaluated at 2026-09-28T05:30:00Z | 1 source
 
 SOURCE        STATUS   RELEASE                    DEADLINE                   OBSERVED                   NEXT EXPECTED
 ecb.fx_rates  ON_TIME  Fri 2026-09-25 15:45 CEST  Fri 2026-09-25 18:00 CEST  Fri 2026-09-25 16:07 CEST  Mon 2026-09-28 15:45 CEST
@@ -67,7 +67,7 @@ uv run freshcal check -c examples/ecb/freshcal.yml --now 2026-09-28T17:00:00+02:
 ```
 <!-- quickstart:output:2 -->
 ```text
-FreshCal 0.1.0 | evaluated at 2026-09-28T15:00:00Z | 1 source
+FreshCal 0.1.1 | evaluated at 2026-09-28T15:00:00Z | 1 source
 
 SOURCE        STATUS   RELEASE                    DEADLINE                   OBSERVED                   NEXT EXPECTED
 ecb.fx_rates  NOT_DUE  Mon 2026-09-28 15:45 CEST  Mon 2026-09-28 18:00 CEST  Fri 2026-09-25 16:07 CEST  Tue 2026-09-29 15:45 CEST
@@ -85,7 +85,7 @@ uv run freshcal check -c examples/ecb/freshcal.yml --now 2026-09-28T18:30:00+02:
 ```
 <!-- quickstart:output:3 -->
 ```text
-FreshCal 0.1.0 | evaluated at 2026-09-28T16:30:00Z | 1 source
+FreshCal 0.1.1 | evaluated at 2026-09-28T16:30:00Z | 1 source
 
 SOURCE        STATUS   RELEASE                    DEADLINE                   OBSERVED                   NEXT EXPECTED
 ecb.fx_rates  OVERDUE  Mon 2026-09-28 15:45 CEST  Mon 2026-09-28 18:00 CEST  Fri 2026-09-25 16:07 CEST  Tue 2026-09-29 15:45 CEST

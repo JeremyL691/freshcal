@@ -165,8 +165,12 @@ MUTANTS: tuple[Mutant, ...] = (
     Mutant(
         "V10",
         V,
-        "    if consulted is not None and valid_until is not None:",
-        "    if False:",
+        # T-7.5 (A-11) moved the W005 condition into `calendar_notice`/`note_consult_horizon`.
+        # The guard in `calendar_notice` is redundant with "nothing was consulted"; the
+        # non-equivalent mutation is the horizon guard, which is what makes a plain cron
+        # (policy `none`) warn about `valid_until` it never consults.
+        "    if consulted is None or valid_until is None:\n        return None",
+        "    if valid_until is None:\n        return None",
         (*CORE_V, "tests/unit/test_app.py", "tests/cli"),
     ),
     Mutant(
@@ -347,6 +351,13 @@ MUTANTS: tuple[Mutant, ...] = (
         "        return self.holiday_name(day) is None",
         "        return day not in self._holidays_for(day.year)",
         (*CORE_C, "tests/unit/test_app.py", "tests/cli"),
+        equivalent_reason=(
+            "T-7.5 (A-11) records the lookup with `_note_lookup(day)` at the top of "
+            "`is_business_day`, before it branches on weekend/override/holiday, so "
+            "replacing the holiday branch's `holiday_name` call with a direct dictionary "
+            "test changes no observable state. The lookup contract is still pinned by "
+            "test_c5_is_business_day_records_the_holiday_lookup"
+        ),
     ),
     # --- observation.py: naive/aware normalisation and W003 skew
     Mutant(
@@ -373,8 +384,9 @@ MUTANTS: tuple[Mutant, ...] = (
     Mutant(
         "O4",
         OBS,
-        "        if observed_timezone is not None:\n            warnings.append(",
-        "        if False:\n            warnings.append(",
+        # T-7.7 re-indented this branch; the mutation is unchanged (drop the W002 warning).
+        "            if observed_timezone is not None:\n                warnings.append(",
+        "            if False:\n                warnings.append(",
         CORE_O,
     ),
     # --- app.py: exit-code precedence, merge, warnings

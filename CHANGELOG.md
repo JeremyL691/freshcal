@@ -7,6 +7,16 @@ While the version is `0.y.z`, breaking changes bump `y`.
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-29
+
+Audit remediation: the v0.1.0 release could report a missed release as `ON_TIME`, leaked a
+DSN password into error output, and made two security promises it did not keep. Every
+finding of the independent audit (`review/v0.1.0/`, recorded as Blueprint Amendment A-7) is
+closed; `review/v0.1.0/check_fixes.py` reports 34 PASS, 0 FAIL, 0 SKIP.
+
+**Do not use 0.1.0.** It can report a missing release as `ON_TIME` in two realistic cases
+and its PostgreSQL read-only guarantees were false (see "Known issues in 0.1.0" below).
+
 ### Fixed
 
 - Release searches: a `preceding` roll that moves a release by more than two days
@@ -86,9 +96,28 @@ deadline has passed still missing, judged by load timestamps?
   time zones, performance budgets, and a CI workflow (lint, tests on Python 3.11-3.14,
   PostgreSQL integration job, build).
 
+### Known issues in 0.1.0
+
+These are the reasons not to use 0.1.0; all of them are fixed in 0.1.1.
+
+- **False `ON_TIME`.** A `preceding` roll that moved a release by more than two days
+  (Easter, Monday holidays) and a cron time inside a DST gap could be skipped, so a missing
+  release was reported as `ON_TIME` (SEM-01, SEM-02).
+- **DSN leak.** A malformed `dsn_env` value was echoed into `E501`, including the password,
+  in the table, the JSON report and `explain` (CFG-01).
+- **Read-only escape.** The PostgreSQL reader executed the user's query through the simple
+  protocol, so a `; COMMIT; …` fragment could write and `SET LOCAL statement_timeout = 0`
+  could lift the timeout (CFG-02).
+- **`infinity` aborted a whole run.** One DuckDB or PostgreSQL `±infinity` timestamp raised
+  `OverflowError` and destroyed the report for every source (E2E-02).
+- **Unbacked claims.** `SECURITY.md` and `docs/configuration.md` promised read-only and
+  timeout guarantees the code did not provide, and the README claimed Linux testing that had
+  never run (CLI-02).
+
 ### Notes
 
-- Not published to PyPI: install from a clone (`uv sync --extra duckdb`).
+- Not published to PyPI: install from a clone (`uv sync --extra duckdb`) or from the built
+  wheel (`dist/freshcal-0.1.1-py3-none-any.whl`).
 - Windows is not tested in v0.1. Arrival is inferred from load timestamps, so a reload of
   old rows can hide a missing release; grace is wall-clock time. See the README's
   limitations and the roadmap in `BLUEPRINT.md` §15.

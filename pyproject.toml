@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "freshcal"
-version = "0.1.0"
+version = "0.1.1"
 description = "Business-calendar-aware data freshness checks: schedules, holidays, grace windows, verdicts."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -39,6 +39,22 @@ postgres = ["psycopg[binary]>=3.3.6,<4"]
 
 [project.scripts]
 freshcal = "freshcal.cli:main"
+
+# The sdist ships the package, the schema, the docs, the examples and the validation data —
+# not the development-only material (agent instructions, the blueprint and this plan, the
+# progress log, the audit evidence, tool caches). CLI-12: 0.1.0's sdist carried all of them.
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/AGENTS.md",
+  "/CLAUDE.md",
+  "/PROGRESS.md",
+  "/BLUEPRINT.md",
+  "/IMPROVEMENT_PLAN.md",
+  "/review",
+  "/.import_linter_cache",
+  "/dist",
+  "/docs/milestones",
+]
 
 [dependency-groups]
 dev = [

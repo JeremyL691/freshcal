@@ -593,3 +593,31 @@ def test_v9_step_two_is_bounded_by_the_start_horizon() -> None:
     assert result.error.code == "E215"
     assert result.release is None
     assert result.next_expected_arrival is None
+
+
+def test_v10_a_plain_cron_never_earns_w005() -> None:
+    """V10: W005 requires the rule to consult its calendar at all (§3.3 as amended by A-11).
+
+    A cron expression with `on_non_business_day: none` never asks the calendar anything, so
+    it must not warn about `valid_until` even when the notice window reaches past it.
+    """
+    base = ecb_rule(schedule=CronSchedule("0 6 * * *", UTC_ZONE, NonBusinessDayPolicy.NONE))
+    rule = SourceRule(
+        source_id=base.source_id,
+        origin=base.origin,
+        schedule=base.schedule,
+        calendar=CalendarSpec(valid_until=date(2026, 10, 1)),
+        grace=base.grace,
+        target=base.target,
+        observed_timezone=base.observed_timezone,
+        active_from=base.active_from,
+    )
+    # An aware observed value (so no W002 for the configured zone) and a `now` inside the
+    # window: the only warning that could appear is the W005 this rule must not earn.
+    result = evaluate(
+        rule,
+        RawObservation(datetime(2026, 9, 28, 5, 0, tzinfo=UTC)),
+        datetime(2026, 9, 28, 6, 0, tzinfo=UTC),
+        FakeCalendarProvider(),
+    )
+    assert "W005" not in [issue.code for issue in result.warnings]
