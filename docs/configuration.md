@@ -22,7 +22,10 @@ to BLUEPRINT.md §4.
   are still evaluated and the run still exits 2.
 - **Secrets never belong in a config file.** The only thing you may write is the *name* of
   an environment variable holding a DSN (`connection.dsn_env`). Fields such as `dsn`,
-  `password`, `url`, `uri`, `conninfo`, and `user` are rejected with `E105`.
+  `password`, `url`, `uri`, `conninfo`, and `user` are rejected with `E105`. The DSN is
+  parsed before connecting; a malformed DSN reports a fixed `E501` message naming the
+  variable, and FreshCal replaces the DSN, the password and its percent-encoded forms in
+  every driver message that reaches `E501`/`E502`.
 
 ## Top level
 
@@ -45,10 +48,16 @@ to BLUEPRINT.md §4.
 | `statement_timeout_seconds` | PostgreSQL | 1–3600, default 30. |
 
 FreshCal never writes to the warehouse: DuckDB opens the file read-only, and PostgreSQL
-runs every read inside a read-only transaction that is always rolled back. Both adapters
-set the session time zone to UTC. `relation`, `loaded_at_field`, and `filter` are SQL
-fragments inserted verbatim — treat config files as code (see
-[../SECURITY.md](../SECURITY.md)).
+runs every read inside a read-only transaction. For PostgreSQL the connection is opened
+with `default_transaction_read_only=on` (the whole session, not only one transaction) and
+the freshness query is sent as a single prepared statement, so a `relation` or `filter`
+that contains `;` (for example `t; COMMIT; CREATE TABLE x(a int)`) is rejected by the
+server before anything runs — a fragment cannot lift the `statement_timeout` either
+(`; SET LOCAL statement_timeout = 0; …` is several statements). A lost connection becomes
+a per-source `E502` for that and every later read, never a crash. Both adapters set the
+session time zone to UTC. `relation`, `loaded_at_field`, and `filter` are SQL fragments
+inserted verbatim — treat config files as code and give the FreshCal connection a
+`SELECT`-only PostgreSQL role (see [../SECURITY.md](../SECURITY.md) and the README).
 
 ## Source
 

@@ -127,6 +127,17 @@ sources:
 Field reference, defaults, the issue catalog, and the secrets policy are in
 [docs/configuration.md](docs/configuration.md).
 
+### PostgreSQL: use a SELECT-only role
+
+Give the FreshCal connection a PostgreSQL role with only `SELECT` on the tables you
+check. FreshCal opens the connection with `default_transaction_read_only=on`, executes
+the freshness query as a single prepared statement (the server rejects a fragment that
+smuggles a second statement), and bounds every read with `statement_timeout` (default
+30 s) — but the read-only session is a second line of defense, not a substitute for a
+least-privilege role. Keep the DSN in an environment variable and configure only its name
+(`connection: {type: postgres, dsn_env: PGDSN}`); FreshCal never stores the DSN, and it
+replaces the DSN and its password in every connection or query error it reports.
+
 ## dbt
 
 Add a rule to a source table and point FreshCal at the manifest dbt writes:

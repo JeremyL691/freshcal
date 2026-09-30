@@ -6,15 +6,19 @@ test run deselects it (BLUEPRINT.md §9.1).
 
 from __future__ import annotations
 
+import json
 import os
+import time
 from collections.abc import Sequence
 from datetime import UTC, datetime
+from pathlib import Path
 from urllib.parse import quote
 from uuid import uuid4
 
 import pytest
 from tests.integration.reader_contract import CONTRACT_CHECKS
 
+from freshcal import cli
 from freshcal.adapters.postgres_reader import PostgresReader
 from freshcal.core.errors import QueryError
 from freshcal.core.model import FreshnessTarget
@@ -207,3 +211,82 @@ def test_reader_can_be_reused_for_several_reads(harness: PostgresHarness) -> Non
         assert reader.read_latest(first).value == datetime(2026, 9, 20, 6, 0)
     finally:
         reader.close()
+
+
+def _admin(dsn: str, sql: str) -> object:
+    """Run one statement on a fresh autocommit connection (test-side only)."""
+    import psycopg
+
+    with psycopg.connect(dsn, autocommit=True) as connection:
+        cursor = connection.execute(sql)
+        return cursor.fetchall() if cursor.description else None
+
+
+def test_i_pg_09_multi_statement_fragment_is_rejected(
+    harness: PostgresHarness, pg_dsn: str, pg_schema: str
+) -> None:
+    """CFG-02: `; COMMIT; CREATE TABLE …` is rejected and the table is never created."""
+    target = harness.make_target("TIMESTAMP", ["TIMESTAMP '2026-09-25 14:07:00'"])
+    relation = (
+        f'{target.relation}; COMMIT; CREATE TABLE "{pg_schema}".pwn_09(a int); SELECT now() AS x'
+    )
+    reader = harness.reader()
+    try:
+        with pytest.raises(QueryError) as excinfo:
+            reader.read_latest(FreshnessTarget(relation=relation, loaded_at_field="loaded_at"))
+        assert excinfo.value.issue.code == "E502"
+    finally:
+        reader.close()
+    assert _admin(pg_dsn, f"SELECT to_regclass('\"{pg_schema}\".pwn_09')") == [(None,)]
+
+
+def test_i_pg_10_the_timeout_cannot_be_lifted(harness: PostgresHarness) -> None:
+    """CFG-02: `; SET LOCAL statement_timeout = 0; SELECT pg_sleep(3)` fails fast."""
+    target = FreshnessTarget(
+        relation="(SELECT now() AS x) q; SET LOCAL statement_timeout = 0; SELECT pg_sleep(3)",
+        loaded_at_field="x",
+    )
+    reader = PostgresReader(dsn_env="FRESHCAL_TEST_PG_DSN", statement_timeout_seconds=1)
+    started = time.perf_counter()
+    try:
+        with pytest.raises(QueryError) as excinfo:
+            reader.read_latest(target)
+    finally:
+        reader.close()
+    elapsed = time.perf_counter() - started
+    assert excinfo.value.issue.code == "E502"
+    assert elapsed < 2.0, f"the fragment was executed (took {elapsed:.1f}s)"
+
+
+def test_i_pg_11_a_lost_connection_is_e502_not_e599(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """CFG-03: one source kills its backend; the run still prints a report and exits 3.
+
+    The reader is marked broken and does not silently retry, so the healthy source after
+    the dead one is a per-source ``E502`` too — never an ``E599`` for the whole run.
+    """
+    config = tmp_path / "lost.yml"
+    config.write_text(
+        "version: 1\n"
+        "connection: {type: postgres, dsn_env: FRESHCAL_TEST_PG_DSN, "
+        "statement_timeout_seconds: 5}\n"
+        "defaults: {grace: 1h, timezone: UTC}\n"
+        "sources:\n"
+        '  - {name: a.kill, relation: "(SELECT now() AS x, '
+        'pg_terminate_backend(pg_backend_pid()) AS k) q", loaded_at_field: x, '
+        'schedule: {kind: business_days, time: "16:00"}}\n'
+        '  - {name: b.ok, relation: "(SELECT now() AS x) q", loaded_at_field: x, '
+        'schedule: {kind: business_days, time: "16:00"}}\n'
+    )
+    code = cli.main(
+        ["check", "--format", "json", "-c", str(config), "--now", "2026-09-28T00:00:00Z"]
+    )
+    captured = capsys.readouterr()
+
+    assert code == 3
+    assert "E599" not in captured.err
+    assert captured.err == ""
+    report = json.loads(captured.out)
+    statuses = {result["source_id"]: result["status"] for result in report["results"]}
+    assert statuses == {"a.kill": "QUERY_ERROR", "b.ok": "QUERY_ERROR"}
