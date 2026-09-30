@@ -22,7 +22,7 @@ output that is only human-readable cannot be asserted in tests.
 v0.1 has exactly two renderers over the same `CheckReport`: a plain-text table on
 stdout (no colour, no box drawing, `-` for missing values) and a JSON document with
 `schema_version: "1.0"`, 2-space indentation, sorted results, and its own committed
-JSON Schema (BLUEPRINT.md §1.5 F8, §8.1–§8.4). Additive changes bump the minor
+JSON Schema (§8.1–§8.4). Additive changes bump the minor
 version; removing or renaming a field or changing status semantics bumps the major
 version and requires a new ADR. The explanation sentence is part of the contract and
 is normative, so the human and the automated view can never disagree about what a

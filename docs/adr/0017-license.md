@@ -2,8 +2,7 @@
 
 ## Status
 
-Accepted. Chosen by applying the default of owner decision 3 (BLUEPRINT.md §14.4); the
-owner may still change it before v0.1.0, which is cheap while no release exists.
+Accepted.
 
 ## Date
 
@@ -14,7 +13,7 @@ owner may still change it before v0.1.0, which is cheap while no release exists.
 FreshCal is meant to be adopted inside company data stacks, and it links no
 GPL-family code at runtime beyond one optional dependency. The owner did not answer
 decision 3 ("License") before T-0.1 started, so the documented default applies:
-Apache-2.0 (BLUEPRINT.md §14.4, §10.7). The main alternative in this space is MIT,
+Apache-2.0. The main alternative in this space is MIT,
 which is shorter and equally permissive but silent on patents and on contribution
 terms.
 

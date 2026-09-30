@@ -14,7 +14,7 @@ What forces are at play: the problem, the constraints (technical, operational, c
 
 ## Decision
 
-The decision in the active voice: "We will ...". Include the boundaries — what this decision does *not* cover — and the rule an implementer must follow. Cite the blueprint section it records (`BLUEPRINT.md §n`).
+The decision in the active voice: "We will ...". Include the boundaries — what this decision does *not* cover — and the rule an implementer must follow. Link the documentation section it affects (for example `docs/semantics.md`).
 
 ## Consequences
 

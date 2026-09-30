@@ -1,4 +1,4 @@
-"""Report examples from BLUEPRINT.md §6.2, §8.2 and §8.3, built from domain objects.
+"""The specified report examples (``tests/fixtures/spec/``), built from domain objects.
 
 The reporters' tests share these builders so that the check example is defined once and
 both renderers are compared against the same input.

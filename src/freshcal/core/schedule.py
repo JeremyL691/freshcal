@@ -1,4 +1,4 @@
-"""Release generation and release searches (BLUEPRINT.md §3.4, as amended by A-9).
+"""Release generation and release searches.
 
 A *nominal release* is a naive local wall-clock time produced by the schedule before
 non-business-day adjustment and DST resolution. Turning a nominal release into a
@@ -38,8 +38,8 @@ The searches are then exact by construction:
 The fast path in :func:`_earliest_release` is what keeps dense schedules affordable: the
 first qualifying nominal is the answer whenever it is not itself a gap release (an
 inversion needs the *earlier* nominal to be inside a gap) and the schedule has no rolling
-policy (a roll can also reorder two nominals that fall on the same business day). Rule P1
-of BLUEPRINT §13 makes ``tests/oracle/`` the proof obligation for all of this.
+policy (a roll can also reorder two nominals that fall on the same business day). The
+independent oracle in ``tests/oracle/`` is the proof obligation for all of this.
 """
 
 from __future__ import annotations

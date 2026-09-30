@@ -2,7 +2,7 @@
 
 This document explains what FreshCal computes and why, in the terms it uses everywhere
 else: the JSON report, the terminal output, `freshcal explain`, and the golden tests. It
-is the user-facing companion to BLUEPRINT.md §3, which is normative.
+is the user-facing description of the semantics that the golden tests pin down.
 
 ## The question FreshCal answers
 
@@ -179,7 +179,7 @@ comparisons that produced the status.
   or after `R`. On 2026-09-28 the ECB's daily file was observably available at 15:56:44
   CEST (the `Last-Modified` proxy, not proof of publication; `docs/validation.md` section
   B). Declare the earliest time your loader can see the data and widen the grace window if
-  needed (BLUEPRINT.md §3.6).
+  needed.
 - **Wall-clock grace.** A Friday 22:00 release with 6 h grace is due Saturday 04:00.
   Business-time grace is a roadmap item.
 - **One obligation per instant.** Releases that roll onto the same instant count once.
@@ -197,5 +197,5 @@ without changing your data. Per-period checks ("did the data *for* 2026-09-28 ar
 need a second rule dimension mapping each release to an expected business period, each
 mapping with its own calendar edge cases, and a different query shape. Shipping both would
 double the semantic surface before the schedule engine is proven, so period-column
-freshness and punctuality audits are the first two roadmap items in
-[../BLUEPRINT.md](../BLUEPRINT.md) §15.
+freshness and punctuality audits are the first two roadmap items (see the README's
+Roadmap).

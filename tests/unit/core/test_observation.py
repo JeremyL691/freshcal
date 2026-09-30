@@ -1,4 +1,4 @@
-"""Tests for observed-timestamp normalization (BLUEPRINT.md §3.7.1)."""
+"""Tests for observed-timestamp normalization."""
 
 from __future__ import annotations
 

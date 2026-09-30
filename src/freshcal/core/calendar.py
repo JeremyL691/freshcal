@@ -8,7 +8,7 @@ sets is a configuration error caught at load time (E403).
 The calendar also records the latest date anyone looked up: every predicate and reason
 answer counts, including weekend and override decisions that never reach the provider,
 and an evaluation additionally declares its 34-day notice window with
-``BusinessCalendar.note_horizon`` (BLUEPRINT §3.3 as amended by A-11). Rule §3.3 uses the
+``BusinessCalendar.note_horizon``. The business-day rules use the
 record for ``valid_until``: evaluating after it fails with ``E408`` (``CONFIG_ERROR``),
 while merely consulting later dates (for the next expected arrival) is ``W005``.
 """
@@ -88,7 +88,7 @@ class BusinessCalendar:
 
         Every answer is recorded as a lookup: a weekend or override decision never asks
         the provider, but it is a business-day decision all the same, and W005 must see
-        it (BLUEPRINT §3.3 as amended by A-11).
+        it.
         """
         self._note_lookup(day)
         if day in self._spec.extra_working_days:
@@ -135,9 +135,8 @@ class BusinessCalendar:
         """Record that business-day decisions up to ``local_date`` are in scope.
 
         ``W005`` must not depend on how far a particular search happens to look, so the
-        evaluation states its notice window explicitly (BLUEPRINT §3.3 as amended by
-        A-11): the dates a rule's horizon reaches are "consulted" even when the exact
-        search never asks about them.
+        evaluation states its notice window explicitly: the dates a rule's horizon reaches
+        are "consulted" even when the exact search never asks about them.
         """
         self._note_lookup(local_date)
 

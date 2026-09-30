@@ -1,7 +1,7 @@
 # Validation inputs
 
-Golden tests prove that the code matches `BLUEPRINT.md`; the data here lets the tests
-prove that the *calendar model* matches the world (BLUEPRINT.md §9.10 A). Only dates are
+Golden tests prove that the code matches the specified semantics; the data here lets the tests
+prove that the *calendar model* matches the world. Only dates are
 stored — never rates, prices, or any other published value.
 
 ## `ecb/publication_dates.csv`

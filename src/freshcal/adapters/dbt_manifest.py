@@ -1,4 +1,4 @@
-"""dbt manifest catalog (BLUEPRINT.md §4.8, §7.7).
+"""dbt manifest catalog.
 
 FreshCal never parses ``sources.yml`` and never renders Jinja: it reads the manifest dbt
 already wrote, which is the resolved, canonical form of the project. Three claims are
@@ -40,8 +40,7 @@ class DbtManifestCatalog(SourceCatalog):
 
     ``config_dir`` is the directory of the FreshCal config file that declares
     ``dbt.manifest``; relative override paths inside ``meta.freshcal`` resolve against
-    it, exactly like every other relative path in a config file (BLUEPRINT §4.1, §4.8,
-    Amendment A-13).
+    it, exactly like every other relative path in a config file.
     """
 
     def __init__(

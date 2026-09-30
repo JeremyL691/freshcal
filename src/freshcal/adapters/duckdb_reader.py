@@ -1,4 +1,4 @@
-"""DuckDB freshness reader (BLUEPRINT.md §7.1).
+"""DuckDB freshness reader.
 
 Two DuckDB behaviours shape this adapter, both verified with duckdb 1.5.6:
 

@@ -10,9 +10,8 @@ Accepted.
 
 ## Context
 
-FreshCal is built autonomously from a blueprint, without a human review gate at each
-step (BLUEPRINT.md §13). Decisions that shape the product — semantics, dependencies,
-tooling, release policy — must be explainable to the owner afterwards, and the
+FreshCal is developed from a written design specification. Decisions that shape the product — semantics, dependencies,
+tooling, release policy — must be explainable to maintainers and users afterwards, and the
 reasoning must survive the context of the session that made it. Without a written
 record, a later change cannot be judged as a change at all.
 
@@ -20,9 +19,8 @@ record, a later change cannot be judged as a change at all.
 
 We will record every architecturally significant decision as a MADR-style record in
 `docs/adr/`, numbered sequentially, with the sections `Status`, `Date`, `Context`,
-`Decision`, `Consequences`, and `Alternatives considered`. Each record cites the
-BLUEPRINT.md section it implements. The fixed decisions of BLUEPRINT.md §1.5 and the
-semantic decisions of §3 each get a record (0002–0019). Changing a decision means
+`Decision`, `Consequences`, and `Alternatives considered`. The fixed product decisions and
+the semantic decisions each get a record (0002–0018). Changing a decision means
 adding a new record that supersedes the old one, not editing history: the superseded
 record keeps its text and its status becomes `Superseded by NNNN`.
 
@@ -40,7 +38,7 @@ section) make the discipline checkable.
 - **Comments in the code.** Rejected: decisions such as the license or the choice of
   a manifest version have no natural code location, and code comments are invisible
   to someone deciding whether to adopt the project.
-- **Only the blueprint.** Rejected: the blueprint is normative and versioned as a
+- **Only the design specification.** Rejected: the specification is versioned as a
   whole; a dated record with alternatives is what makes a later reversal cheap.
 - **A wiki or issue tracker.** Rejected: the repository must be self-contained
-  (BLUEPRINT.md §10.6 — installation is from a clone).
+  (installation works from a clone).

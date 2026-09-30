@@ -5,7 +5,7 @@ body:
   - type: markdown
     attributes:
       value: |
-        FreshCal v0.1 is deliberately small; the roadmap (BLUEPRINT.md §15)
+        FreshCal v0.1 is deliberately small; the README's Roadmap section
         lists what is already planned. A concrete schedule that FreshCal
         cannot express today is the most useful form of request.
   - type: textarea

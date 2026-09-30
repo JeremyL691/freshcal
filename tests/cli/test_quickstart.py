@@ -1,4 +1,4 @@
-"""The README quickstart is executable (BLUEPRINT.md §11.1, §6.2).
+"""The README quickstart is executable.
 
 Every command and every line of expected output in the quickstart is taken from
 ``README.md`` between its markers, run through ``cli.main``, and compared byte for byte,

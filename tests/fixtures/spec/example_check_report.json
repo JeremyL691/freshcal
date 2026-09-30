@@ -1,0 +1,108 @@
+{
+  "schema_version": "1.0",
+  "kind": "check",
+  "freshcal_version": "0.1.0",
+  "evaluated_at": "2026-09-28T05:30:00Z",
+  "exit_code": 1,
+  "summary": {
+    "total": 3,
+    "ON_TIME": 2,
+    "NOT_DUE": 0,
+    "OVERDUE": 1,
+    "NO_DATA": 0,
+    "CONFIG_ERROR": 0,
+    "QUERY_ERROR": 0
+  },
+  "results": [
+    {
+      "source_id": "ecb.fx_rates",
+      "origin": "config",
+      "status": "ON_TIME",
+      "is_verdict": true,
+      "schedule_timezone": "Europe/Berlin",
+      "release": {
+        "instant": "2026-09-25T14:00:00Z",
+        "local": "2026-09-25T16:00:00+02:00",
+        "adjusted_from": null,
+        "dst": "normal",
+        "clamped": false
+      },
+      "deadline": "2026-09-25T16:00:00Z",
+      "observed": {
+        "instant": "2026-09-25T14:07:00Z",
+        "raw": "2026-09-25T14:07:00",
+        "was_naive": true,
+        "interpreted_timezone": "UTC"
+      },
+      "next_expected_arrival": "2026-09-28T14:00:00Z",
+      "missed_count": 0,
+      "missed_truncated": false,
+      "pending_count": 0,
+      "explanation": "On time: latest release Fri 2026-09-25 16:00 CEST arrived (observed Fri 2026-09-25 16:07 CEST); next release Mon 2026-09-28 16:00 CEST.",
+      "warnings": [],
+      "error": null
+    },
+    {
+      "source_id": "stats.monthly_report",
+      "origin": "dbt_manifest",
+      "status": "ON_TIME",
+      "is_verdict": true,
+      "schedule_timezone": "Europe/Berlin",
+      "release": {
+        "instant": "2026-09-03T07:00:00Z",
+        "local": "2026-09-03T09:00:00+02:00",
+        "adjusted_from": null,
+        "dst": "normal",
+        "clamped": false
+      },
+      "deadline": "2026-09-03T11:00:00Z",
+      "observed": {
+        "instant": "2026-09-03T07:10:00Z",
+        "raw": "2026-09-03T07:10:00+00:00",
+        "was_naive": false,
+        "interpreted_timezone": null
+      },
+      "next_expected_arrival": "2026-10-05T07:00:00Z",
+      "missed_count": 0,
+      "missed_truncated": false,
+      "pending_count": 0,
+      "explanation": "On time: latest release Thu 2026-09-03 09:00 CEST arrived (observed Thu 2026-09-03 09:10 CEST); next release Mon 2026-10-05 09:00 CEST.",
+      "warnings": [],
+      "error": null
+    },
+    {
+      "source_id": "vendor.daily_prices",
+      "origin": "config",
+      "status": "OVERDUE",
+      "is_verdict": true,
+      "schedule_timezone": "UTC",
+      "release": {
+        "instant": "2026-09-27T06:00:00Z",
+        "local": "2026-09-27T06:00:00+00:00",
+        "adjusted_from": null,
+        "dst": "normal",
+        "clamped": false
+      },
+      "deadline": "2026-09-27T07:00:00Z",
+      "observed": {
+        "instant": "2026-09-26T06:03:00Z",
+        "raw": "2026-09-26T06:03:00+00:00",
+        "was_naive": false,
+        "interpreted_timezone": null
+      },
+      "next_expected_arrival": "2026-09-28T06:00:00Z",
+      "missed_count": 1,
+      "missed_truncated": false,
+      "pending_count": 0,
+      "explanation": "Overdue: release Sun 2026-09-27 06:00 UTC missed its deadline Sun 2026-09-27 07:00 UTC; 1 release missed; latest data observed Sat 2026-09-26 06:03 UTC.",
+      "warnings": [
+        {
+          "code": "W002",
+          "message": "observed_timezone 'UTC' ignored because the value is timezone-aware",
+          "location": "vendor.daily_prices"
+        }
+      ],
+      "error": null
+    }
+  ]
+}

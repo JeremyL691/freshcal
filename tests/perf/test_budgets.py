@@ -1,4 +1,4 @@
-"""Performance and resource budgets (BLUEPRINT.md §9.9).
+"""Performance and resource budgets.
 
 Wall time is measured with ``time.perf_counter()``, which is allowed: only *reading the
 wall clock for decisions* is banned (the clock rule of ADR 0010). The budgets are
@@ -183,7 +183,7 @@ def test_pb_5_property_suite_under_the_ci_profile() -> None:
     assert elapsed < 420.0, f"PB-5 took {elapsed:.1f}s (budget 420s)"
 
 
-#: The schedule mix of `review/v0.1.0/E-blackbox/perf/small200.yml`, in file order.
+#: The schedule mix of the external black-box review's 200-source perf config, in file order.
 MIXED_SCHEDULES = (
     'schedule: {kind: business_days, time: "16:00"}',
     'schedule: {kind: cron, cron: "*/15 * * * *"}',
@@ -212,7 +212,7 @@ def mixed_config(count: int) -> str:
 def test_pb_6_run_validate_for_500_mixed_sources() -> None:
     """PB-6: `validate` for 500 sources of mixed kinds stays under ten seconds.
 
-    Built from the schedule mix of `review/v0.1.0/E-blackbox/perf/small200.yml` (finding
+    Built from the schedule mix of the black-box review's perf config (finding
     E2E-04 measured `validate` at 36 s for 5 000 such sources). `validate` opens no
     connection, so no database is involved; the run uses the real loader and the fake
     calendar provider, which is what the budget is about.

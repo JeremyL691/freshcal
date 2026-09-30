@@ -20,7 +20,7 @@ that complicates the whole verdict algorithm.
 
 ## Decision
 
-Grace is wall-clock elapsed time (BLUEPRINT.md §3.5, §3.8.8): a `timedelta` in
+Grace is wall-clock elapsed time: a `timedelta` in
 `[0, 366 days]`, added to the release instant in UTC, so a deadline that crosses a DST
 change is exactly *g* elapsed hours later, and a Friday release with 6h grace has a
 Saturday deadline even though Saturday is not a business day. Consequently deadlines

@@ -1,4 +1,4 @@
-"""Core domain types (BLUEPRINT.md §5.3).
+"""Core domain types.
 
 Everything here is frozen: an evaluation is a pure function of these values, and
 nothing in the core mutates them. Datetime fields named ``instant``, ``deadline``,
@@ -45,7 +45,7 @@ __all__ = [
 
 
 class Status(StrEnum):
-    """The single classification of one evaluation (BLUEPRINT.md §3.7.3)."""
+    """The single classification of one evaluation."""
 
     ON_TIME = "ON_TIME"
     NOT_DUE = "NOT_DUE"
@@ -108,7 +108,7 @@ class HolidayCalendarRef:
 
 @dataclass(frozen=True, slots=True)
 class CalendarSpec:
-    """Weekend, holiday calendars, and overrides for one rule (BLUEPRINT.md §3.3)."""
+    """Weekend, holiday calendars, and overrides for one rule."""
 
     weekend: frozenset[Weekday] = frozenset({Weekday.SAT, Weekday.SUN})
     holiday_calendars: tuple[HolidayCalendarRef, ...] = ()
@@ -190,7 +190,7 @@ class RawObservation:
 
 @dataclass(frozen=True, slots=True)
 class Observation:
-    """A raw value after normalization (BLUEPRINT.md §3.7.1)."""
+    """A raw value after normalization."""
 
     instant: datetime  # aware UTC
     raw: datetime
@@ -203,7 +203,7 @@ class Observation:
 
 @dataclass(frozen=True, slots=True)
 class EvaluationResult:
-    """The outcome of evaluating one source (BLUEPRINT.md §3.7.3)."""
+    """The outcome of evaluating one source."""
 
     source_id: str
     origin: Origin

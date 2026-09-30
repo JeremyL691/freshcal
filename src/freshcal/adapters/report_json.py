@@ -1,4 +1,4 @@
-"""JSON report renderer (BLUEPRINT.md §8.1, §8.2).
+"""JSON report renderer.
 
 The report is a contract for automated callers, so it is rendered exactly as the schema
 describes: keys in schema order, two-space indentation, UTC instants as

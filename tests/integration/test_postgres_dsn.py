@@ -2,8 +2,8 @@
 
 These checks need no PostgreSQL server: a malformed DSN fails while it is parsed, and the
 two remaining cases fail before a connection is established (a closed port and an invalid
-``sslmode``), so the module carries no ``postgres`` marker (BLUEPRINT.md §7.2 as amended
-by A-12). The config file only ever holds the *name* of the environment variable.
+``sslmode``), so the module carries no ``postgres`` marker. The config file only ever
+holds the *name* of the environment variable.
 """
 
 from __future__ import annotations

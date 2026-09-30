@@ -1,4 +1,4 @@
-"""Application use cases and exit-code policy (BLUEPRINT.md §5.5, §6.1-§6.3).
+"""Application use cases and exit-code policy.
 
 This module depends only on :mod:`freshcal.core`; every outside interaction is injected
 (``FreshnessReader``, ``CalendarProvider``, ``Clock``), which is what lets the use cases
@@ -66,7 +66,7 @@ def merge_entries(
 ) -> tuple[list[SourceEntry], list[Issue]]:
     """Combine config-file and manifest sources, sorted by source ID.
 
-    Precedence (BLUEPRINT.md §4.8): a source defined in the config file wins **entirely**
+    Precedence: a source defined in the config file wins **entirely**
     over the manifest definition — no field-level merge — and the run emits ``W004``
     naming both places. Duplicate IDs *inside* the manifest (the same
     ``source_name.name`` from two packages) are an error on every entry involved

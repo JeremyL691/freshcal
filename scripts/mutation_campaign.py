@@ -1,7 +1,6 @@
-"""Mutation spot-check campaign (BLUEPRINT §13 rule P9, task T-7.4).
+"""Mutation spot-check campaign.
 
-A product-side adaptation of the owner's reviewer harness
-(``review/v0.1.0/D-process-tests/mutate.py``, kept read-only): one mutant at a time is
+A product-side adaptation of an external reviewer's mutation harness: one mutant at a time is
 applied to a scratch copy of the working tree under ``/tmp``, a targeted test subset is
 run (and, if the mutant survives, the whole suite except ``tests/perf``), then the file
 is restored. The repository itself is never mutated.

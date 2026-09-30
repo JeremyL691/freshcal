@@ -61,7 +61,7 @@ DEFAULT_CONFIG = Path("freshcal.yml")
 DEFAULT_NEXT_COUNT = 3
 
 _STATUS_HELP = """\
-Statuses (BLUEPRINT.md §3.7.3):
+Statuses:
   ON_TIME   judged by load timestamps, no release whose deadline has passed is
             currently missing. It does not mean past releases were punctual, and a
             reload of old rows can hide a missing release.

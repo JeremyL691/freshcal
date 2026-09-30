@@ -23,7 +23,7 @@ side effect.
 
 The core never reads the clock or the machine's zone: `now` is a parameter supplied by
 an injected `Clock`, and every instant inside `freshcal.core` is an aware UTC
-`datetime` (BLUEPRINT.md §1.5 F9, §3.2). Reading the system clock is banned outside
+`datetime`. Reading the system clock is banned outside
 `freshcal/adapters/clock.py` and enforced by ruff `TID251`. Naive values from the
 warehouse are interpreted in `observed_timezone`, which must be configured explicitly
 — there is no implicit default, not even UTC — and its absence is a configuration

@@ -1,4 +1,4 @@
-"""Tests for the dbt manifest catalog (BLUEPRINT.md §4.8, §9.5)."""
+"""Tests for the dbt manifest catalog."""
 
 from __future__ import annotations
 

@@ -1,4 +1,4 @@
-"""Tests for calendar configuration (BLUEPRINT.md §4.3-§4.5, §3.3)."""
+"""Tests for calendar configuration."""
 
 from __future__ import annotations
 

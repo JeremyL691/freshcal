@@ -1,7 +1,7 @@
 """PostgreSQL reader tests: the shared contract plus PostgreSQL-specific behaviour (§7.2).
 
 Every test needs ``FRESHCAL_TEST_PG_DSN`` and is marked ``postgres``, so the default
-test run deselects it (BLUEPRINT.md §9.1).
+test run deselects it.
 """
 
 from __future__ import annotations

@@ -27,7 +27,7 @@ build backend (PEP 621 metadata, PEP 639 license expression, includes
 import-linter enforces the layering (ADR 0003); `argparse` implements the CLI (stdlib,
 so exit codes are fully under our control); `jsonschema` validates config and reports
 because a maintained Draft 2020-12 implementation is not something to rewrite
-(BLUEPRINT.md §4.4, §6, §10.1–§10.3, §12.1). The four check commands are one line and
+(§10.1–§10.3, §12.1). The four check commands are one line and
 run identically locally, in pre-commit, and in CI.
 
 ## Consequences

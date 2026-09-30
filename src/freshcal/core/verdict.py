@@ -1,4 +1,4 @@
-"""Verdict and outcome algorithm (BLUEPRINT.md §3.7).
+"""Verdict and outcome algorithm.
 
 The whole evaluation rests on one monotonicity fact: because grace is constant, the
 deadlines of consecutive releases are strictly increasing, so the arrived releases are
@@ -127,7 +127,7 @@ def _format(value: datetime) -> str:
 
 #: The notice window of W005: the local dates releases up to ``now + CHUNK +
 #: DATE_PADDING_DAYS`` (34 days) depend on. Declaring it keeps the warning independent of
-#: the shape of the searches (BLUEPRINT §3.3 as amended by A-11, finding SEM-04).
+#: the shape of the searches.
 CONSULT_HORIZON = CHUNK + timedelta(days=DATE_PADDING_DAYS)
 
 

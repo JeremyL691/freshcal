@@ -1,4 +1,4 @@
-"""Ports: the ``typing.Protocol`` interfaces the core depends on (BLUEPRINT.md §5.4).
+"""Ports: the ``typing.Protocol`` interfaces the core depends on.
 
 Adapters implement these outside the core, so the engine never imports a database
 driver, the ``holidays`` library, or a YAML parser. Ports are added here as the tasks
@@ -23,7 +23,7 @@ __all__ = ["CalendarProvider", "Clock", "FreshnessReader", "Reporter", "SourceCa
 
 
 class Clock(Protocol):
-    """The evaluation instant (BLUEPRINT.md §5.4).
+    """The evaluation instant.
 
     This is the only way the engine learns "now": the composition root passes a
     ``FixedClock`` (``--now``) or a ``SystemClock``, and ruff's ``TID251`` rule bans the
@@ -74,7 +74,7 @@ class SourceCatalog(Protocol):
 
 
 class Reporter(Protocol):
-    """Renders a check report as text (BLUEPRINT.md §5.4, §8.1)."""
+    """Renders a check report as text."""
 
     def render(self, report: CheckReport) -> str:
         """Return the report as the text the CLI writes to stdout or ``--output``."""

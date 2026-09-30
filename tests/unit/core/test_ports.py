@@ -1,4 +1,4 @@
-"""Tests for the protocol ports (BLUEPRINT.md §5.4, CFG-18)."""
+"""Tests for the protocol ports."""
 
 from __future__ import annotations
 

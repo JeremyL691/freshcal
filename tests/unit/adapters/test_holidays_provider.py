@@ -1,4 +1,4 @@
-"""Tests for the ``holidays``-backed provider (BLUEPRINT.md §7.5).
+"""Tests for the ``holidays``-backed provider.
 
 These tests use the real library on purpose: they pin a handful of facts (XECB 2026,
 DE versus DE-BY, CN's National Day week, the supported-year ranges) that the golden

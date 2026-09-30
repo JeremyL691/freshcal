@@ -1,4 +1,4 @@
-"""Tests for the verdict engine (BLUEPRINT.md §3.7)."""
+"""Tests for the verdict engine."""
 
 from __future__ import annotations
 
@@ -444,7 +444,7 @@ def test_w005_when_the_calendar_is_consulted_past_valid_until() -> None:
 def test_u_ver_15_no_w005_on_a_config_error_result() -> None:
     """SEM-07: W005 belongs to non-error returns only.
 
-    ``review/v0.1.0/A-semantics/repro_w005_on_error.py``: a leap-day schedule whose
+    The audit's W005-on-error reproducer: a leap-day schedule whose
     calendar is valid until 2103-12-31 cannot be decided for a 2096 observation (E215),
     and the search for the next arrival consults 2104-02-29 — past ``valid_until``. The
     lookup is real, but a result that carries no verdict must not also carry a warning
@@ -500,7 +500,7 @@ def leap_rule() -> SourceRule:
 def test_v1_step_one_requires_now_past_the_deadline() -> None:
     """Kills mutant V1: step 1 must not count ``now == deadline`` as missed.
 
-    ``review/v0.1.0/D-process-tests/v1_demo.py``: with data of 2092-03-01 and now exactly
+    The audit's mutation demo: with data of 2092-03-01 and now exactly
     2104-03-01 the 2104-02-29 release's deadline *is* now (release + 1 day), so the recent
     window proves nothing and step 2 must find the 2096-02-29 miss. The ``>=`` mutant
     returns NOT_DUE for the 2104 release, truncating away the real OVERDUE; the boundary

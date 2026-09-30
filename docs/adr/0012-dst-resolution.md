@@ -22,7 +22,7 @@ offsets.
 ## Decision
 
 Local wall times are converted to UTC by one function, `resolve_local`, which applies
-PEP 495 `fold=0` (BLUEPRINT.md §3.2, §3.8.3). Consequences, all normative: a
+PEP 495 `fold=0`. Consequences, all normative: a
 non-existent time is shifted forward by the length of the gap (2026-03-29 02:30
 Berlin → 03:30 CEST = 01:30Z, classified `gap`); an ambiguous time resolves to its
 **first** occurrence (2026-10-25 02:30 → 02:30 CEST = 00:30Z, classified

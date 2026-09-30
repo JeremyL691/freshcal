@@ -1,7 +1,5 @@
 # FreshCal
 
-Development status (2026-09-29): the local v0.1.1 release is complete and the M8 second-audit remediation is finished — all nine confirmed findings are fixed and both acceptance gates report 0 FAIL / 0 SKIP. The remediation plan and its report (`M8_REMEDIATION_PLAN.md` and `docs/milestones/M8-report.md`) live in the repository checkout and are not part of the released package; the package version remains 0.1.1 and no new tag was created.
-
 Business-calendar-aware data freshness checks: declare *when* data should arrive (cron,
 business days, Nth or last business day of the month, holiday calendars, overrides, time
 zone) and *how late* it may be (a grace window); FreshCal tells you whether a due release
@@ -303,8 +301,7 @@ punctuality audits, Slack-formatted output, Elementary integration, more warehou
 (Snowflake, BigQuery, Databricks, Redshift), business-time grace windows, importing
 `holidays` make-up workdays, `loaded_at_query` support, more manifest versions, Python
 3.15, upstream contributions to dbt and Elementary, and PyPI publishing via trusted
-publishing. Each item starts with an ADR; the current list is in
-[BLUEPRINT.md](BLUEPRINT.md) §15.
+publishing. Each item starts with an ADR ([docs/adr/](docs/adr/README.md)).
 
 ## Contributing
 

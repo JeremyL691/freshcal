@@ -1,4 +1,4 @@
-"""Holiday calendars backed by the ``holidays`` library (BLUEPRINT.md §7.5).
+"""Holiday calendars backed by the ``holidays`` library.
 
 :func:`validate_ref` checks a reference at load time (T-1.4);
 :class:`HolidaysCalendarProvider` answers the ``CalendarProvider`` port at evaluation

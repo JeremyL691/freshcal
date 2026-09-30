@@ -1,4 +1,4 @@
-"""Tests for release generation: cron schedules (BLUEPRINT.md §3.4.1-§3.4.3)."""
+"""Tests for release generation: cron schedules."""
 
 from __future__ import annotations
 
@@ -536,7 +536,7 @@ def test_u_sch_17_tzdata_bounds_hold_for_the_search_constants() -> None:
     """U-SCH-17: the constants the searches rely on really hold in this tzdata (T-7.2).
 
     Derived from every zone's explicit TZif table, 1900-2100 (the same source
-    ``review/v0.1.0/A-semantics/tz_transitions.py`` used to find the T-6.1 regressions):
+    the audit's transition scan used to find the T-6.1 regressions):
 
     * no two consecutive offset changes are closer than ``4 * MAX_OFFSET`` (104 h), so a
       two-point offset comparison spanning ``2 * MAX_OFFSET`` detects every nearby

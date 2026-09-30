@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Arrival-time replay against the ECB publication-time proxy (BLUEPRINT.md §9.10 B).
+"""Arrival-time replay against the ECB publication-time proxy.
 
 ``Last-Modified`` is the origin server's belief about when a representation was last
 modified; it is a **proxy** for publication time, not proof that the file was public then.
@@ -240,7 +240,7 @@ def explain_disagreement(publication_proxies: dict[date, datetime], instant: dat
             f"the file for {day.isoformat()} was observably available before the configured "
             f"release time (proxy {proxy.astimezone(BERLIN):%H:%M} CEST vs release "
             f"{RULE_TIME:%H:%M} CEST), so an immediate loader's timestamp predates the release "
-            "and the release looks missing (BLUEPRINT.md §3.6)"
+            "and the release looks missing"
         )
     return (
         f"the proxy for {day.isoformat()} is later than the configured release time (proxy "

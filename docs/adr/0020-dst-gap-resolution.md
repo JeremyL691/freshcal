@@ -13,12 +13,11 @@ Deferred (2026-09-30). FreshCal 0.1.2 ships the current behaviour (a local time 
 When a schedule's local wall time does not exist because the clock springs forward, FreshCal
 resolves it with PEP 495 `fold=0` and the stdlib's shift-forward rule: Europe/Berlin
 `30 2 * * *` on 2026-03-29 becomes 03:30 CEST (01:30Z), classified `gap`
-(BLUEPRINT.md §3.2 rule 3, §3.8.3; ADR 0012). The shift moves the release forward by the
+(ADR 0012). The shift moves the release forward by the
 full length of the gap even though the transition itself — 03:00 CEST (01:00Z) — is when
 the wall clock passes the scheduled time.
 
-The independent black-box review (`review/v0.1.0/E-blackbox/`, findings in
-`IMPROVEMENT_PLAN.md` §1 and §3) hand-worked spring-gap cases for Berlin, New York and
+An independent black-box review of v0.1.0 hand-worked spring-gap cases for Berlin, New York and
 Australia/Lord_Howe (30-minute gap) and observed that every remaining mismatch is this
 DST-gap class: the review's expected answers follow what cron implementations do, and
 cron(8) documents the behaviour: for a jump under three hours, "those jobs that would have
@@ -42,11 +41,10 @@ Lord Howe's 30-minute gap would resolve 02:10 to 02:30 rather than 02:40 local. 
 classification stays `gap`; the fall-back overlap keeps `fold=0` and its first occurrence
 (ADR 0012), and every other §3.2 rule is untouched.
 
-This record is `Proposed`: BLUEPRINT.md §3.2.3 and §3.8.3 stay as written and the code
-keeps shifting by the gap length until the owner accepts it (protocol rule 7b). If
-accepted, the change is an algorithm change under rule P2 with its own task: it updates
+This record is `Deferred`: the code keeps shifting by the gap length. If adopted, the
+change is an algorithm change of its own: it updates
 §3.2/§3.8.3, `resolve_local`/`classify_local`, the golden rows that pin gap instants
-(G15, G42–G44 are owner-issued and change only together with the owner's decision), the
+(G15, G42–G44), the
 unit and property tests, `docs/semantics.md` and the `explain` annotation wording.
 
 ## Consequences
@@ -63,7 +61,7 @@ rule P1): whichever rule is chosen must be implemented in one place and kept gre
 
 ## Alternatives considered
 
-- **Keep the shift-by-gap-length rule (status quo, BLUEPRINT §3.2.3).** Rejected by the
+- **Keep the shift-by-gap-length rule (status quo).** Rejected by the
   proposal for the reason above; it remains the implemented behaviour until the owner
   decides, and it is defensible for schedules whose provider follows a wall-clock
   scheduler that also skips the interval.

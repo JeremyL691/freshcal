@@ -1,4 +1,4 @@
-"""Tests for rule conversion and configuration loading (BLUEPRINT.md §4.1-§4.3)."""
+"""Tests for rule conversion and configuration loading."""
 
 from __future__ import annotations
 
@@ -392,7 +392,7 @@ sources:
     )
     first, second = load_config(config).entries
     # Both members are marked: with two definitions of one source, neither can be
-    # trusted to be the intended one (BLUEPRINT.md §4.8: "E206 for every duplicate").
+    # trusted to be the intended one (E206 is reported for every duplicate).
     for duplicate_entry in (first, second):
         assert duplicate_entry.rule is None
         assert [issue.code for issue in duplicate_entry.errors] == ["E206"]

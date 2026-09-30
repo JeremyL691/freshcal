@@ -1,4 +1,4 @@
-"""PostgreSQL test fixtures (BLUEPRINT.md §9.6).
+"""PostgreSQL test fixtures.
 
 The tests are deselected by default (``addopts`` contains ``-m "not postgres"``); running
 them without ``FRESHCAL_TEST_PG_DSN`` fails with instructions instead of silently
@@ -16,7 +16,7 @@ import pytest
 INSTRUCTIONS = """\
 FRESHCAL_TEST_PG_DSN is not set, so the PostgreSQL integration tests cannot run.
 
-Start a throwaway server (BLUEPRINT.md §9.6) and point the tests at it, for example:
+Start a throwaway server and point the tests at it, for example:
 
   TMP=$(mktemp -d)
   initdb -D "$TMP/pg" -U postgres --auth=trust

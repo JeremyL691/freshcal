@@ -13,7 +13,7 @@ Accepted.
 Golden tests prove that the code matches the blueprint; they cannot prove the blueprint
 matches the world. The risk that matters most for this project is a calendar or
 schedule model that is internally consistent but wrong about when a publisher actually
-publishes (BLUEPRINT.md §14.1 R4, R6). Two kinds of evidence are available from public
+publishes. Two kinds of evidence are available from public
 sources: complete publication *date* histories (the ECB publishes a definitive list
 since 1999; the US Treasury publishes daily par yield curves) and a publication-*time*
 proxy (the `Last-Modified` header of the ECB's daily file, which RFC 9110 defines as
@@ -21,8 +21,7 @@ the server's belief about the last modification — not proof the file was publi
 
 ## Decision
 
-v0.1 ships both, and only results actually produced may be quoted (BLUEPRINT.md §1.3,
-§9.10, §13 rule 10). (A) Automated, in CI: `tests/validation/test_calendar_history.py`
+v0.1 ships both, and only results actually produced may be quoted. (A) Automated, in CI: `tests/validation/test_calendar_history.py`
 compares FreshCal's own `releases_between` against the committed ECB and Treasury date
 lists and asserts exact confusion-matrix counts, including the Treasury case where
 `country: US` and `XNYS` both fail and overrides fix it — the evidence for ADR 0006.

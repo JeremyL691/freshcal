@@ -1,4 +1,4 @@
-# Golden scenarios (BLUEPRINT.md §3.10).
+# Golden scenarios.
 #
 # Every row is a normative expected output: `status`, the reported release and its
 # deadline, the next expected arrival, the counts, warning codes, the error code (null

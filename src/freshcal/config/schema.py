@@ -1,4 +1,4 @@
-"""Structural validation of configuration documents (BLUEPRINT.md §4.4).
+"""Structural validation of configuration documents.
 
 Stage 1 of the two-stage validation: the committed JSON Schema decides whether a
 document has the right shape, and every schema error is mapped to a coded
