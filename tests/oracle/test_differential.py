@@ -13,7 +13,10 @@ Failure messages carry the case description (zone, kind, expression, calendar, g
 from __future__ import annotations
 
 import json
+import os
 import random
+import subprocess
+import sys
 from collections import Counter
 from pathlib import Path
 
@@ -255,3 +258,57 @@ def test_orc_04_recorded_regressions() -> None:
         f"({sum(1 for case in cases if case['oracle_limit'])} pinned to the v0.1.0 answer)"
     )
     assert failures == [], _report(failures)
+
+
+WORKFLOW = Path(__file__).resolve().parents[2] / ".github/workflows/ci.yml"
+
+
+def _workflow_campaign_command() -> list[str]:
+    """The pytest arguments of the workflow's full-campaign run step (AUD-05)."""
+    lines = [
+        line.strip().replace('"', "").replace("'", "")
+        for line in WORKFLOW.read_text(encoding="utf-8").splitlines()
+    ]
+    matches = [line for line in lines if "pytest" in line and "-m oracle" in line]
+    assert len(matches) == 1, f"expected exactly one campaign step, got {matches}"
+    words = matches[0].split()
+    index = next(i for i, word in enumerate(words) if word.endswith("pytest"))
+    args = [word for word in words[index + 1 :] if word != "-s"]
+    assert "tests/oracle" in args, args
+    return args
+
+
+def _collect(args: list[str]) -> str:
+    completed = subprocess.run(
+        [sys.executable, "-m", "pytest", *args, "--collect-only", "-q", "-p", "no:cacheprovider"],
+        capture_output=True,
+        text=True,
+        cwd=Path(__file__).resolve().parents[2],
+        env={
+            **os.environ,
+            "PYTHONPATH": str(Path(__file__).resolve().parents[2] / "src"),
+        },
+        check=False,
+    )
+    return completed.stdout + completed.stderr
+
+
+def test_orc_15_the_ci_workflow_selects_the_full_campaign() -> None:
+    """AUD-05: CI runs the campaign, and the exact workflow command selects it.
+
+    Text claiming that CI runs the campaign is not evidence. The default `addopts` exclude
+    the `oracle` marker, so the guard proves both halves: the same command without `-m
+    oracle` does *not* collect the campaign, and the workflow's command does. The campaign
+    size is asserted here too, so a smaller campaign cannot pass as the full one.
+    """
+    assert len(ORACLE_SEEDS) >= 20, ORACLE_SEEDS
+    assert len(ORACLE_SEEDS) * ORACLE_PER_SEED >= 10_000, (ORACLE_SEEDS, ORACLE_PER_SEED)
+
+    default = _collect(["tests/oracle"])
+    assert "test_orc_full_campaign" not in default, default[-400:]
+
+    campaign = _collect(_workflow_campaign_command())
+    assert "test_orc_full_campaign" in campaign, campaign[-400:]
+    # The recorded regressions are unmarked, so they run in the ordinary matrix job; the
+    # campaign job selects the marked campaign only.
+    assert "test_orc_04_recorded_regressions" not in campaign, campaign[-400:]
