@@ -20,10 +20,10 @@ once and the first nominal release supplies the metadata.
 **Ordering.** Nominals are generated in ascending *local* order, but local order is not
 always instant order: when a nominal falls inside a DST gap it resolves forward by the
 gap length, so a later nominal just after the gap can resolve to an earlier instant
-(SEM-02). One transition can invert at most ``MAX_OFFSET`` of local time, and tzdata
-never changes a zone's offset twice within ``4 * MAX_OFFSET`` (see :data:`MAX_OFFSET`),
-so :func:`iter_releases_in_window` holds a release back until a further ``MAX_OFFSET`` of
-nominals has been generated; after that no future nominal can resolve earlier.
+(SEM-02). A nominal's instant lies within ``MAX_OFFSET`` of its wall time (no offset
+reaches ``MAX_OFFSET``), so :func:`iter_releases_in_window` holds a release back until a
+further ``MAX_OFFSET`` of nominals has been generated; after that no future nominal can
+resolve earlier.
 
 The searches are then exact by construction:
 
@@ -94,11 +94,12 @@ MAX_COUNTED_RELEASES = 10_000  # cap for missed/pending counting
 #   largest per-zone offset spread    = 25 h 30 min      (Pacific/Apia)
 #   largest forward jump              = 24 h             (Kwajalein, 1993-08-21)
 #   smallest spacing between changes  = 167 h            (America/Boa_Vista, 2000-10-08)
+#                                     =  96 h with pre-1970 history (Africa/Freetown, 1939)
 # MAX_OFFSET is the single constant the searches need: it bounds how far a nominal can
 # resolve away from its own wall time (so it is the scan padding), how far one transition
 # can reorder local time (so it is the streaming hold-back), and - doubled - how far a
 # transition can influence an instant, which stays below the smallest spacing (52 h <
-# 167 h), so comparing two offsets that far apart detects every nearby transition.
+# 96 h), so offsets sampled that far apart (and in between) detect every nearby transition.
 MAX_OFFSET = timedelta(hours=26)
 HOLD_BACK = MAX_OFFSET  # reordering delay of the streaming generator
 ROLL_PAD = timedelta(days=MAX_ROLL_DAYS)  # the roll distance as a duration
@@ -350,15 +351,18 @@ def nominal_releases(
 def _offset_stable(instant: datetime, timezone: ZoneInfo) -> bool:
     """True when no offset change can influence order near ``instant``.
 
-    Compares the zone's offset ``TRANSITION_GUARD`` before and after ``instant``. Two
-    equal samples prove there is no transition in between, because tzdata never changes
-    one zone's offset twice within ``2 * TRANSITION_GUARD`` (52 h, against the smallest
-    measured spacing of 167 h) — a single transition could not hide inside the window.
+    Samples the zone's offset ``2 * MAX_OFFSET`` before ``instant``, at ``instant`` and
+    ``2 * MAX_OFFSET`` after it. Three equal samples prove there is no transition in the
+    window, because tzdata never changes one zone's offset twice within ``2 * MAX_OFFSET``
+    (52 h): each half of the window can hold at most one transition, and one transition
+    changes the offset. Two samples would not do: Linux tzdata keeps pre-1970 history
+    in which Africa/Freetown changes twice within 96 h and returns to its old offset.
     """
     span = 2 * MAX_OFFSET
     before = (instant - span).astimezone(timezone).utcoffset()
+    middle = instant.astimezone(timezone).utcoffset()
     after = (instant + span).astimezone(timezone).utcoffset()
-    return before == after
+    return before == middle == after
 
 
 def _hold(rule: SourceRule) -> timedelta:

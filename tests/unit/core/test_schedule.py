@@ -27,6 +27,7 @@ from freshcal.core.schedule import (
     HOLD_BACK,
     MAX_OFFSET,
     MAX_ROLL_DAYS,
+    _offset_stable,
     day_or_branches,
     next_release_after,
     previous_release_at_or_before,
@@ -538,9 +539,10 @@ def test_u_sch_17_tzdata_bounds_hold_for_the_search_constants() -> None:
     Derived from every zone's explicit TZif table, 1900-2100 (the same source
     the audit's transition scan used to find the T-6.1 regressions):
 
-    * no two consecutive offset changes are closer than ``4 * MAX_OFFSET`` (104 h), so a
-      two-point offset comparison spanning ``2 * MAX_OFFSET`` detects every nearby
-      transition - that is the guard the searches use;
+    * no two consecutive offset changes are closer than ``2 * MAX_OFFSET`` (52 h), so the
+      guard's three samples ``2 * MAX_OFFSET`` apart detect every nearby transition (the
+      bound was ``4 * MAX_OFFSET`` with two samples; Linux tzdata's pre-1970 history has
+      Africa/Freetown changes 96 h apart, see U-SCH-27);
     * the largest forward jump is below ``HOLD_BACK``; and the largest per-zone offset
       spread is at most ``HOLD_BACK``, so the streaming generator's hold-back is sound;
     * no offset is larger than ``MAX_OFFSET`` in absolute value, so a nominal cannot resolve
@@ -589,7 +591,7 @@ def test_u_sch_17_tzdata_bounds_hold_for_the_search_constants() -> None:
     assert largest_jump is not None
     assert largest_spread is not None
     assert largest_offset is not None
-    assert smallest_step[0] > 4 * MAX_OFFSET, smallest_step
+    assert smallest_step[0] > 2 * MAX_OFFSET, smallest_step
     assert largest_jump[0] < HOLD_BACK, largest_jump
     assert largest_spread[0] <= HOLD_BACK, largest_spread
     assert abs(largest_offset[0]) < MAX_OFFSET, largest_offset
@@ -825,3 +827,37 @@ def test_u_sch_26_multiple_alternatives_keep_every_matching_date() -> None:
     )
     assert [release.local.day for release in releases] == [1, 5, 12, 15]
     assert len({release.instant for release in releases}) == len(releases)
+
+
+def _two_transition_zone(first: datetime, spacing: timedelta) -> ZoneInfo:
+    """A TZif v1 zone that moves UTC+0 -> UTC+1 at ``first`` and back after ``spacing``."""
+    import io
+    import struct
+
+    times = (int(first.timestamp()), int((first + spacing).timestamp()))
+    abbreviations = b"AAA\x00BBB\x00"
+    data = (
+        b"TZif"
+        + b"\x00" * 16
+        + struct.pack(">6l", 0, 0, 0, len(times), 2, len(abbreviations))
+        + struct.pack(f">{len(times)}l", *times)
+        + bytes((1, 0))
+        + struct.pack(">lbB", 0, 0, 0)
+        + struct.pack(">lbB", 3600, 1, 4)
+        + abbreviations
+    )
+    return ZoneInfo.from_file(io.BytesIO(data), key="Test/TwoTransitions")
+
+
+def test_u_sch_27_offset_guard_sees_a_cancelling_pair_of_transitions() -> None:
+    """U-SCH-27: two transitions that cancel inside the guard window are still detected.
+
+    Linux tzdata carries pre-1970 history that macOS omits: Africa/Freetown changes its
+    offset twice within 95 h in September 1939. Offsets sampled only at both ends of the
+    104 h guard window agree there, so the guard must also look at the midpoint.
+    """
+    first = datetime(2030, 3, 1, 12, tzinfo=UTC)
+    zone = _two_transition_zone(first, timedelta(hours=60))
+    assert zone.utcoffset(first + timedelta(hours=1)) == timedelta(hours=1)
+    assert not _offset_stable(first + timedelta(hours=30), zone)
+    assert _offset_stable(first + timedelta(days=30), zone)
