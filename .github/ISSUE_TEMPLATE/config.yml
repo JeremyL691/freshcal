@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/JeremyL691/freshcal/security/advisories/new
+    about: Report vulnerabilities privately, not in a public issue.
+  - name: Semantics and configuration reference
+    url: https://github.com/JeremyL691/freshcal/tree/main/docs
+    about: What each status means, every configuration field, and the issue codes.

@@ -104,7 +104,7 @@ These results measure agreement with the Last-Modified publication proxy, not ar
 
 Both collected proxy times (15:56:44 CEST on 2026-09-28, 15:56:34 CEST on 2026-09-29) are
 earlier than the example's old 16:00 release time — exactly the early-publication effect
-the replay reports above (finding CLI-07). The semantics require `time` to be the
+the replay reports above. The semantics require `time` to be the
 earliest time the loader can see the data, so `examples/ecb/freshcal.yml` now declares
 `time: "15:45"` (before the earliest observed proxy time) and `grace: 2h15m`, which keeps
 the illustrative 18:00 deadline. Data loaded at an observed proxy time therefore counts as
@@ -113,6 +113,6 @@ arrived, and the quickstart still prints ON_TIME / NOT_DUE / OVERDUE with exit c
 
 This changes no arrival-time claim: with two observations there is still no distribution
 to derive a time from, so 15:45 is a margin, not a measurement, and the README still makes
-no timing statement. T-6.7's criterion stays conditional on the collected data: once at
-least 20 business days exist, the example's time is set from the observed proxy
+no timing statement. Once at
+least 20 business days have been collected, the example's time is set from the observed proxy
 distribution and the README gains a timing statement.

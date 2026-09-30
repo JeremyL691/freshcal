@@ -47,7 +47,7 @@ checked.
 
 Publication-*time* proxies (the daily file's `Last-Modified` and the first response's
 `Date`), collected by `ecb/collect.py`; see `ecb/README.md`. They feed the arrival-time
-replay (T-6.7, §9.10 B) and are deliberately separate from the date history above,
+replay (`docs/validation.md` section B) and are deliberately separate from the date history above,
 which is a definitive publication record.
 
 ## What these files do not prove

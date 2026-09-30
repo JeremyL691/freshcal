@@ -1,9 +1,26 @@
 # FreshCal
 
-Business-calendar-aware data freshness checks: declare *when* data should arrive (cron,
-business days, Nth or last business day of the month, holiday calendars, overrides, time
-zone) and *how late* it may be (a grace window); FreshCal tells you whether a due release
-is currently missing.
+[![CI](https://github.com/JeremyL691/freshcal/actions/workflows/ci.yml/badge.svg)](https://github.com/JeremyL691/freshcal/actions/workflows/ci.yml)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)
+
+**Data freshness checks that know about business days, holidays, and publication
+schedules.** Declare *when* data should arrive (cron, business days, Nth or last business
+day of the month, holiday calendars, overrides, time zone) and *how late* it may be (a
+grace window); FreshCal tells you whether a due release is currently missing.
+
+- **No weekend or holiday false alarms**: Friday's data on Monday morning is on time;
+  a missing release on an ordinary business day is not.
+- **Real calendars**: country, subdivision and financial-market holidays from the
+  [`holidays`](https://pypi.org/project/holidays/) library, plus your own overrides.
+- **Explainable verdicts**: `freshcal explain` walks through every release, deadline and
+  observation behind a result.
+- **Fits your stack**: DuckDB and PostgreSQL, rules inline or in dbt `meta`, a terminal
+  table or a versioned JSON report, and exit codes a scheduler or CI job can act on.
+
+> **Status:** early release (v0.1). The semantics are pinned by golden tests and checked
+> against an independent reference implementation, but the tool is new: run it next to
+> your existing checks before relying on it.
 
 ## Why
 
@@ -15,23 +32,32 @@ Monday morning is *not* an alert, while a missing 16:00 release is.
 
 ## Install
 
-FreshCal v0.1 is not published on PyPI. Install it from a clone:
+FreshCal is not on PyPI yet; install it straight from GitHub. It needs Python 3.11 or
+newer. As a command-line tool with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-git clone <repository-url> && cd freshcal
-uv sync --extra duckdb --no-dev     # or --all-extras --no-dev for the PostgreSQL adapter too
-uv run freshcal --version  # freshcal 0.1.1
+uv tool install "freshcal[duckdb] @ git+https://github.com/JeremyL691/freshcal@v0.1.2"
+freshcal --version  # freshcal 0.1.2
 ```
 
-`freshcal` needs Python 3.11 or newer; `uv` fetches it if necessary. The `duckdb` extra
-adds DuckDB support, the `postgres` extra adds PostgreSQL, and `--all-extras` adds both;
-`--no-dev` leaves out the development tools, which a user does not need. To use the CLI
-without `uv run`, activate the environment (`source .venv/bin/activate`).
+or with pip, in the environment of your choice:
 
-Or build the wheel and install it into another environment: `uv build` inside the clone,
-then `uv pip install "dist/freshcal-0.1.1-py3-none-any.whl[duckdb]"` in that environment
-(the wheel brings its dependencies, not the development tools; verified for v0.1.1 —
-`freshcal --version` prints `freshcal 0.1.1` and the first quickstart command exits 0).
+```bash
+pip install "freshcal[duckdb] @ git+https://github.com/JeremyL691/freshcal@v0.1.2"
+```
+
+The `duckdb` extra adds DuckDB support and the `postgres` extra adds PostgreSQL
+(`freshcal[duckdb,postgres]` for both). Each
+[release](https://github.com/JeremyL691/freshcal/releases) also carries the wheel and
+the source distribution.
+
+To run the quickstart below, work from a clone:
+
+```bash
+git clone https://github.com/JeremyL691/freshcal.git && cd freshcal
+uv sync --extra duckdb --no-dev     # or --all-extras --no-dev for PostgreSQL too
+uv run freshcal --version
+```
 
 ## 30-second quickstart
 
