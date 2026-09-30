@@ -29,19 +29,19 @@ from freshcal.core.explain import explain_lines, explanation
 from freshcal.core.model import (
     CheckReport,
     EvaluationResult,
+    FreshnessTarget,
     NextEntry,
     NextRelease,
     NextReport,
     RawObservation,
     SourceEntry,
-    SourceRule,
     Status,
     mark_duplicate_source_ids,
 )
 from freshcal.core.ports import CalendarProvider, FreshnessReader
 from freshcal.core.schedule import next_release_after
 from freshcal.core.timeutil import local_date, to_utc
-from freshcal.core.verdict import evaluate, schedule_context
+from freshcal.core.verdict import calendar_notice, evaluate, schedule_context
 
 __all__ = [
     "ValidateReport",
@@ -225,6 +225,27 @@ def _with_warnings(result: EvaluationResult, warnings: Sequence[Issue]) -> Evalu
     return replace(result, warnings=result.warnings + matching)
 
 
+def _unusable_observation(
+    target: FreshnessTarget, raw: RawObservation | None, error: BaseException
+) -> Issue:
+    """``E502`` for a value that cannot be turned into an instant, naming the value.
+
+    Either the read itself failed while converting the value (``raw`` is then unknown) or
+    the failure happened later, while formatting the result; both are that one source's
+    data problem, never a reason to abort the run (audit E2E-02).
+    """
+    if raw is None or raw.value is None:
+        detail = (
+            f"max({target.loaded_at_field}) returned a value that cannot be used as a timestamp"
+        )
+    else:
+        detail = (
+            f"max({target.loaded_at_field}) returned {raw.value.isoformat(sep=' ')}, which "
+            "cannot be used as a timestamp"
+        )
+    return Issue("E502", f"query failed: {detail} ({type(error).__name__}: {error})")
+
+
 def run_check(
     entries: Sequence[SourceEntry],
     reader: FreshnessReader | None,
@@ -239,6 +260,10 @@ def run_check(
     ``reader=None`` means the reader could not be created: every valid source then gets a
     ``QUERY_ERROR`` carrying ``reader_error``, while sources whose rule did not load keep
     their ``CONFIG_ERROR``.
+
+    A failure while handling one source's value — a query error, or an overflow while
+    normalizing or formatting an extreme timestamp — becomes that source's ``QUERY_ERROR``
+    (``E502``); the remaining sources are still evaluated.
     """
     now = to_utc(now)
     results: list[EvaluationResult] = []
@@ -253,12 +278,16 @@ def run_check(
                 reader_error or Issue("E501", "cannot connect to the warehouse"),
             )
         else:
+            raw: RawObservation | None = None
             try:
                 raw = reader.read_latest(entry.rule.target)
+                result = evaluate(entry.rule, raw, now, provider)
             except QueryError as error:
                 result = query_error_result(entry, now, provider, error.issue)
-            else:
-                result = evaluate(entry.rule, raw, now, provider)
+            except (OverflowError, ValueError) as error:
+                result = query_error_result(
+                    entry, now, provider, _unusable_observation(entry.rule.target, raw, error)
+                )
         result = _with_warnings(result, entry.warnings)
         results.append(_with_warnings(result, extra_warnings))
 
@@ -326,7 +355,10 @@ def _next_entry(
     except (ConfigError, CalendarError) as failure:
         error = failure.issue
         releases = []
-    warnings.extend(_consulted_past_valid_until(rule, calendar))
+    else:
+        notice = calendar_notice(rule, calendar, now)
+        if notice is not None:
+            warnings.append(notice)
     warnings.extend(issue for issue in extra_warnings if issue.location in (None, rule.source_id))
     return NextEntry(
         source_id=entry.source_id,
@@ -335,22 +367,6 @@ def _next_entry(
         warnings=tuple(warnings),
         error=error,
     )
-
-
-def _consulted_past_valid_until(rule: SourceRule, calendar: BusinessCalendar) -> list[Issue]:
-    """``W005`` when a search only *looked up* dates after ``valid_until``."""
-    consulted = calendar.consulted_past_valid_until()
-    valid_until = rule.calendar.valid_until
-    if consulted is None or valid_until is None:
-        return []
-    return [
-        Issue(
-            "W005",
-            f"calendar {calendar.label} was consulted for {consulted.isoformat()}, after its "
-            f"valid_until {valid_until.isoformat()}; the next expected arrival may be wrong",
-            rule.source_id,
-        )
-    ]
 
 
 def run_explain(
@@ -377,14 +393,51 @@ def run_explain(
     return result, lines
 
 
+def _deduplicate(issues: Iterable[Issue]) -> list[Issue]:
+    """Drop repeated ``E206`` messages, keeping the first occurrence.
+
+    Every member of a duplicate-ID group carries the same ``E206`` message (CFG-21), so
+    the group is reported once. Only ``E206`` may be identical across entries: other
+    messages either embed their location or genuinely describe different sources (two
+    impossible cron schedules both earn the location-less ``E209``), and those must all
+    be reported.
+    """
+    unique: list[Issue] = []
+    seen_duplicates: set[str] = set()
+    for issue in issues:
+        if issue.code == "E206":
+            if issue.message in seen_duplicates:
+                continue
+            seen_duplicates.add(issue.message)
+        unique.append(issue)
+    return unique
+
+
+def _located(issue: Issue, source_id: str) -> Issue:
+    """Give an issue that names no location the source it came from (CLI-03).
+
+    ``validate`` prints ``CODE location: message``, so an ``E209``/``E405``/``E407``/
+    ``E408`` raised while checking one source must say which source; issues that already
+    carry a location (a schema path, a calendar reference) keep it.
+    """
+    if issue.location:
+        return issue
+    return Issue(issue.code, issue.message, source_id)
+
+
 def run_validate(
-    entries: Sequence[SourceEntry], provider: CalendarProvider, now: datetime
+    entries: Sequence[SourceEntry],
+    provider: CalendarProvider,
+    now: datetime,
+    *,
+    extra_warnings: Sequence[Issue] = (),
 ) -> ValidateReport:
     """Check every rule without a warehouse: schedules, calendars, and warnings (§6.2).
 
     Catches ``E209`` (no release in the horizon), ``E405``/``E407`` (calendar data or a
     roll failure), ``E408`` (an expired calendar) and the warnings ``W005``/``W006`` —
-    plus everything a rule already carried when it was loaded.
+    plus everything a rule already carried when it was loaded and the run-level warnings
+    the CLI passes in (``W004`` from the merge, CLI-04).
     """
     now = to_utc(now)
     errors: list[Issue] = []
@@ -395,7 +448,7 @@ def run_validate(
         entry_errors: list[Issue] = []
         calendar: BusinessCalendar | None = None
         if entry.rule is None:
-            entry_errors.extend(entry.errors)
+            entry_errors.extend(_located(issue, entry.source_id) for issue in entry.errors)
         else:
             rule = entry.rule
             calendar = BusinessCalendar(rule.calendar, provider, source_id=rule.source_id)
@@ -403,16 +456,21 @@ def run_validate(
                 calendar.check_valid_at(local_date(now, rule.schedule.timezone))
                 schedule_context(rule, now, provider)
             except (ConfigError, CalendarError) as failure:
-                entry_errors.append(failure.issue)
-            warnings.extend(_consulted_past_valid_until(rule, calendar))
+                entry_errors.append(_located(failure.issue, rule.source_id))
+            else:
+                # The same function `evaluate` uses, on the calendar this loop owns.
+                notice = calendar_notice(rule, calendar, now)
+                if notice is not None:
+                    warnings.append(notice)
         errors.extend(entry_errors)
         warnings.extend(entry.warnings)
         if entry_errors:
             entries_with_errors += 1
         else:
             valid_count += 1
+    warnings.extend(extra_warnings)
     return ValidateReport(
-        issues=tuple(errors) + tuple(warnings),
+        issues=tuple(_deduplicate([*errors, *warnings])),
         valid_count=valid_count,
         error_count=entries_with_errors,
         warning_count=len(warnings),

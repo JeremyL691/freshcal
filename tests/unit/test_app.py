@@ -31,6 +31,7 @@ from freshcal.core.model import (
     SourceEntry,
     SourceRule,
     Status,
+    mark_duplicate_source_ids,
 )
 
 
@@ -368,6 +369,48 @@ def test_u_app_07_query_error_with_a_rule_that_has_no_releases() -> None:
     assert report.results[0].error.code == "E209"
 
 
+def test_run_check_contains_a_normalisation_overflow() -> None:
+    """E2E-02/I-PG-12: an unrepresentable value is that source's E502, not an E599."""
+    entry = source_entry("a.b")
+    rule = entry.rule
+    assert rule is not None
+    entry = replace(entry, rule=replace(rule, observed_timezone=ZoneInfo("America/New_York")))
+    reader = FakeReader({"raw.a.b": RawObservation(datetime(9999, 12, 31, 22, 0))})
+
+    report = run_check([entry], reader, FakeCalendarProvider(), ECB_NOW)
+
+    result = report.results[0]
+    assert result.status is Status.QUERY_ERROR
+    assert result.error is not None
+    assert result.error.code == "E502"
+    assert result.error.message.startswith("query failed: ")
+    assert "9999-12-31 22:00:00" in result.error.message
+    assert report.exit_code == 3
+
+
+def test_run_check_one_overflowing_value_does_not_abort_the_other_sources() -> None:
+    """E2E-02: the healthy source is still evaluated when another one overflows."""
+    entries = [source_entry("a.ok", relation="raw.ok"), source_entry("b.huge", relation="raw.huge")]
+    reader = FakeReader(
+        {
+            "raw.ok": FRIDAY_DATA,
+            # 23:30 UTC is a valid ``datetime`` but past Berlin's midnight: formatting the
+            # explanation overflows, and the overflow must stay on this one source.
+            "raw.huge": RawObservation(datetime(9999, 12, 31, 23, 30)),
+        }
+    )
+
+    report = run_check(entries, reader, FakeCalendarProvider(), ECB_NOW)
+
+    by_id = {result.source_id: result for result in report.results}
+    assert by_id["b.huge"].status is Status.QUERY_ERROR
+    assert by_id["b.huge"].error is not None
+    assert by_id["b.huge"].error.code == "E502"
+    assert "9999-12-31 23:30:00" in by_id["b.huge"].error.message
+    assert by_id["a.ok"].status is Status.ON_TIME
+    assert report.exit_code == 3
+
+
 @pytest.mark.parametrize(
     ("statuses", "fatal", "internal", "expected"),
     [
@@ -446,6 +489,9 @@ def test_u_app_10_run_validate_finds_schedule_calendar_and_warning_problems() ->
     )
     valid_second = source_entry("c.valid_second")
     good = source_entry("d.good")
+    # The 34-day notice window reaches 2027-02-07 on 2027-01-04, so this calendar (valid
+    # until 2027-02-01) earns W005 without being expired.
+    inside_window = source_entry("f.window", valid_until=date(2027, 2, 1))
     unloaded = SourceEntry(
         source_id="e.unloaded",
         origin=Origin.CONFIG,
@@ -459,7 +505,7 @@ def test_u_app_10_run_validate_finds_schedule_calendar_and_warning_problems() ->
 
     eventually = datetime(2027, 1, 4, 2, 0, tzinfo=UTC)
     report = run_validate(
-        [expired, impossible, valid_second, good, unloaded],
+        [expired, impossible, valid_second, good, inside_window, unloaded],
         FakeCalendarProvider(start_year=1999),
         eventually,
     )
@@ -469,12 +515,17 @@ def test_u_app_10_run_validate_finds_schedule_calendar_and_warning_problems() ->
     assert "E209" in codes  # b.impossible: no release in the horizon
     assert "E201" in codes  # e.unloaded: carried from loading
     assert "W006" in codes
+    assert "W005" in codes  # f.window: its notice window reaches past valid_until
+    # The warning comes from the same function `evaluate` uses and names the horizon.
+    w005 = next(issue for issue in report.issues if issue.code == "W005")
+    assert w005.location == "f.window"
+    assert "was consulted for 2027-02-07, after its valid_until 2027-02-01" in w005.message
     # errors come first, warnings after
     first_warning = next(index for index, code in enumerate(codes) if code.startswith("W"))
     assert all(code.startswith("E") for code in codes[:first_warning])
     assert report.error_count == 3  # expired, impossible, unloaded
-    assert report.valid_count == 2
-    assert report.warning_count == 1
+    assert report.valid_count == 3
+    assert report.warning_count == 2
 
 
 def test_u_app_10_run_validate_reports_the_horizon_and_calendar_range_errors() -> None:
@@ -519,6 +570,38 @@ def test_u_app_11_run_next_reports_w005_near_valid_until() -> None:
     assert [issue.code for issue in entry_result.warnings] == ["W005"]
     assert "was consulted for 2027-" in entry_result.warnings[0].message
     assert entry_result.warnings[0].location == "cn.daily_sales"
+
+
+def test_u_app_12_run_validate_reports_e206_once_for_a_duplicate_group() -> None:
+    """CFG-21: every member carries E206, but ``validate`` prints the group once."""
+    first = SourceEntry(
+        source_id="a.b", origin=Origin.CONFIG, rule=rule("a.b"), location="sources[0]"
+    )
+    second = replace(first, location="sources[1]")
+    third = replace(first, location="sources[2]")
+    entries = mark_duplicate_source_ids([first, second, third])
+
+    report = run_validate(entries, FakeCalendarProvider(), ECB_NOW)
+
+    e206 = [issue for issue in report.issues if issue.code == "E206"]
+    assert len(e206) == 1
+    assert e206[0].message == ("duplicate source id 'a.b' at sources[0], sources[1] and sources[2]")
+    assert report.error_count == 3
+    assert report.valid_count == 0
+
+
+def test_u_app_12_run_validate_keeps_two_identical_e209_messages() -> None:
+    """Only E206 is collapsed: two impossible schedules are two separate errors."""
+    broken = replace(rule("a.b"), schedule=CronSchedule("0 0 30 2 *", ZoneInfo("UTC")))
+    entries = [
+        SourceEntry(source_id=source_id, origin=Origin.CONFIG, rule=broken, location="sources[0]")
+        for source_id in ("a.b", "c.d")
+    ]
+
+    report = run_validate(entries, FakeCalendarProvider(), ECB_NOW)
+
+    assert [issue.code for issue in report.issues] == ["E209", "E209"]
+    assert report.error_count == 2
 
 
 def test_run_explain_returns_the_result_and_the_trace() -> None:
@@ -569,3 +652,25 @@ def test_run_check_attaches_merge_and_entry_warnings() -> None:
     )
     codes = [issue.code for issue in report.results[0].warnings]
     assert codes == ["W006", "W004"]
+
+
+def test_a4_warning_without_location_reaches_every_result() -> None:
+    """Kills mutant A4: ``_with_warnings`` keeps warnings whose location is ``None``.
+
+    A warning that names no source belongs to every source (the run-level warnings the CLI
+    passes in), so ``location in (None, source_id)`` must match; the ``== source_id``
+    mutant silently drops it from every result and the operator never sees it.
+    """
+    entries = [source_entry("a.b"), source_entry("c.d")]
+    global_warning = Issue("W004", "manifest v12 is deprecated; regenerate it", None)
+    report = run_check(
+        entries,
+        FakeReader({"raw.a.b": FRIDAY_DATA, "raw.c.d": FRIDAY_DATA}),
+        FakeCalendarProvider(),
+        ECB_NOW,
+        extra_warnings=[global_warning],
+    )
+    assert [result.source_id for result in report.results] == ["a.b", "c.d"]
+    for result in report.results:
+        assert [issue.code for issue in result.warnings] == ["W004"]
+        assert result.warnings[0].location is None

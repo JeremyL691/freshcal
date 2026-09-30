@@ -423,6 +423,35 @@ def test_aware_observation_uses_an_offset() -> None:
     assert document["results"][0]["observed"]["raw"] == "2026-09-25T23:07:00+09:00"
 
 
+def test_j2_issue_without_location_renders_as_json_null() -> None:
+    """Kills mutant J2: an issue with no location is JSON ``null``, never ``""``.
+
+    §8.1 models ``location`` as nullable, and the schema also accepts an empty string, so
+    only the rendered value distinguishes them. The ``issue.location or ""`` mutant turns
+    "no location" into "" and callers lose the ability to tell an absent location from an
+    empty one.
+    """
+    result = EvaluationResult(
+        source_id="a.config_error",
+        origin=Origin.CONFIG,
+        status=Status.CONFIG_ERROR,
+        evaluated_at=EVALUATED_AT,
+        schedule_timezone=None,
+        release=None,
+        deadline=None,
+        observation=None,
+        next_expected_arrival=None,
+        explanation="Configuration error: E201 unknown time zone 'Mars/Olympus'",
+        error=Issue("E201", "sources[0].schedule.timezone: unknown time zone 'Mars/Olympus'"),
+    )
+    rendered = JsonReporter().render(
+        CheckReport(evaluated_at=EVALUATED_AT, results=(result,), exit_code=2)
+    )
+    assert '"location": null' in rendered
+    document = json.loads(rendered)
+    assert document["results"][0]["error"]["location"] is None
+
+
 def test_every_schema_def_is_used() -> None:
     """Guard: the committed schema is the one the reporter's documents validate against."""
     schema = schema_document()

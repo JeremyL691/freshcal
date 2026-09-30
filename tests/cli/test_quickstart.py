@@ -1,10 +1,10 @@
 """The README quickstart is executable (BLUEPRINT.md §11.1, §6.2).
 
 Every command and every line of expected output in the quickstart is taken from
-``README.md`` between its markers, run through ``cli.main``, and compared byte for byte.
-The README shows ``FreshCal 0.1.0`` — the released version string of the example — so the
-actual output's version is normalised before the comparison; after T-6.8's version bump
-the comparison holds without normalisation.
+``README.md`` between its markers, run through ``cli.main``, and compared byte for byte,
+including the ``FreshCal 0.1.0`` version line: since T-6.8 the released version string *is*
+the running one, so the comparison is verbatim (finding CLI-21: the old test normalised
+the version, which would have hidden a mismatch).
 """
 
 from __future__ import annotations
@@ -13,10 +13,9 @@ from pathlib import Path
 
 import pytest
 
-from freshcal import __version__, cli
+from freshcal import cli
 
 README = Path("README.md")
-RELEASED_VERSION = "0.1.0"
 QUICKSTART_CASES = (
     (1, "ON_TIME", 0),
     (2, "NOT_DUE", 0),
@@ -33,12 +32,8 @@ def marked_block(marker: str) -> list[str]:
     return lines[fence + 1 : end]
 
 
-def normalised(text: str) -> str:
-    return text.replace(f"FreshCal {__version__}", f"FreshCal {RELEASED_VERSION}")
-
-
 @pytest.mark.parametrize(("index", "status", "expected_code"), QUICKSTART_CASES)
-def test_quickstart_command_matches_the_readme(
+def test_q_01_q_03_quickstart_command_matches_the_readme(
     index: int,
     status: str,
     expected_code: int,
@@ -54,7 +49,7 @@ def test_quickstart_command_matches_the_readme(
 
     assert code == expected_code
     assert captured.err == ""
-    assert normalised(captured.out) == expected
+    assert captured.out == expected
     assert status in captured.out
 
 
@@ -76,7 +71,8 @@ def test_example_config_and_data_are_present_and_synthetic() -> None:
         "relation: \"read_csv('fx_rates.csv')\"",
         "observed_timezone: UTC",
         "financial: XECB",
-        "grace: 2h",
+        'time: "15:45"',
+        "grace: 2h15m",
     ):
         assert fragment in text, fragment
 

@@ -7,6 +7,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pytest
+from tests.oracle.cases import CRONITER_DAY_OR_REFUSALS
 
 from freshcal.config.loader import (
     AppConfig,
@@ -135,6 +136,25 @@ def test_u_load_03_duration_too_long_is_e203() -> None:
     assert error.issue.message == "sources[0].grace: duration '367d' exceeds the maximum of 366d"
 
 
+def test_cfg_10_huge_duration_is_e203_not_overflow() -> None:
+    """CFG-10: a duration too large for ``timedelta`` is E203, never an OverflowError."""
+    error = error_of(lambda: parse_duration("99999999999999d", "defaults.grace"))
+    assert error.issue.code == "E203"
+    assert error.issue.message == (
+        "defaults.grace: duration '99999999999999d' exceeds the maximum of 366d"
+    )
+
+
+def test_cfg_10_huge_duration_in_a_config_is_e203(tmp_path: Path) -> None:
+    """CFG-10 end to end: the loader reports E203 for the huge duration."""
+    config = write_config(tmp_path, "version: 1\ndefaults: {grace: 99999999999999d}\n")
+    error = error_of(lambda: load_config(config))
+    assert [issue.code for issue in error.issues] == ["E203"]
+    assert error.issues[0].message == (
+        "defaults.grace: duration '99999999999999d' exceeds the maximum of 366d"
+    )
+
+
 def test_u_load_03_malformed_duration_is_e106() -> None:
     error = error_of(lambda: parse_duration("2x", "grace"))
     assert error.issue.code == "E106"
@@ -145,6 +165,39 @@ def test_u_load_04_unknown_timezone_is_e201(value: str) -> None:
     error = error_of(lambda: parse_timezone(value, "sources[0].schedule.timezone"))
     assert error.issue.code == "E201"
     assert error.issue.message == f"sources[0].schedule.timezone: unknown time zone '{value}'"
+
+
+def test_cfg_19_zone_names_are_case_sensitive() -> None:
+    """CFG-19: zone lookup uses ``available_timezones()``, so it never depends on the OS.
+
+    macOS resolves ``europe/berlin`` through its case-insensitive file system; the
+    membership check makes the answer the same everywhere.
+    """
+    error = error_of(lambda: parse_timezone("europe/berlin", "sources[0].schedule.timezone"))
+    assert error.issue.code == "E201"
+    assert error.issue.message == (
+        "sources[0].schedule.timezone: unknown time zone 'europe/berlin'"
+    )
+    assert parse_timezone("Europe/Berlin", "tz").key == "Europe/Berlin"
+    assert parse_timezone("UTC", "tz").key == "UTC"
+
+
+def test_cfg_19_lowercase_zone_in_a_source_is_e201(tmp_path: Path) -> None:
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+sources:
+  - name: a.b
+    relation: raw.a
+    loaded_at_field: _loaded_at
+    schedule: {kind: business_days, time: "16:00", timezone: europe/berlin}
+    grace: 1h
+""",
+    )
+    entry = load_config(config).entries[0]
+    assert entry.rule is None
+    assert [issue.code for issue in entry.errors] == ["E201"]
 
 
 @pytest.mark.parametrize(
@@ -173,6 +226,27 @@ def test_u_load_05_out_of_range_field_is_e202() -> None:
 def test_u_load_05_weekday_names_are_accepted() -> None:
     assert validate_cron("0 16 * * THU", "cron") == "0 16 * * THU"
     assert validate_cron("0 6 1,15 * 1-5", "cron") == "0 6 1,15 * 1-5"
+
+
+@pytest.mark.parametrize("expression", CRONITER_DAY_OR_REFUSALS)
+def test_sem_08_croniter_day_or_refusals_are_rejected_at_load_time(expression: str) -> None:
+    """SEM-08: a valid OR schedule croniter cannot express is E202, never a false verdict.
+
+    Standard cron OR semantics (`day_or`) make `15 0 30 2 0,6` fire every weekend in
+    February even though 30 February never exists; croniter cannot compute that, so
+    FreshCal refuses the expression instead of reporting "no release" for a schedule
+    that does fire (conservative: a configuration error, exit 2).
+    """
+    error = error_of(lambda: validate_cron(expression, "sources[0].schedule.cron"))
+    assert error.issue.code == "E202"
+    assert "day-of-month" in error.issue.message
+    assert "OR" in error.issue.message
+
+
+def test_sem_08_a_never_firing_cron_stays_loadable_for_e209() -> None:
+    """Without an OR alternative there is no valid reading, so E209 keeps naming it."""
+    assert validate_cron("0 0 30 2 *", "cron") == "0 0 30 2 *"
+    assert validate_cron("0 0 29 2 *", "cron") == "0 0 29 2 *"  # leap years fire
 
 
 def test_u_load_06_defaults_resolution_order(tmp_path: Path) -> None:
@@ -278,6 +352,95 @@ sources:
         assert duplicate_entry.errors[0].message == (
             "duplicate source id 'a.b' at sources[0] and sources[1]"
         )
+
+
+def test_u_load_12_e206_names_every_duplicate_and_keeps_other_errors(tmp_path: Path) -> None:
+    """CFG-21: E206 names every member of the group and hides no other error.
+
+    With three definitions of one ID the message lists all three locations; the middle
+    entry also has an unknown time zone, and that error must survive next to E206.
+    """
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+sources:
+  - name: a.b
+    relation: raw.a
+    loaded_at_field: _loaded_at
+    schedule: {kind: business_days, time: "16:00", timezone: UTC}
+    grace: 1h
+  - name: a.b
+    relation: raw.b
+    loaded_at_field: _loaded_at
+    schedule: {kind: business_days, time: "16:00", timezone: Mars/Olympus}
+    grace: 1h
+  - name: a.b
+    relation: raw.c
+    loaded_at_field: _loaded_at
+    schedule: {kind: business_days, time: "16:00", timezone: UTC}
+    grace: 1h
+""",
+    )
+    entries = load_config(config).entries
+    expected = "duplicate source id 'a.b' at sources[0], sources[1] and sources[2]"
+    assert len(entries) == 3
+    for entry in entries:
+        assert entry.rule is None
+        assert entry.errors[0].code == "E206"
+        assert entry.errors[0].message == expected
+    # The entry's own error is not replaced by E206.
+    assert [issue.code for issue in entries[1].errors] == ["E206", "E201"]
+    assert entries[1].errors[1].message == (
+        "sources[1].schedule.timezone: unknown time zone 'Mars/Olympus'"
+    )
+
+
+def test_u_load_12_multiple_top_level_errors_are_all_raised(tmp_path: Path) -> None:
+    """CFG-04: a top-level document error does not hide the other top-level errors."""
+    config = write_config(tmp_path, "version: 2\nunknown_section: {}\n")
+    with pytest.raises(ConfigError) as excinfo:
+        load_config(config)
+    assert [issue.code for issue in excinfo.value.issues] == ["E101", "E104"]
+    assert excinfo.value.issue.code == "E101"  # the best match stays first
+
+
+def test_u_load_12_every_calendar_error_is_collected(tmp_path: Path) -> None:
+    """CFG-04: a bad calendar does not hide the other calendars' errors."""
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+calendars:
+  bad_country: {holidays: [{country: ZZ}]}
+  bad_date: {valid_until: "2026-13-01"}
+""",
+    )
+    error = error_of(lambda: load_config(config))
+    assert [issue.code for issue in error.issues] == ["E401", "E106"]
+    assert error.issues[0].message == ("calendars.bad_country.holidays[0]: unknown country 'ZZ'")
+    assert error.issues[1].message == (
+        "calendars.bad_date.valid_until: invalid value '2026-13-01': not a valid calendar date"
+    )
+
+
+def test_u_load_12_every_defaults_error_is_collected(tmp_path: Path) -> None:
+    """CFG-04: one bad default does not hide the other defaults' errors."""
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+defaults:
+  timezone: Mars/Olympus
+  observed_timezone: Mars/Olympus
+""",
+    )
+    error = error_of(lambda: load_config(config))
+    assert [issue.code for issue in error.issues] == ["E201", "E201"]
+    assert error.issues[0].message == "defaults.timezone: unknown time zone 'Mars/Olympus'"
+    assert error.issues[1].message == (
+        "defaults.observed_timezone: unknown time zone 'Mars/Olympus'"
+    )
 
 
 def test_u_load_09_connection_parsing(tmp_path: Path) -> None:
@@ -409,7 +572,9 @@ sources:
     )
     entry = load_config(config).entries[0]
     assert [issue.code for issue in entry.warnings] == ["W006"]
-    assert entry.warnings[0].location == "a.b"
+    # CLI-03/CLI-17: the label names the source; there is no location prefix.
+    assert entry.warnings[0].location is None
+    assert entry.warnings[0].message.startswith("calendar of a.b has overrides")
 
 
 def test_dbt_manifest_path_is_relative_to_the_config_directory(tmp_path: Path) -> None:
@@ -462,7 +627,30 @@ def test_yaml_document_that_is_not_a_mapping(tmp_path: Path) -> None:
     config = write_config(tmp_path, "- just\n- a list\n")
     error = error_of(lambda: load_config(config))
     assert error.issue.code == "E103"
-    assert error.issue.message == "expected object, got list"
+    assert error.issue.message == f"{config}: expected object, got list"
+
+
+def test_cli_19_top_level_errors_name_the_file(tmp_path: Path) -> None:
+    """CLI-19: an empty config's message names the file, not just the type.
+
+    Document-level errors have no in-file location, so the config path is the location;
+    errors with a location keep the existing ``{loc}: {message}`` shape.
+    """
+    empty = tmp_path / "empty.yml"
+    empty.write_text("", encoding="utf-8")
+    error = error_of(lambda: load_config(empty))
+    assert error.issue.code == "E103"
+    assert error.issue.message == f"{empty}: expected object, got NoneType"
+    assert error.issue.location == str(empty)
+
+    unknown = write_config(tmp_path, "version: 1\nunknown_section: {}\n", name="unknown.yml")
+    error = error_of(lambda: load_config(unknown))
+    assert error.issue.code == "E101"
+    assert error.issue.message == f"{unknown}: unknown field 'unknown_section'"
+
+    located = write_config(tmp_path, "version: 2\n", name="version.yml")
+    error = error_of(lambda: load_config(located))
+    assert error.issue.message == "version: unsupported config version; expected 1"
 
 
 def test_load_yaml_helpers_are_used(tmp_path: Path) -> None:

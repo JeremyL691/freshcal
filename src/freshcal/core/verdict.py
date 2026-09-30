@@ -39,15 +39,24 @@ from freshcal.core.observation import normalize_observed
 from freshcal.core.ports import CalendarProvider
 from freshcal.core.schedule import (
     CHUNK,
+    DATE_PADDING_DAYS,
     MAX_COUNTED_RELEASES,
     SEARCH_HORIZON,
+    consults_calendar,
     iter_releases_in_window,
     next_release_after,
     previous_release_at_or_before,
 )
 from freshcal.core.timeutil import local_date, resolve_local, to_utc
 
-__all__ = ["evaluate", "find_first_unarrived", "iter_releases", "schedule_context"]
+__all__ = [
+    "calendar_notice",
+    "evaluate",
+    "find_first_unarrived",
+    "iter_releases",
+    "note_consult_horizon",
+    "schedule_context",
+]
 
 
 def iter_releases(
@@ -116,6 +125,47 @@ def _format(value: datetime) -> str:
     return to_utc(value).isoformat().replace("+00:00", "Z")
 
 
+#: The notice window of W005: the local dates releases up to ``now + CHUNK +
+#: DATE_PADDING_DAYS`` (34 days) depend on. Declaring it keeps the warning independent of
+#: the shape of the searches (BLUEPRINT §3.3 as amended by A-11, finding SEM-04).
+CONSULT_HORIZON = CHUNK + timedelta(days=DATE_PADDING_DAYS)
+
+
+def note_consult_horizon(rule: SourceRule, calendar: BusinessCalendar, now: datetime) -> None:
+    """Declare the rule's notice window on ``calendar`` (:data:`CONSULT_HORIZON`).
+
+    A no-op for a schedule that never asks the calendar anything: a cron expression with
+    ``on_non_business_day: none`` never earns W005.
+    """
+    if consults_calendar(rule.schedule):
+        calendar.note_horizon(local_date(now + CONSULT_HORIZON, rule.schedule.timezone))
+
+
+def calendar_notice(rule: SourceRule, calendar: BusinessCalendar, now: datetime) -> Issue | None:
+    """The ``W005`` notice for ``rule``'s calendar, or ``None`` when there is none.
+
+    This is the one definition of W005, shared by ``evaluate``, ``next`` and ``validate``.
+    It declares the notice window first (:func:`note_consult_horizon`), so the answer does
+    not depend on how far a particular search happens to look, then reports the latest date
+    consulted — the window itself, or a later date a search really looked up — when it lies
+    after ``valid_until``. A schedule that never consults its calendar never earns the
+    warning, and callers attach it only to non-error results (§3.7.2, finding SEM-07).
+    """
+    if not consults_calendar(rule.schedule):
+        return None
+    note_consult_horizon(rule, calendar, now)
+    consulted = calendar.consulted_past_valid_until()
+    valid_until = calendar.spec.valid_until
+    if consulted is None or valid_until is None:
+        return None
+    return Issue(
+        "W005",
+        f"calendar {calendar.label} was consulted for {consulted.isoformat()}, after its "
+        f"valid_until {valid_until.isoformat()}; the next expected arrival may be wrong",
+        rule.source_id,
+    )
+
+
 def schedule_context(
     rule: SourceRule, now: datetime, provider: CalendarProvider
 ) -> tuple[Release | None, datetime | None]:
@@ -126,6 +176,7 @@ def schedule_context(
     """
     now = to_utc(now)
     calendar = BusinessCalendar(rule.calendar, provider, source_id=rule.source_id)
+    note_consult_horizon(rule, calendar, now)
     last = previous_release_at_or_before(rule, now, calendar)
     following = next_release_after(rule, now, calendar)
     if last is None and following is None:
@@ -155,19 +206,10 @@ def _result(
 ) -> EvaluationResult:
     """Assemble the result: deadline from the release, W005 from the calendar."""
     deadline = release.instant + rule.grace if release is not None else None
-    consulted = calendar.consulted_past_valid_until()
-    valid_until = calendar.spec.valid_until
-    if consulted is not None and valid_until is not None:
-        warnings = (
-            *warnings,
-            Issue(
-                "W005",
-                f"calendar {calendar.label} was consulted for {consulted.isoformat()}, after "
-                f"its valid_until {valid_until.isoformat()}; the next expected arrival may "
-                "be wrong",
-                rule.source_id,
-            ),
-        )
+    if error is None:  # W005 belongs to verdicts only, never to a CONFIG_ERROR (SEM-07)
+        notice = calendar_notice(rule, calendar, now)
+        if notice is not None:
+            warnings = (*warnings, notice)
     result = EvaluationResult(
         source_id=rule.source_id,
         origin=rule.origin,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import time
 from pathlib import Path
 from typing import Any
 
@@ -253,6 +254,52 @@ def test_u_schema_02_dbt_rule_forbids_name_and_relation() -> None:
     ]
 
 
+def test_u_schema_05_every_error_of_a_source_is_reported() -> None:
+    """CFG-04: a source with three mistakes yields three coded issues, not the best match.
+
+    ``validate`` lists every schema error of a source, while ``check`` may keep showing
+    only the first (the best match) in its ``CONFIG_ERROR`` result.
+    """
+    document = source(
+        typo=1,
+        grace="2x",
+        schedule={"kind": "business_days", "time": "25:00", "timezone": "UTC"},
+    )
+    assert validate_source(document, 0) == [
+        Issue("E101", "sources[0]: unknown field 'typo'", "sources[0]"),
+        Issue(
+            "E106",
+            "sources[0].schedule.time: invalid value '25:00': expected \"HH:MM\" "
+            '(24-hour), e.g. "16:00"',
+            "sources[0].schedule.time",
+        ),
+        Issue(
+            "E106",
+            "sources[0].grace: invalid value '2x': expected a duration such as "
+            '"90m", "2h", "1d6h"',
+            "sources[0].grace",
+        ),
+    ]
+
+
+def test_u_schema_05_every_top_level_and_calendar_error_is_reported() -> None:
+    """CFG-04: the document validator returns every top-level and calendar error.
+
+    A repeated weekend entry makes jsonschema report both ``uniqueItems`` and
+    ``maxItems`` at the same path; both map to the same E406 and are reported once.
+    """
+    document = {
+        "version": 2,
+        "extra": True,
+        "calendars": {"c": {"weekend": ["mon", "tue", "wed", "thu", "fri", "sat", "mon"]}},
+    }
+    issues = validate_document(document)
+    assert [issue.code for issue in issues] == ["E101", "E104", "E406"]
+    assert issues[2] == Issue(
+        "E406", "calendars.c.weekend: weekend may contain at most 6 days", "calendars.c.weekend"
+    )
+
+
 def test_u_schema_04_source_errors_are_not_reported_by_validate_document() -> None:
     document = {
         "version": 1,
@@ -264,7 +311,7 @@ def test_u_schema_04_source_errors_are_not_reported_by_validate_document() -> No
     ]
 
 
-def test_u_schema_03_test_schema_matches_blueprint() -> None:
+def test_schema_03_test_schema_matches_blueprint() -> None:
     text = BLUEPRINT.read_text(encoding="utf-8")
     start = text.index("### 4.4 JSON Schema")
     block = text.index("```json", start)
@@ -275,6 +322,86 @@ def test_u_schema_03_test_schema_matches_blueprint() -> None:
         Path("src/freshcal/schemas/config.v1.schema.json").read_text(encoding="utf-8")
     )
     assert committed == blueprint_schema
+
+
+def test_cfg_11_seven_distinct_weekend_days_is_e406() -> None:
+    """CFG-11: ``maxItems`` is mapped, so seven *distinct* days reach E406.
+
+    All seven weekday names are distinct, so ``uniqueItems`` does not fire; only
+    ``maxItems`` does, and it must be mapped to E406 like the repeated-day case.
+    """
+    days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+    assert validate_source(source(calendar={"weekend": days}), 0) == [
+        Issue(
+            "E406",
+            "sources[0].calendar.weekend: weekend may contain at most 6 days",
+            "sources[0].calendar.weekend",
+        )
+    ]
+    document = {"version": 1, "calendars": {"c": {"weekend": days}}}
+    assert validate_document(document) == [
+        Issue(
+            "E406", "calendars.c.weekend: weekend may contain at most 6 days", "calendars.c.weekend"
+        )
+    ]
+
+
+@pytest.mark.parametrize(
+    ("cron", "fields"),
+    [("0 6 * *", 4), ("@daily", 1), ("", 0)],
+)
+def test_cfg_12_short_cron_is_e202_with_the_field_count(cron: str, fields: int) -> None:
+    """CFG-12: a cron shorter than the schema's ``minLength`` is E202, not E106.
+
+    The schema cannot count fields; the mapping derives the count so the message
+    matches ``validate_cron``'s ``expected 5 fields, got N`` reason.
+    """
+    assert validate_source(source(schedule={"kind": "cron", "cron": cron}), 0) == [
+        Issue(
+            "E202",
+            f"sources[0].schedule.cron: invalid cron expression '{cron}': "
+            f"expected 5 fields, got {fields}",
+            "sources[0].schedule.cron",
+        )
+    ]
+
+
+def test_cfg_12_min_length_hint_names_the_minimum() -> None:
+    """CFG-12: other ``minLength`` failures say how many characters are needed."""
+    assert validate_source(source(relation=""), 0) == [
+        Issue(
+            "E106",
+            "sources[0].relation: invalid value '': at least 1 characters",
+            "sources[0].relation",
+        )
+    ]
+
+
+def test_cfg_13_alias_bomb_messages_are_bounded() -> None:
+    """CFG-13: a 380-byte alias bomb must not render expanded values.
+
+    The same structure as ``review/v0.1.0/B-config-adapters/alias_bomb_d8.yml``: eight
+    nested lists expanding to 9**8 leaves. Every message must stay small and validation
+    must finish well inside the gate's 3 s budget.
+    """
+    entries: list[object] = ["lol"] * 9
+    levels: list[object] = [entries]
+    for _ in range(7):
+        levels.append([levels[-1]] * 9)
+    document = {"version": 1, "calendars": {"c1": {"weekend": levels}}}
+
+    started = time.monotonic()
+    issues = validate_document(document)
+    elapsed = time.monotonic() - started
+    assert elapsed < 3.0, f"validation took {elapsed:.1f}s"
+    assert issues, "the bomb must be rejected"
+    assert max(len(issue.message) for issue in issues) <= 200
+    assert sum(len(issue.message) for issue in issues) < 10_000
+
+
+def test_cfg_21_non_string_yaml_key_is_named_in_e101() -> None:
+    """CFG-21: a mapping key that is not a string is named, not rendered as ''."""
+    assert validate_document({"version": 1, 1: "x"}) == [Issue("E101", "unknown field 1", "")]
 
 
 def test_validate_override_file_accepts_the_shipped_override_files() -> None:

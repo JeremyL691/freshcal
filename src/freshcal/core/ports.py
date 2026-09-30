@@ -8,17 +8,31 @@ that need them arrive.
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from datetime import date
+from datetime import date, datetime
 from typing import Protocol
 
 from freshcal.core.model import (
+    CheckReport,
     FreshnessTarget,
     HolidayCalendarRef,
     RawObservation,
     SourceEntry,
 )
 
-__all__ = ["CalendarProvider", "FreshnessReader", "SourceCatalog"]
+__all__ = ["CalendarProvider", "Clock", "FreshnessReader", "Reporter", "SourceCatalog"]
+
+
+class Clock(Protocol):
+    """The evaluation instant (BLUEPRINT.md §5.4).
+
+    This is the only way the engine learns "now": the composition root passes a
+    ``FixedClock`` (``--now``) or a ``SystemClock``, and ruff's ``TID251`` rule bans the
+    clock-reading APIs everywhere else.
+    """
+
+    def now(self) -> datetime:
+        """The current instant as an aware UTC datetime."""
+        ...
 
 
 class CalendarProvider(Protocol):
@@ -56,4 +70,12 @@ class SourceCatalog(Protocol):
 
     def entries(self) -> Sequence[SourceEntry]:
         """Every source the catalog defines, including the ones that failed to load."""
+        ...
+
+
+class Reporter(Protocol):
+    """Renders a check report as text (BLUEPRINT.md §5.4, §8.1)."""
+
+    def render(self, report: CheckReport) -> str:
+        """Return the report as the text the CLI writes to stdout or ``--output``."""
         ...

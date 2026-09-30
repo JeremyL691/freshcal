@@ -6,22 +6,31 @@ document has the right shape, and every schema error is mapped to a coded
 
 Two design constraints come from the blueprint: sub-schemas are validated through a
 wrapper ``{"$defs": …, "$ref": "#/$defs/<name>"}`` so that ``$ref``s still resolve,
-and each call reports the single most relevant error (``best_match``) because the
-schema is written so that one mistake yields one error.
+and every error is reported because ``validate`` lists them all; the ``best_match``
+error stays first so a caller that shows only one (the ``check`` path) keeps the most
+relevant message (CFG-04).
+
+Input hardening (T-7.9): the extended validator below builds *bounded* messages for the
+keywords that render an instance (``enum``, ``maxItems``, ``uniqueItems``) because
+jsonschema's own versions format ``repr(instance)`` eagerly and a YAML alias bomb
+expands to hundreds of megabytes there; every message this module renders goes through
+:func:`~freshcal.core.errors.render_value` (CFG-13).
 """
 
 from __future__ import annotations
 
 import json
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterator, Mapping, Sequence
 from importlib.resources import files
 from typing import Any, Final
 
 from jsonschema import Draft202012Validator, ValidationError
+from jsonschema._utils import equal, uniq
 from jsonschema.exceptions import best_match
+from jsonschema.validators import extend
 
-from freshcal.core.errors import Issue
+from freshcal.core.errors import Issue, render_value, truncate
 
 __all__ = [
     "validate_dbt_rule",
@@ -49,6 +58,7 @@ _RANGE_VALIDATORS: Final[frozenset[str]] = frozenset(
         "pattern",
         "minLength",
         "minItems",
+        "maxItems",
         "uniqueItems",
         "minProperties",
         "minimum",
@@ -57,7 +67,6 @@ _RANGE_VALIDATORS: Final[frozenset[str]] = frozenset(
     }
 )
 _REQUIRED_RE: Final[re.Pattern[str]] = re.compile(r"^'([^']+)' is a required property$")
-_QUOTED_RE: Final[re.Pattern[str]] = re.compile(r"'([^']+)'")
 
 
 def _load_schema() -> dict[str, Any]:
@@ -66,10 +75,52 @@ def _load_schema() -> dict[str, Any]:
     return loaded
 
 
+def _bounded_enum(
+    validator: Draft202012Validator, enums: Any, instance: Any, schema: Any
+) -> Iterator[ValidationError]:
+    """jsonschema's ``enum`` with a bounded message (CFG-13)."""
+    if all(not equal(each, instance) for each in enums):
+        yield ValidationError(f"{render_value(instance)} is not one of {render_value(enums)}")
+
+
+def _bounded_max_items(
+    validator: Draft202012Validator, maximum: Any, instance: Any, schema: Any
+) -> Iterator[ValidationError]:
+    """jsonschema's ``maxItems`` with a bounded message (CFG-13)."""
+    if validator.is_type(instance, "array") and len(instance) > maximum:
+        message = "is expected to be empty" if maximum == 0 else "is too long"
+        yield ValidationError(f"{render_value(instance)} {message}")
+
+
+def _bounded_unique_items(
+    validator: Draft202012Validator, unique: Any, instance: Any, schema: Any
+) -> Iterator[ValidationError]:
+    """jsonschema's ``uniqueItems`` with a bounded message (CFG-13)."""
+    if unique and validator.is_type(instance, "array") and not uniq(instance):
+        yield ValidationError(f"{render_value(instance)} has non-unique elements")
+
+
+#: ``Draft202012Validator`` whose instance-rendering messages stay small.
+#:
+#: Only the message text changes: the yielded errors carry the same ``validator``,
+#: ``validator_value``, ``instance`` and path, so ``_map_error`` maps them exactly as
+#: before. jsonschema's own versions format ``repr(instance)`` eagerly, which turns a
+#: 380-byte YAML alias bomb into gigabytes of strings before this module can truncate
+#: anything (CFG-13). ``extend`` is jsonschema's supported way to replace keywords;
+#: subclassing the validator class directly is deprecated.
+_BoundedValidator = extend(  # type: ignore[no-untyped-call]  # the stubs leave extend untyped
+    Draft202012Validator,
+    {
+        "enum": _bounded_enum,
+        "maxItems": _bounded_max_items,
+        "uniqueItems": _bounded_unique_items,
+    },
+)
+
 _SCHEMA: Final[dict[str, Any]] = _load_schema()
-_DOCUMENT_VALIDATOR: Final[Draft202012Validator] = Draft202012Validator(_SCHEMA)
+_DOCUMENT_VALIDATOR: Final[Draft202012Validator] = _BoundedValidator(_SCHEMA)
 _SUBSCHEMA_VALIDATORS: Final[dict[str, Draft202012Validator]] = {
-    name: Draft202012Validator({"$defs": _SCHEMA["$defs"], "$ref": f"#/$defs/{name}"})
+    name: _BoundedValidator({"$defs": _SCHEMA["$defs"], "$ref": f"#/$defs/{name}"})
     for name in ("source", "dbtRule", "overrideDays")
 }
 
@@ -123,20 +174,40 @@ def _hint(field: str, error: ValidationError) -> str:
     if validator == "minProperties":
         return "expected at least one field"
     if validator == "minLength":
-        return "must not be empty"
+        return f"at least {error.validator_value} characters"
     pattern = error.schema.get("pattern") if isinstance(error.schema, Mapping) else None
     if pattern is not None:
         return f"does not match {pattern}"
     return str(error.validator)
 
 
-def _unexpected_keys(error: ValidationError) -> list[str]:
-    message = error.message
-    start = message.find("(")
-    end = message.rfind(")")
-    if start == -1 or end == -1:
+def _unexpected_keys(error: ValidationError) -> list[object]:
+    """The keys the schema rejected, read from the instance.
+
+    Reading them structurally instead of parsing jsonschema's message names every key,
+    including YAML keys that are not strings (CFG-21). The committed schema has no
+    ``patternProperties``, so "unknown" means "not listed under ``properties``".
+    """
+    instance = error.instance
+    if not isinstance(instance, Mapping):
         return []
-    return _QUOTED_RE.findall(message[start:end])
+    properties = error.schema.get("properties") if isinstance(error.schema, Mapping) else None
+    known = set(properties) if isinstance(properties, Mapping) else set()
+    return [key for key in instance if key not in known]
+
+
+def _key_text(key: object) -> str:
+    """A bounded, unambiguous rendering of a mapping key for the E101 message."""
+    if isinstance(key, str):
+        return f"'{truncate(key)}'"
+    return render_value(key)
+
+
+def _value_text(value: object) -> str:
+    """The E104 form of a value: quoted for strings, a bounded repr otherwise."""
+    if isinstance(value, str):
+        return f"'{truncate(value)}'"
+    return render_value(value)
 
 
 def _map_error(error: ValidationError, prefix: str, *, dbt_rule: bool) -> list[Issue]:
@@ -172,7 +243,7 @@ def _map_error(error: ValidationError, prefix: str, *, dbt_rule: bool) -> list[I
                     )
                 )
             else:
-                issues.append(_issue("E101", location, f"unknown field '{key}'"))
+                issues.append(_issue("E101", location, f"unknown field {_key_text(key)}"))
         return issues
 
     if validator == "required":
@@ -210,7 +281,9 @@ def _map_error(error: ValidationError, prefix: str, *, dbt_rule: bool) -> list[I
         if not isinstance(allowed, list | tuple):
             allowed = [allowed]
         rendered = ", ".join(str(value) for value in allowed)
-        return [_issue("E104", location, f"'{error.instance}' is not one of: {rendered}")]
+        return [
+            _issue("E104", location, f"{_value_text(error.instance)} is not one of: {rendered}")
+        ]
 
     if validator in _RANGE_VALIDATORS:
         if field == "business_day":
@@ -224,7 +297,8 @@ def _map_error(error: ValidationError, prefix: str, *, dbt_rule: bool) -> list[I
             ]
         # A weekend list with more than six entries is E406 however the schema reports
         # it: with only seven weekday names, seven entries always repeat one, so
-        # ``uniqueItems`` can fire before ``maxItems`` (found on 2026-09-29).
+        # ``uniqueItems`` can fire before ``maxItems`` (found on 2026-09-29). CFG-11:
+        # ``maxItems`` is mapped too, so seven *distinct* days reach E406 as well.
         weekend_too_long = field == "weekend" and (
             validator == "maxItems"
             or (
@@ -235,12 +309,36 @@ def _map_error(error: ValidationError, prefix: str, *, dbt_rule: bool) -> list[I
         )
         if weekend_too_long:
             return [_issue("E406", location, "weekend may contain at most 6 days")]
+        # CFG-12: the schema's only ``minLength`` guard on ``cron`` is a rough proxy for
+        # "at least five fields"; count the fields so the message matches E202's
+        # ``expected 5 fields, got N`` reason (a cron with five 1-character fields is
+        # nine characters, so a shorter expression always has too few fields).
+        if validator == "minLength" and field == "cron":
+            expression = error.instance if isinstance(error.instance, str) else ""
+            return [
+                _issue(
+                    "E202",
+                    location,
+                    f"invalid cron expression {render_value(expression)}: "
+                    f"expected 5 fields, got {len(expression.split())}",
+                )
+            ]
         return [
-            _issue("E106", location, f"invalid value {error.instance!r}: {_hint(field, error)}")
+            _issue(
+                "E106",
+                location,
+                f"invalid value {render_value(error.instance)}: {_hint(field, error)}",
+            )
         ]
 
     # Fallback: keep the schema's own wording rather than dropping the error.
-    return [_issue("E106", location, f"invalid value {error.instance!r}: {error.message}")]
+    return [
+        _issue(
+            "E106",
+            location,
+            f"invalid value {render_value(error.instance)}: {truncate(error.message)}",
+        )
+    ]
 
 
 def _issues(
@@ -250,10 +348,26 @@ def _issues(
     *,
     dbt_rule: bool = False,
 ) -> list[Issue]:
-    error = best_match(validator.iter_errors(instance))
-    if error is None:
+    """Every schema error, mapped and de-duplicated by path, with ``best_match`` first.
+
+    Several schema errors can describe one mistake at the same path (a seven-entry
+    ``weekend`` fails both ``uniqueItems`` and ``maxItems``); the path keeps the best
+    match and the others are dropped. One error can still yield several issues (one per
+    unexpected key), and the best match is placed first so a caller that shows a single
+    message keeps the most relevant one.
+    """
+    errors = list(validator.iter_errors(instance))
+    if not errors:
         return []
-    return _map_error(error, prefix, dbt_rule=dbt_rule)
+    best = best_match(errors)
+    by_path: dict[tuple[object, ...], ValidationError] = {}
+    for error in [best, *(error for error in errors if error is not best)]:
+        by_path.setdefault(tuple(error.absolute_path), error)
+    return [
+        issue
+        for error in by_path.values()
+        for issue in _map_error(error, prefix, dbt_rule=dbt_rule)
+    ]
 
 
 def validate_document(doc: object) -> list[Issue]:

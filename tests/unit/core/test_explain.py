@@ -384,3 +384,255 @@ def test_observation_dataclass_is_used_for_aware_values() -> None:
     assert "(timezone-aware value)" in "\n".join(lines)
     assert Observation.__name__ == "Observation"
     assert Release.__name__ == "Release"
+
+
+def test_u_exp_10_on_time_reasoning_names_the_arrived_release() -> None:
+    """CLI-06: a release at or before the observation is never called "after" it.
+
+    ON_TIME is decided by the latest release at or before the observed timestamp (which
+    arrived) and by the first release after it lying beyond ``now``.
+    """
+    text = "\n".join(
+        explain_lines(
+            ecb_rule(),
+            RawObservation(naive("2026-09-25 14:07:00")),
+            aware("2026-09-28T05:30:00Z"),
+            provider(),
+        )
+    )
+    assert "First release after the observed timestamp: Fri 2026-09-25" not in text
+    assert (
+        "  1. The latest release at or before the observed timestamp: "
+        "Fri 2026-09-25 16:00 CEST arrived (observed Fri 2026-09-25 16:07 CEST)."
+    ) in text
+    assert (
+        "  2. The first release after the observed timestamp, "
+        "Mon 2026-09-28 16:00 CEST, is later than now (release > now)."
+    ) in text
+    assert "  3. Nothing due is outstanding" in text
+    assert "  => ON_TIME" in text
+
+
+def test_u_exp_11_only_the_first_future_release_is_the_next_expected_arrival() -> None:
+    """CLI-14: the tag belongs to the next expected arrival alone."""
+    text = "\n".join(
+        explain_lines(
+            ecb_rule(),
+            RawObservation(naive("2026-09-25 14:07:00")),
+            aware("2026-09-28T05:30:00Z"),
+            provider(),
+        )
+    )
+    assert text.count("(next expected arrival)") == 1
+    assert (
+        "  Mon 2026-09-28 16:00 CEST  2026-09-28T14:00:00Z  future (next expected arrival)" in text
+    )
+    assert "  Tue 2026-09-29 16:00 CEST  2026-09-29T14:00:00Z  future\n" in text
+
+
+def test_u_exp_12_clamped_release_names_the_month_and_its_business_days() -> None:
+    """CLI-14: not a bare "(clamped)" but the month and how many business days it had."""
+    clamped = SourceRule(
+        source_id="vendor.monthly",
+        origin=Origin.CONFIG,
+        schedule=MonthlyBusinessDaySchedule(business_day=22, at=time(18, 0), timezone=UTC_ZONE),
+        calendar=CalendarSpec(),
+        grace=timedelta(hours=2),
+        target=FreshnessTarget(relation="raw.monthly", loaded_at_field="_loaded_at"),
+        observed_timezone=UTC_ZONE,
+    )
+    text = "\n".join(
+        explain_lines(
+            clamped,
+            RawObservation(naive("2026-01-30 18:05:00")),
+            aware("2026-02-27T19:00:00Z"),
+            provider(),
+        )
+    )
+    assert "(clamped)" not in text
+    assert "clamped: February 2026 has only 20 business days" in text
+
+
+def test_u_exp_13_deadline_state_names_the_deadline() -> None:
+    """CLI-14: "deadline not passed" says which deadline, in the schedule time zone."""
+    not_due = "\n".join(
+        explain_lines(
+            ecb_rule(),
+            RawObservation(naive("2026-09-25 14:07:00")),
+            aware("2026-09-28T14:30:00Z"),
+            provider(),
+        )
+    )
+    assert "occurred, not arrived; deadline Mon 2026-09-28 18:00 CEST not passed" in not_due
+
+    overdue = "\n".join(
+        explain_lines(
+            ecb_rule(),
+            RawObservation(naive("2026-09-25 14:07:00")),
+            aware("2026-09-28T16:00:01Z"),
+            provider(),
+        )
+    )
+    assert "occurred, not arrived; deadline Mon 2026-09-28 18:00 CEST passed" in overdue
+
+
+def test_u_exp_14_a_single_truncated_miss_is_singular() -> None:
+    """SEM-10: one truncated miss reads `at least 1 release missed`, never `1 releases`."""
+    rule = SourceRule(
+        source_id="vendor.leap",
+        origin=Origin.CONFIG,
+        schedule=CronSchedule("0 0 29 2 *", UTC_ZONE, NonBusinessDayPolicy.NONE),
+        calendar=CalendarSpec(),
+        grace=timedelta(days=1),
+        target=FreshnessTarget(relation="raw.leap", loaded_at_field="_loaded_at"),
+    )
+    result = evaluate(
+        rule,
+        RawObservation(aware("2020-01-01T00:00:00Z")),
+        aware("2030-01-01T00:00:00Z"),
+        provider(),
+    )
+    assert result.status is Status.OVERDUE
+    assert result.missed_count == 1
+    assert result.missed_truncated is True
+    assert "at least 1 release missed" in result.explanation
+    assert "1 releases" not in result.explanation
+
+
+G01_TRACE = (
+    "Source    ecb.fx_rates (config examples/ecb/freshcal.yml, sources[0])\n"
+    "Schedule  business_days at 16:00 Europe/Berlin\n"
+    "Calendar  weekend: sat, sun | holidays: financial XECB | overrides: none\n"
+    "Grace     2h (wall-clock)\n"
+    "Query     SELECT max(_loaded_at) AS observed FROM raw.ecb_fx_rates\n"
+    "Now       2026-09-28T05:30:00Z = Mon 2026-09-28 07:30 CEST\n"
+    "Observed  2026-09-25T14:07:00Z = Fri 2026-09-25 16:07 CEST "
+    "(timezone-aware value)\n"
+    "\n"
+    "Releases around now (Europe/Berlin)\n"
+    "  Wed 2026-09-23 16:00 CEST  2026-09-23T14:00:00Z  arrived\n"
+    "  Thu 2026-09-24 16:00 CEST  2026-09-24T14:00:00Z  arrived\n"
+    "  Fri 2026-09-25 16:00 CEST  2026-09-25T14:00:00Z  arrived\n"
+    "  Sat 2026-09-26  no release: weekend\n"
+    "  Sun 2026-09-27  no release: weekend\n"
+    "  Mon 2026-09-28 16:00 CEST  2026-09-28T14:00:00Z  future (next expected arrival)\n"
+    "  Tue 2026-09-29 16:00 CEST  2026-09-29T14:00:00Z  future\n"
+    "\n"
+    "Reasoning\n"
+    "  1. The latest release at or before the observed timestamp: Fri 2026-09-25 "
+    "16:00 CEST arrived (observed Fri 2026-09-25 16:07 CEST).\n"
+    "  2. The first release after the observed timestamp, Mon 2026-09-28 16:00 CEST, "
+    "is later than now (release > now).\n"
+    "  3. Nothing due is outstanding: no release in the searched interval is missing.\n"
+    "  => ON_TIME\n"
+    "\n"
+    "Result    ON_TIME: On time: latest release Fri 2026-09-25 16:00 CEST arrived "
+    "(observed Fri 2026-09-25 16:07 CEST); next release Mon 2026-09-28 16:00 CEST.\n"
+)
+
+CLAMPED_TRACE = (
+    "Source    vendor.monthly\n"
+    "Schedule  monthly_business_day 22 at 18:00 UTC\n"
+    "Calendar  weekend: sat, sun | holidays: none | overrides: none\n"
+    "Grace     2h (wall-clock)\n"
+    "Now       2026-02-27T19:00:00Z = Fri 2026-02-27 19:00 UTC\n"
+    "Observed  2026-01-30T18:05:00Z = Fri 2026-01-30 18:05 UTC (naive value "
+    "interpreted in UTC via observed_timezone)\n"
+    "\n"
+    "Releases around now (UTC)\n"
+    "  Tue 2025-12-30 18:00 UTC  2025-12-30T18:00:00Z  arrived\n"
+    "  Fri 2026-01-30 18:00 UTC  2026-01-30T18:00:00Z  arrived\n"
+    "  Fri 2026-02-27 18:00 UTC  2026-02-27T18:00:00Z  occurred, not arrived; "
+    "deadline Fri 2026-02-27 20:00 UTC not passed (clamped: February 2026 has only "
+    "20 business days)\n"
+    "  Tue 2026-03-31 18:00 UTC  2026-03-31T18:00:00Z  future (next expected arrival)\n"
+    "  Thu 2026-04-30 18:00 UTC  2026-04-30T18:00:00Z  future\n"
+    "\n"
+    "Reasoning\n"
+    "  1. First release after the observed timestamp: Fri 2026-02-27 18:00 UTC.\n"
+    "  2. It has occurred (release <= now).\n"
+    "  3. Its deadline Fri 2026-02-27 20:00 UTC has not passed (now <= deadline).\n"
+    "  => NOT_DUE\n"
+    "\n"
+    "Result    NOT_DUE: Not due: release Fri 2026-02-27 18:00 UTC has not arrived "
+    "yet; grace window ends Fri 2026-02-27 20:00 UTC; next release Tue 2026-03-31 "
+    "18:00 UTC.\n"
+)
+
+HOLIDAY_GAP_TRACE = (
+    "Source    ecb.fx_rates\n"
+    "Schedule  business_days at 16:00 Europe/Berlin\n"
+    "Calendar  weekend: sat, sun | holidays: financial XECB | overrides: none\n"
+    "Grace     2h (wall-clock)\n"
+    "Now       2026-04-07T06:00:00Z = Tue 2026-04-07 08:00 CEST\n"
+    "Observed  2026-04-02T14:05:00Z = Thu 2026-04-02 16:05 CEST (naive value "
+    "interpreted in UTC via observed_timezone)\n"
+    "\n"
+    "Releases around now (Europe/Berlin)\n"
+    "  Tue 2026-03-31 16:00 CEST  2026-03-31T14:00:00Z  arrived\n"
+    "  Wed 2026-04-01 16:00 CEST  2026-04-01T14:00:00Z  arrived\n"
+    "  Thu 2026-04-02 16:00 CEST  2026-04-02T14:00:00Z  arrived\n"
+    "  Fri 2026-04-03  no release: holiday: Good Friday (financial XECB)\n"
+    "  Sat 2026-04-04  no release: weekend\n"
+    "  Sun 2026-04-05  no release: weekend\n"
+    "  Mon 2026-04-06  no release: holiday: Easter Monday (financial XECB)\n"
+    "  Tue 2026-04-07 16:00 CEST  2026-04-07T14:00:00Z  future (next expected arrival)\n"
+    "  Wed 2026-04-08 16:00 CEST  2026-04-08T14:00:00Z  future\n"
+    "\n"
+    "Reasoning\n"
+    "  1. The latest release at or before the observed timestamp: Thu 2026-04-02 "
+    "16:00 CEST arrived (observed Thu 2026-04-02 16:05 CEST).\n"
+    "  2. The first release after the observed timestamp, Tue 2026-04-07 16:00 CEST, "
+    "is later than now (release > now).\n"
+    "  3. Nothing due is outstanding: no release in the searched interval is missing.\n"
+    "  => ON_TIME\n"
+    "\n"
+    "Result    ON_TIME: On time: latest release Thu 2026-04-02 16:00 CEST arrived "
+    "(observed Thu 2026-04-02 16:05 CEST); next release Tue 2026-04-07 16:00 CEST.\n"
+)
+
+
+def test_trace_snapshot_g01_on_time() -> None:
+    """The whole G01 trace, exactly: the §8.4 sentence plus the §6.2 lines it comes from."""
+    from freshcal.adapters.holidays_provider import HolidaysCalendarProvider
+
+    lines = explain_lines(
+        ecb_rule(),
+        RawObservation(aware("2026-09-25T14:07:00Z")),
+        aware("2026-09-28T05:30:00Z"),
+        HolidaysCalendarProvider(),
+        origin_label="config examples/ecb/freshcal.yml, sources[0]",
+        query_text="SELECT max(_loaded_at) AS observed FROM raw.ecb_fx_rates",
+    )
+    assert "\n".join(lines) + "\n" == G01_TRACE
+
+
+def test_trace_snapshot_clamped_release() -> None:
+    """A clamped monthly release: the annotated line carries the month and its count."""
+    clamped = SourceRule(
+        source_id="vendor.monthly",
+        origin=Origin.CONFIG,
+        schedule=MonthlyBusinessDaySchedule(business_day=22, at=time(18, 0), timezone=UTC_ZONE),
+        calendar=CalendarSpec(),
+        grace=timedelta(hours=2),
+        target=FreshnessTarget(relation="raw.monthly", loaded_at_field="_loaded_at"),
+        observed_timezone=UTC_ZONE,
+    )
+    lines = explain_lines(
+        clamped,
+        RawObservation(naive("2026-01-30 18:05:00")),
+        aware("2026-02-27T19:00:00Z"),
+        provider(),
+    )
+    assert "\n".join(lines) + "\n" == CLAMPED_TRACE
+
+
+def test_trace_snapshot_holiday_gap() -> None:
+    """A holiday gap: every skipped local date with its reason, and the ON_TIME reasoning."""
+    lines = explain_lines(
+        ecb_rule(),
+        RawObservation(naive("2026-04-02 14:05:00")),
+        aware("2026-04-07T06:00:00Z"),
+        provider(),
+    )
+    assert "\n".join(lines) + "\n" == HOLIDAY_GAP_TRACE

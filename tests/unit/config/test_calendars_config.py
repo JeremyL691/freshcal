@@ -173,6 +173,35 @@ def test_u_ccal_07_missing_override_file(tmp_path: Path) -> None:
     )
 
 
+def test_cfg_09_override_file_directory_is_e404(tmp_path: Path) -> None:
+    """CFG-09: a directory as an override file is E404, not an E599 read crash."""
+    (tmp_path / "ovdir").mkdir()
+    config = tmp_path / "config.yml"
+    config.write_text(
+        "version: 1\ncalendars:\n  c:\n    overrides:\n      - file: ovdir\n", encoding="utf-8"
+    )
+    error = error_of(lambda: source_calendar(config))
+    assert error.issue.code == "E404"
+    assert error.issue.message == (
+        f"calendars.c.overrides[0]: override file '{tmp_path / 'ovdir'}': is a directory"
+    )
+
+
+def test_cfg_09_override_file_not_utf8_is_e404(tmp_path: Path) -> None:
+    """CFG-09: an override file that is not valid UTF-8 is E404."""
+    (tmp_path / "latin1.yml").write_bytes(b"working_days: []\n# caf\xe9\n")
+    config = tmp_path / "config.yml"
+    config.write_text(
+        "version: 1\ncalendars:\n  c:\n    overrides:\n      - file: latin1.yml\n",
+        encoding="utf-8",
+    )
+    error = error_of(lambda: source_calendar(config))
+    assert error.issue.code == "E404"
+    assert error.issue.message == (
+        f"calendars.c.overrides[0]: override file '{tmp_path / 'latin1.yml'}': not valid UTF-8"
+    )
+
+
 def test_u_ccal_07_invalid_yaml_override_file(tmp_path: Path) -> None:
     (tmp_path / "broken.yml").write_text("working_days: [\n", encoding="utf-8")
     config = tmp_path / "config.yml"
@@ -231,12 +260,13 @@ def test_u_ccal_10_w006_for_overrides_without_valid_until() -> None:
     plain = parse_calendar(
         {"overrides": [{"non_working_days": ["2026-12-24"]}]}, {}, "sources[0].calendar", Path(".")
     )
-    warnings = calendar_warnings(plain, source_id="acme.timesheets", location="acme.timesheets")
+    warnings = calendar_warnings(plain, source_id="acme.timesheets")
     assert len(warnings) == 1
     assert warnings[0].code == "W006"
-    assert warnings[0].location == "acme.timesheets"
+    # CLI-03/CLI-17: the label names the source once; there is no location prefix.
+    assert warnings[0].location is None
     assert warnings[0].message == (
-        "acme.timesheets: calendar of acme.timesheets has overrides but no valid_until; "
+        "calendar of acme.timesheets has overrides but no valid_until; "
         "override dates are usually valid for one year, so set valid_until to the last date "
         "you checked"
     )
@@ -250,7 +280,6 @@ def test_u_ccal_10_w006_for_overrides_without_valid_until() -> None:
                 Path("."),
             ),
             source_id="acme.timesheets",
-            location="acme.timesheets",
         )
         == ()
     )

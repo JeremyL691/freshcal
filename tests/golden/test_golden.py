@@ -7,7 +7,9 @@
 
 from __future__ import annotations
 
+import os
 import time
+from collections.abc import Iterator
 from datetime import datetime
 from typing import Any
 
@@ -25,6 +27,23 @@ from freshcal.adapters.holidays_provider import HolidaysCalendarProvider
 from freshcal.core.calendar import BusinessCalendar
 from freshcal.core.schedule import next_release_after
 from freshcal.core.verdict import evaluate
+
+
+@pytest.fixture(autouse=True)
+def _restore_process_timezone() -> Iterator[None]:
+    """Put the process time zone back after each run (TEST-08: the tests leaked it).
+
+    Every case sets ``TZ`` and calls ``time.tzset()``; without this teardown the last case's
+    zone stays active for the rest of the session, which makes any later test that reads the
+    process zone order-dependent.
+    """
+    original = os.environ.get("TZ")
+    yield
+    if original is None:
+        os.environ.pop("TZ", None)
+    else:
+        os.environ["TZ"] = original
+    time.tzset()
 
 
 @pytest.mark.parametrize("process_timezone", PROCESS_TIME_ZONES)
@@ -67,7 +86,7 @@ def test_golden_scenario(
 
     assert result.deadline == instant(expect["deadline"]), scenario_id
     assert result.next_expected_arrival == instant(expect["next_expected_arrival"]), scenario_id
-    if "next_adjusted_from" in expect:
+    if "next_adjusted_from" in expect or "next_dst" in expect:
         provider = HolidaysCalendarProvider()
         upcoming = next_release_after(
             rule,
@@ -76,8 +95,11 @@ def test_golden_scenario(
         )
         assert upcoming is not None, scenario_id
         assert upcoming.instant == result.next_expected_arrival, scenario_id
-        assert upcoming.adjusted_from is not None, scenario_id
-        assert upcoming.adjusted_from.isoformat() == expect["next_adjusted_from"], scenario_id
+        if "next_adjusted_from" in expect:
+            assert upcoming.adjusted_from is not None, scenario_id
+            assert upcoming.adjusted_from.isoformat() == expect["next_adjusted_from"], scenario_id
+        if "next_dst" in expect:
+            assert upcoming.dst == expect["next_dst"], scenario_id
 
     assert result.missed_count == expect["missed_count"], scenario_id
     assert result.missed_truncated is expect["missed_truncated"], scenario_id

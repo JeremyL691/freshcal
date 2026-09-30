@@ -24,6 +24,7 @@ from freshcal.core.model import (
     Release,
     Status,
 )
+from freshcal.core.ports import Reporter
 from freshcal.core.timeutil import format_utc
 
 __all__ = ["SCHEMA_VERSION", "JsonReporter"]
@@ -84,7 +85,7 @@ def _summary(results: tuple[EvaluationResult, ...]) -> dict[str, object]:
     return summary
 
 
-class JsonReporter:
+class JsonReporter(Reporter):
     """Renders check and next reports as schema-valid JSON text."""
 
     schema_version = SCHEMA_VERSION

@@ -3,23 +3,84 @@
 Every diagnostic FreshCal emits is an :class:`Issue` with a code from
 ``ISSUE_CODES``. Errors raise one of the :class:`FreshCalError` subclasses; the
 application layer turns them into statuses and exit codes.
+
+The two rendering helpers keep a message's size independent of its input: a YAML alias
+bomb is 380 bytes and expands to hundreds of megabytes, so a value that reaches a
+message is always rendered through :func:`render_value` (``reprlib``, bounded) and any
+other interpolated text through :func:`truncate` (CFG-13).
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+import reprlib
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Final
 
 __all__ = [
     "ISSUE_CODES",
+    "MAX_RENDER_LENGTH",
     "CalendarError",
     "ConfigError",
     "FreshCalError",
     "Issue",
     "QueryError",
+    "format_issue",
+    "read_failure_reason",
+    "render_value",
+    "truncate",
 ]
+
+#: Longest rendering of one value in a message (CFG-13).
+MAX_RENDER_LENGTH: Final[int] = 80
+
+_RENDERER: Final[reprlib.Repr] = reprlib.Repr()
+_RENDERER.maxlevel = 4
+_RENDERER.maxstring = 60
+_RENDERER.maxother = 60
+_RENDERER.maxlist = 6
+_RENDERER.maxtuple = 6
+_RENDERER.maxdict = 6
+_RENDERER.maxset = 6
+_RENDERER.maxfrozenset = 6
+_RENDERER.maxdeque = 6
+_RENDERER.maxarray = 6
+
+
+def truncate(text: str, limit: int = MAX_RENDER_LENGTH) -> str:
+    """Truncate ``text`` to ``limit`` characters with a trailing ``...``."""
+    if len(text) <= limit:
+        return text
+    return text[: limit - 3] + "..."
+
+
+def render_value(value: object, limit: int = MAX_RENDER_LENGTH) -> str:
+    """Render ``value`` for a message: ``reprlib`` (bounded, cycle-safe, shared-safe).
+
+    ``reprlib`` replaces deep or long parts with ``...`` and never expands an alias
+    structure, so the result is short even for a YAML alias bomb; the final ``limit``
+    keeps every message small (CFG-13).
+    """
+    return truncate(_RENDERER.repr(value), limit)
+
+
+def read_failure_reason(error: BaseException) -> str:
+    """A short, stable reason for a failed ``Path.read_text(encoding="utf-8")``.
+
+    Callers wrap it in their own code (``E110`` for the config file, ``E404`` for
+    override files, ``E302`` for a dbt manifest) so the reason wording is identical
+    everywhere (CFG-09).
+    """
+    if isinstance(error, FileNotFoundError):
+        return "file not found"
+    if isinstance(error, IsADirectoryError):
+        return "is a directory"
+    if isinstance(error, PermissionError):
+        return "permission denied"
+    if isinstance(error, UnicodeDecodeError):
+        return "not valid UTF-8"
+    return truncate(str(error))
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,14 +92,41 @@ class Issue:
     location: str | None = None
 
 
+def format_issue(issue: Issue) -> str:
+    """Render one issue the way the CLI prints it: ``CODE location: message`` (§4.6).
+
+    The location is printed exactly once: several §4.6 message templates interpolate
+    their own ``{loc}`` prefix, so a message that already carries ``location: `` keeps
+    its text and the prefix is not added a second time (the CLI-03 contract for
+    ``validate``; ``docs/configuration.md``).
+    """
+    location = issue.location
+    message = issue.message
+    if location and message.startswith(f"{location}: "):
+        message = message[len(location) + 2 :]
+    if location:
+        return f"{issue.code} {location}: {message}"
+    return f"{issue.code} {message}"
+
+
 class FreshCalError(Exception):
-    """Base class for errors that carry an :class:`Issue`."""
+    """Base class for errors that carry one or more :class:`Issue` objects.
+
+    ``issue`` is the first (most relevant) issue and stays the single-issue accessor
+    existing callers use; ``issues`` carries every issue the failure produced, so a
+    command can report all of them instead of only the first (CFG-04).
+    """
 
     issue: Issue
+    issues: tuple[Issue, ...]
 
-    def __init__(self, issue: Issue) -> None:
-        super().__init__(f"{issue.code} {issue.message}")
-        self.issue = issue
+    def __init__(self, issue: Issue | Iterable[Issue]) -> None:
+        issues = (issue,) if isinstance(issue, Issue) else tuple(issue)
+        if not issues:
+            raise ValueError("a FreshCalError needs at least one issue")
+        super().__init__("; ".join(f"{item.code} {item.message}" for item in issues))
+        self.issues = issues
+        self.issue = issues[0]
 
 
 class ConfigError(FreshCalError):
@@ -81,6 +169,8 @@ ISSUE_CODES: Final[Mapping[str, str]] = MappingProxyType(
         "E213": "Connection missing",
         "E214": "Naive value without zone",
         "E215": "Undecidable (stale beyond horizon)",
+        "E216": "No sources to evaluate",
+        "E217": "Cannot write output file",
         "E301": "Unsupported manifest version",
         "E302": "Manifest unreadable",
         "E303": "No loaded_at_field",

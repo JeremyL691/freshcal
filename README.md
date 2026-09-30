@@ -19,20 +19,29 @@ FreshCal v0.1 is not published on PyPI. Install it from a clone:
 
 ```bash
 git clone <repository-url> && cd freshcal
-uv sync --extra duckdb     # or --all-extras for the PostgreSQL adapter too
-uv run freshcal --version  # freshcal 0.1.0
+uv sync --extra duckdb --no-dev     # or --all-extras --no-dev for the PostgreSQL adapter too
+uv run freshcal --version  # freshcal 0.1.1
 ```
 
 `freshcal` needs Python 3.11 or newer; `uv` fetches it if necessary. The `duckdb` extra
-adds DuckDB support, the `postgres` extra adds PostgreSQL, and `--all-extras` adds both.
-To use the CLI without `uv run`, activate the environment (`source .venv/bin/activate`).
+adds DuckDB support, the `postgres` extra adds PostgreSQL, and `--all-extras` adds both;
+`--no-dev` leaves out the development tools, which a user does not need. To use the CLI
+without `uv run`, activate the environment (`source .venv/bin/activate`).
+
+Or build the wheel and install it into another environment: `uv build` inside the clone,
+then `uv pip install "dist/freshcal-0.1.1-py3-none-any.whl[duckdb]"` in that environment
+(the wheel brings its dependencies, not the development tools; verified for v0.1.1 —
+`freshcal --version` prints `freshcal 0.1.1` and the first quickstart command exits 0).
 
 ## 30-second quickstart
 
 The example config reads a small CSV with DuckDB, applies the ECB's schedule (business
-days at 16:00 Europe/Berlin, TARGET holidays, 2 h grace) and is evaluated three times on
-Monday 2026-09-28. `examples/ecb/fx_rates.csv` is **synthetic** sample data shaped like
-ECB reference rates, not the real rates.
+days at 15:45 Europe/Berlin, TARGET holidays, 2 h 15 m grace) and is evaluated three times
+on Monday 2026-09-28. `examples/ecb/fx_rates.csv` is **synthetic** sample data shaped like
+ECB reference rates, not the real rates. The release time is illustrative and set before
+the earliest collected publication proxy (15:56 CEST on both collected days,
+`docs/validation.md` section B) — the earliest time a loader could see the data — not from
+a distribution; the grace window keeps the 18:00 deadline.
 
 <!-- quickstart:command:1 -->
 ```bash
@@ -40,12 +49,12 @@ uv run freshcal check -c examples/ecb/freshcal.yml --now 2026-09-28T07:30:00+02:
 ```
 <!-- quickstart:output:1 -->
 ```text
-FreshCal 0.1.0 | evaluated at 2026-09-28T05:30:00Z | 1 source
+FreshCal 0.1.1 | evaluated at 2026-09-28T05:30:00Z | 1 source
 
 SOURCE        STATUS   RELEASE                    DEADLINE                   OBSERVED                   NEXT EXPECTED
-ecb.fx_rates  ON_TIME  Fri 2026-09-25 16:00 CEST  Fri 2026-09-25 18:00 CEST  Fri 2026-09-25 16:07 CEST  Mon 2026-09-28 16:00 CEST
+ecb.fx_rates  ON_TIME  Fri 2026-09-25 15:45 CEST  Fri 2026-09-25 18:00 CEST  Fri 2026-09-25 16:07 CEST  Mon 2026-09-28 15:45 CEST
 
-ecb.fx_rates: On time: latest release Fri 2026-09-25 16:00 CEST arrived (observed Fri 2026-09-25 16:07 CEST); next release Mon 2026-09-28 16:00 CEST.
+ecb.fx_rates: On time: latest release Fri 2026-09-25 15:45 CEST arrived (observed Fri 2026-09-25 16:07 CEST); next release Mon 2026-09-28 15:45 CEST.
 
 Summary: 1 ON_TIME | exit code 0
 ```
@@ -58,12 +67,12 @@ uv run freshcal check -c examples/ecb/freshcal.yml --now 2026-09-28T17:00:00+02:
 ```
 <!-- quickstart:output:2 -->
 ```text
-FreshCal 0.1.0 | evaluated at 2026-09-28T15:00:00Z | 1 source
+FreshCal 0.1.1 | evaluated at 2026-09-28T15:00:00Z | 1 source
 
 SOURCE        STATUS   RELEASE                    DEADLINE                   OBSERVED                   NEXT EXPECTED
-ecb.fx_rates  NOT_DUE  Mon 2026-09-28 16:00 CEST  Mon 2026-09-28 18:00 CEST  Fri 2026-09-25 16:07 CEST  Tue 2026-09-29 16:00 CEST
+ecb.fx_rates  NOT_DUE  Mon 2026-09-28 15:45 CEST  Mon 2026-09-28 18:00 CEST  Fri 2026-09-25 16:07 CEST  Tue 2026-09-29 15:45 CEST
 
-ecb.fx_rates: Not due: release Mon 2026-09-28 16:00 CEST has not arrived yet; grace window ends Mon 2026-09-28 18:00 CEST; next release Tue 2026-09-29 16:00 CEST.
+ecb.fx_rates: Not due: release Mon 2026-09-28 15:45 CEST has not arrived yet; grace window ends Mon 2026-09-28 18:00 CEST; next release Tue 2026-09-29 15:45 CEST.
 
 Summary: 1 NOT_DUE | exit code 0
 ```
@@ -76,12 +85,12 @@ uv run freshcal check -c examples/ecb/freshcal.yml --now 2026-09-28T18:30:00+02:
 ```
 <!-- quickstart:output:3 -->
 ```text
-FreshCal 0.1.0 | evaluated at 2026-09-28T16:30:00Z | 1 source
+FreshCal 0.1.1 | evaluated at 2026-09-28T16:30:00Z | 1 source
 
 SOURCE        STATUS   RELEASE                    DEADLINE                   OBSERVED                   NEXT EXPECTED
-ecb.fx_rates  OVERDUE  Mon 2026-09-28 16:00 CEST  Mon 2026-09-28 18:00 CEST  Fri 2026-09-25 16:07 CEST  Tue 2026-09-29 16:00 CEST
+ecb.fx_rates  OVERDUE  Mon 2026-09-28 15:45 CEST  Mon 2026-09-28 18:00 CEST  Fri 2026-09-25 16:07 CEST  Tue 2026-09-29 15:45 CEST
 
-ecb.fx_rates: Overdue: release Mon 2026-09-28 16:00 CEST missed its deadline Mon 2026-09-28 18:00 CEST; 1 release missed; latest data observed Fri 2026-09-25 16:07 CEST.
+ecb.fx_rates: Overdue: release Mon 2026-09-28 15:45 CEST missed its deadline Mon 2026-09-28 18:00 CEST; 1 release missed; latest data observed Fri 2026-09-25 16:07 CEST.
 
 Summary: 1 OVERDUE | exit code 1
 ```
@@ -92,8 +101,9 @@ can act on it.
 ## How it works
 
 1. **Releases** — the schedule and calendar produce the local dates and times a release is
-   expected: `business_days` at 16:00 Europe/Berlin, `monthly_business_day: 3` at 09:00,
-   or a cron expression. Releases are converted to UTC with `fold=0`, so a spring-forward
+   expected: `business_days` at a configured local time, `monthly_business_day` with
+   `business_day: 3` at 09:00 (the Nth business day of the month), or a cron expression.
+   Releases are converted to UTC with `fold=0`, so a spring-forward
    wall time is shifted forward and a fall-back wall time keeps its first occurrence.
 2. **Deadline** — *D = R + grace*, in elapsed time: a Friday 22:00 release with 6 h grace
    is due Saturday at 04:00, because pipeline latency does not pause on weekends.
@@ -115,17 +125,35 @@ sources:
   - name: ecb.fx_rates
     relation: raw.ecb_fx_rates
     loaded_at_field: _loaded_at
-    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    schedule: {kind: business_days, time: "15:45", timezone: Europe/Berlin}
     calendar:
       weekend: [sat, sun]
       holidays:
         - financial: XECB        # TARGET closing days
-    grace: 2h
+    grace: 2h15m
     observed_timezone: UTC       # the loader writes naive UTC timestamps
 ```
 
 Field reference, defaults, the issue catalog, and the secrets policy are in
 [docs/configuration.md](docs/configuration.md).
+
+### PostgreSQL: use a SELECT-only role
+
+Give the FreshCal connection a PostgreSQL role with only `SELECT` on the tables you
+check. FreshCal opens the connection with `default_transaction_read_only=on`, executes
+the freshness query as a single prepared statement (the server rejects a fragment that
+smuggles a second statement), and bounds every read with `statement_timeout` (default
+30 s) — but the read-only session is a second line of defense, not a substitute for a
+least-privilege role. Keep the DSN in an environment variable and configure only its name
+(`connection: {type: postgres, dsn_env: PGDSN}`); FreshCal never stores the DSN, and it
+replaces the DSN and its password in every connection or query error it reports.
+
+FreshCal's query is `SELECT max(<loaded_at_field>) FROM <relation> WHERE <filter>`. A
+composite index whose leading columns are the ones your `filter` tests and whose last
+column is the load timestamp (for example `CREATE INDEX ON raw.ecb_fx_rates (feed,
+_loaded_at)` for `filter: "feed = 'ecb'"`) lets PostgreSQL answer it from the index
+instead of scanning the table; without one, each check scans. See
+[docs/configuration.md](docs/configuration.md) for the full field reference.
 
 ## dbt
 
@@ -142,9 +170,10 @@ sources:
         config:
           meta:
             freshcal:
-              schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+              schedule: {kind: business_days, time: "15:45", timezone: Europe/Berlin}
               calendar: target          # defined in freshcal.yml
-              grace: 2h
+              grace: 2h15m
+              observed_timezone: UTC    # the loader writes naive UTC timestamps
 ```
 
 ```yaml
@@ -192,12 +221,14 @@ schema, so they are safe to consume from a script.
 - **dbt source freshness** configures `warn_after` / `error_after` as fixed durations
   (`count` + `period` of `minute`, `hour`, or `day`) with `loaded_at_field`,
   `loaded_at_query`, and `filter` (docs.getdbt.com/reference/resource-properties/freshness,
-  checked 2026-09-29). It has no documented native holiday-calendar, business-day, cron, or
-  non-fixed-threshold support. The request for time-aware freshness checks, dbt issue
-  #10963 ("[Feature] Time Aware Freshness Checks", labels `type:feature`, `Refinement`,
-  `freshness`, `engine:v1`), is **open** as of 2026-09-29 (GitHub API on `dbt-labs/dbt`,
-  last updated 2026-06-01). FreshCal can be run next to dbt and reads the same
-  `loaded_at_field` convention.
+  checked 2026-09-29). Its only documented Jinja workaround applies to `build_after`
+  (custom build frequency, for example a different count on weekends), not to the
+  freshness thresholds; there is no documented native holiday-calendar, business-day,
+  cron, or non-fixed-threshold support. The request for time-aware freshness checks, dbt
+  issue #10963 ("[Feature] Time Aware Freshness Checks", labels `type:feature`,
+  `Refinement`, `freshness`, `engine:v1`), is **open** as of 2026-09-29 (GitHub API on
+  `dbt-labs/dbt`, last updated 2026-06-01). FreshCal can be run next to dbt and reads the
+  same `loaded_at_field` convention.
 - **Elementary** offers statistical freshness monitoring (`freshness_anomalies`) and a
   rule-based daily SLA test, `data_freshness_sla`, whose parameters are `timestamp_column`,
   `sla_time`, `timezone`, optional `day_of_week`, `day_of_month`, and `where_expression`
@@ -225,7 +256,7 @@ reference rates for every publication day from 1999-01-04 to 2026-09-28 (7,102 d
 the `financial: XECB` calendar match exactly, and the US Treasury daily par yield curve for
 2023–2025 (749 dates) matches exactly once two Good Fridays are added as non-working days
 and Veterans Day 2023-11-10 as a working day. Arrival-time validation has not been done: the
-ECB publication-time proxy has too few collected business days (1 of the 20 needed), so no
+ECB publication-time proxy has too few collected business days (2 of the 20 needed), so no
 statement about arrival times is made. Details, including the disagreements that library
 calendars produce and the replay's "insufficient data" report, are in
 [docs/validation.md](docs/validation.md).
@@ -239,6 +270,15 @@ to your existing checks until you have seen it agree with reality for a few week
   or a loader that touches `loaded_at` on every run can make a missing release look
   arrived, and a release that arrived late but is present now is `ON_TIME`. Per-period
   checks (`rate_date = release date`) are a roadmap item.
+- **A publication earlier than the release time never counts.** Arrival is `O ≥ R`, so
+  data loaded *before* the release time does not satisfy it: if the schedule time is later
+  than the real earliest publication, FreshCal reports the release missing — `OVERDUE`
+  once the deadline has passed — until the loader runs again at or after `R`. On
+  2026-09-28 the ECB's daily file was observably available at 15:56:44 CEST (the
+  `Last-Modified` proxy, not proof of publication; `docs/validation.md` section B), before
+  the 16:00 a naive rule would declare. Set `time` to the earliest time your loader can see
+  the data (the example uses 15:45 with a 2 h 15 m grace window, keeping the 18:00
+  deadline).
 - **Grace is wall-clock time**, not business time; a Friday 22:00 release with 6 h grace is
   due Saturday 04:00.
 - **One instant is one delivery obligation**: releases that roll onto the same instant
@@ -248,10 +288,11 @@ to your existing checks until you have seen it agree with reality for a few week
 - **Holiday data comes from the `holidays` library** plus your overrides. Calendars whose
   dates are announced yearly should set `valid_until`; evaluating past it stops with
   `E408`.
-- **Naive timestamps need `observed_timezone`**; without it the result is `E408`'s sibling
-  `E214` — a configuration error, never a guess.
+- **Naive timestamps need `observed_timezone`**; without it the result is `E214` — a
+  configuration error, never a guess.
 - **DuckDB and PostgreSQL only**, and DuckDB has no statement timeout in v0.1.
-- Tested on Linux and macOS; Windows is not tested in v0.1.
+- Tested on macOS with Python 3.11 (full suite); the CI workflow targets Linux and
+  Python 3.11-3.14 but has not run yet. Windows is not tested in v0.1.
 
 ## Roadmap
 

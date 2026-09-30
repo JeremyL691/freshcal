@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from freshcal.core.errors import ConfigError
+from freshcal.core.errors import ConfigError, QueryError
 from freshcal.core.model import RawObservation
 from freshcal.core.observation import FUTURE_SKEW_TOLERANCE, normalize_observed
 
@@ -119,3 +119,26 @@ def test_u_obs_05_aware_value_with_a_configured_zone_warns() -> None:
 def test_naive_now_raises_value_error() -> None:
     with pytest.raises(ValueError, match="timezone-aware"):
         normalize_observed(RawObservation(None), None, datetime(2026, 9, 28, 16, 30))
+
+
+def test_an_overflowing_naive_value_is_e502_naming_the_value() -> None:
+    """E2E-02: normalizing cannot overflow out of the run; it is a per-source E502."""
+    value = datetime(9999, 12, 31, 22, 0)
+    with pytest.raises(QueryError) as excinfo:
+        normalize_observed(
+            RawObservation(value), ZoneInfo("America/New_York"), NOW, loaded_at_field="_loaded_at"
+        )
+    issue = excinfo.value.issue
+    assert issue.code == "E502"
+    assert issue.message.startswith("query failed: ")
+    assert "9999-12-31 22:00:00" in issue.message
+
+
+def test_an_overflowing_aware_value_is_e502_naming_the_value() -> None:
+    value = datetime(9999, 12, 31, 23, 59, 59, 999999, tzinfo=ZoneInfo("America/New_York"))
+    with pytest.raises(QueryError) as excinfo:
+        normalize_observed(RawObservation(value), None, NOW, loaded_at_field="_loaded_at")
+    issue = excinfo.value.issue
+    assert issue.code == "E502"
+    assert issue.message.startswith("query failed: ")
+    assert "9999-12-31 23:59:59.999999" in issue.message

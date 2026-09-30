@@ -2,15 +2,25 @@
 
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 import pytest
 from tests.conftest import FakeCalendarProvider
 
 from freshcal.core.calendar import MAX_ROLL_DAYS, BusinessCalendar
-from freshcal.core.errors import CalendarError
-from freshcal.core.model import CalendarSpec, HolidayCalendarRef, Weekday
+from freshcal.core.errors import CalendarError, Issue
+from freshcal.core.model import (
+    BusinessDaysSchedule,
+    CalendarSpec,
+    FreshnessTarget,
+    HolidayCalendarRef,
+    Origin,
+    RawObservation,
+    SourceRule,
+    Weekday,
+)
+from freshcal.core.verdict import evaluate
 
 XECB = HolidayCalendarRef("financial", "XECB")
 DE = HolidayCalendarRef("country", "DE")
@@ -175,10 +185,141 @@ def test_u_cal_10_valid_until_and_w005_tracking() -> None:
     assert open_calendar.consulted_past_valid_until() is None
 
 
+def test_u_cal_11_w005_notice_window_starts_34_days_before_valid_until() -> None:
+    """SEM-04: the notice window is explicit; the first W005 is 2026-11-28.
+
+    ``review/v0.1.0/A-semantics/w005_timing.py`` evaluates this rule daily at 08:00
+    Asia/Shanghai: with ``valid_until: 2026-12-31`` and a 34-day notice window
+    (``CHUNK + DATE_PADDING_DAYS``) the window first reaches past the valid date on
+    2026-11-28, and W005 stays on every day through 2026-12-31 — 34 of the 42 days
+    evaluated. The window is declared by ``note_horizon``, so ``check``, ``next`` and
+    ``validate`` all give this answer however far their searches happen to look.
+    """
+    shanghai = ZoneInfo("Asia/Shanghai")
+    rule = SourceRule(
+        source_id="cn.daily_sales",
+        origin=Origin.CONFIG,
+        schedule=BusinessDaysSchedule(at=time(15, 0), timezone=shanghai),
+        calendar=CalendarSpec(name="cn_workdays", valid_until=date(2026, 12, 31)),
+        grace=timedelta(hours=2),
+        target=FreshnessTarget(relation="raw.cn", loaded_at_field="_loaded_at"),
+        observed_timezone=shanghai,
+    )
+    warnings_by_day: list[tuple[date, tuple[Issue, ...]]] = []
+    day = date(2026, 11, 20)
+    while day <= date(2026, 12, 31):
+        now = datetime.combine(day, time(8, 0), tzinfo=shanghai)
+        observed = datetime.combine(day - timedelta(days=1), time(15, 5))
+        result = evaluate(rule, RawObservation(observed), now, FakeCalendarProvider())
+        warnings_by_day.append((day, result.warnings))
+        day += timedelta(days=1)
+
+    first_w005 = next(
+        day for day, warnings in warnings_by_day if any(issue.code == "W005" for issue in warnings)
+    )
+    assert first_w005 == date(2026, 11, 28)
+    assert all(
+        any(issue.code == "W005" for issue in warnings)
+        for day, warnings in warnings_by_day
+        if day >= date(2026, 11, 28)
+    )
+    assert all(
+        all(issue.code != "W005" for issue in warnings)
+        for day, warnings in warnings_by_day
+        if day < date(2026, 11, 28)
+    )
+    first_day = next(warnings for day, warnings in warnings_by_day if day == first_w005)
+    assert first_day[0].message == (
+        "calendar cn_workdays was consulted for 2027-01-01, after its valid_until "
+        "2026-12-31; the next expected arrival may be wrong"
+    )
+    assert first_day[0].location == "cn.daily_sales"
+
+
+def test_weekend_and_override_decisions_are_recorded_as_lookups() -> None:
+    """The suspected lookup gap: weekend and override answers short-circuit the provider.
+
+    ``is_business_day`` returns early for an explicit working day, an explicit
+    non-working day and a weekend day, so those decisions used to leave no trace in
+    ``max_date_looked_up``. Every predicate answer now records its date, which keeps the
+    W005 notice honest even for a decision a search makes beyond the declared window.
+    The declared window (``note_horizon``) is what makes the *answer* independent of the
+    search shape; this test pins both halves.
+    """
+    cal = calendar(
+        CalendarSpec(
+            name="cn_workdays",
+            valid_until=date(2026, 12, 31),
+            extra_working_days=frozenset({SATURDAY}),
+            extra_non_working_days=frozenset({date(2027, 1, 5)}),
+        ),
+        source_id="cn.daily_sales",
+    )
+    # An explicit working day beats the weekend, and the decision is recorded.
+    assert cal.is_business_day(SATURDAY)
+    assert cal.max_date_looked_up == SATURDAY
+    assert cal.consulted_past_valid_until() is None
+
+    # A weekend day and an explicit non-working day past valid_until are decisions too.
+    sunday = date(2027, 1, 3)
+    assert not cal.is_business_day(sunday)
+    assert cal.max_date_looked_up == sunday
+    override = date(2027, 1, 5)
+    assert not cal.is_business_day(override)
+    assert cal.max_date_looked_up == override
+    assert cal.consulted_past_valid_until() == override
+
+    # A declared horizon is recorded even when no predicate asked about it — this is
+    # what makes W005 independent of how far a search happens to look.
+    declared = calendar(CalendarSpec(name="cn_workdays", valid_until=date(2026, 12, 31)))
+    declared.note_horizon(date(2027, 1, 2))  # a Saturday
+    assert declared.max_date_looked_up == date(2027, 1, 2)
+    assert declared.consulted_past_valid_until() == date(2027, 1, 2)
+
+
 def test_labels_for_inline_and_named_calendars() -> None:
     assert calendar(CalendarSpec(name="target")).label == "target"
     assert calendar(source_id="ecb.fx_rates").label == "of ecb.fx_rates"
     assert calendar().label == "inline"
+
+
+def test_c2_roll_reaches_exactly_max_roll_days() -> None:
+    """Kills mutant C2: a business day exactly ``MAX_ROLL_DAYS`` away is reachable.
+
+    With the first 30 days blocked the next business day is 31 days out, and §3.4.3
+    allows the roll; the ``range(1, MAX_ROLL_DAYS)`` mutant stops one day short and
+    raises E407. With 31 days blocked (32 away) E407 is the correct answer, so the test
+    pins both sides of the boundary.
+    """
+    start = date(2026, 9, 1)
+    blocked_30 = frozenset(start + timedelta(days=offset) for offset in range(1, 31))
+    cal = calendar(CalendarSpec(extra_non_working_days=blocked_30))
+    assert cal.roll(start, 1) == start + timedelta(days=MAX_ROLL_DAYS)
+
+    blocked_31 = frozenset(start + timedelta(days=offset) for offset in range(1, 32))
+    cal = calendar(CalendarSpec(extra_non_working_days=blocked_31))
+    with pytest.raises(CalendarError) as excinfo:
+        cal.roll(start, 1)
+    assert excinfo.value.issue.code == "E407"
+
+
+def test_c4_lookup_equal_to_valid_until_is_not_w005() -> None:
+    """Kills mutant C4: ``max_date_looked_up == valid_until`` is still inside the calendar.
+
+    The last valid day is part of the calendar; only a lookup strictly after
+    ``valid_until`` is consulted past it. The ``>=`` mutant reports W005 one day early,
+    so every rule would warn on its calendar's last valid day.
+    """
+    cal = calendar(
+        CalendarSpec(valid_until=date(2026, 12, 31), name="cn_workdays"),
+        source_id="cn.daily_sales",
+    )
+    cal.is_business_day(date(2026, 12, 31))
+    assert cal.max_date_looked_up == date(2026, 12, 31)
+    assert cal.consulted_past_valid_until() is None
+
+    cal.is_business_day(date(2027, 1, 1))
+    assert cal.consulted_past_valid_until() == date(2027, 1, 1)
 
 
 def test_holiday_lookup_caches_by_year_per_ref() -> None:
@@ -194,3 +335,22 @@ def test_holiday_lookup_caches_by_year_per_ref() -> None:
     assert cal.non_business_reason(day) == "holiday: Labour Day (country DE)"
     assert cal.non_business_reason(date(2027, 5, 1)) == "weekend"
     assert ZoneInfo("UTC") is not None
+
+
+def test_c5_is_business_day_records_the_holiday_lookup() -> None:
+    """C5: the holiday branch of `is_business_day` is still a recorded lookup.
+
+    T-7.4's campaign killed the mutant that replaces `self.holiday_name(day) is None` with a
+    direct dictionary test, because the replacement silently stops recording the lookup.
+    W005's notice window no longer depends on that recording (A-11 declares it), so this
+    test pins the documented contract directly: the calendar records the latest date anyone
+    looked up, and a holiday answer is a lookup.
+    """
+    holiday = date(2026, 4, 3)
+    cal = calendar(
+        CalendarSpec(holiday_calendars=(XECB,)),
+        {("financial XECB", 2026): {holiday: "Good Friday"}},
+    )
+    assert cal.max_date_looked_up is None
+    assert cal.is_business_day(holiday) is False
+    assert cal.max_date_looked_up == holiday

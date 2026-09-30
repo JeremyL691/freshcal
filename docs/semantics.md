@@ -68,6 +68,22 @@ scheduled time), the instant is reported once. One load at or after that instant
 every release at it, so FreshCal could not tell two same-instant deliveries apart; a
 provider that really ships separate files still gets one obligation reported.
 
+## Calendar validity and the W005 notice window
+
+A calendar may declare `valid_until`, the last local date whose holidays and overrides a
+person has checked. Evaluating after it fails with `E408`. Before that, FreshCal warns with
+`W005` when the calendar is *consulted* for a date after `valid_until`, because the verdict
+then rests on data nobody has verified.
+
+The notice window is explicit, not a side effect of how far a search happens to look: for
+every rule that consults its calendar — a plain `cron` with `on_non_business_day: none`
+never does — the local dates in the schedule time zone that releases up to
+`now + CHUNK + DATE_PADDING_DAYS` (34 days) can depend on are declared as consulted, and
+every predicate or reason answer records its date, including weekend and override
+decisions that never reach the provider. `check`, `next` and `validate` all compute the
+warning through the same function, so they agree on the same evaluation instant, and `W005`
+is never attached to a `CONFIG_ERROR` result.
+
 ## The decision table
 
 Rows are evaluated top to bottom; the first match wins.
@@ -103,13 +119,16 @@ FreshCal instead guarantees:
   interval *(O, now]* — so "no release" really means "no release";
 - if the observed timestamp is older than the horizon, the search first looks for a missed
   release inside the recent 1830 days, which proves `OVERDUE` without touching ancient
-  calendar data, and then searches forward from the observed timestamp itself to find the
-  exact oldest missed release;
+  calendar data; **only when that finds no missed release** does it search forward from
+  the observed timestamp itself for up to 1830 days, which finds the exact oldest
+  unarrived release;
 - if even that finds nothing — a gap longer than 1830 days after the observed timestamp —
   the result is `CONFIG_ERROR` `E215`, "cannot decide", never `ON_TIME`.
 
-`missed_truncated` is true in the first case and when counting hit the cap: the counts are
-then lower bounds ("at least N releases missed") and `release` is the oldest miss *found*.
+`missed_truncated` is true when the stale shortcut above answered (the count started from
+the recent window rather than at the oldest unarrived release) and when counting hit the
+10 000 cap: the counts are then lower bounds ("at least N releases missed", singular for
+`N = 1`) and `release` is the oldest miss *found*.
 The status never depends on the truncated part.
 
 ## Edge cases, with the ruling and the reason
@@ -128,7 +147,7 @@ The status never depends on the truncated part.
 | Grace crosses a weekend or holiday | The deadline is still *R + g* elapsed | Grace models pipeline latency, which does not pause; the calendar already governs when releases happen. |
 | The table is empty and no `active_from` is set | `NO_DATA` | FreshCal cannot know which releases were expected. With `active_from`, releases exist from that date and an empty table is `ON_TIME` before the first one, then `NOT_DUE`, then `OVERDUE`. |
 | A calendar has overrides and no `valid_until` | Warning `W006` at load time | Override dates are usually valid for one year. |
-| Evaluation happens after `valid_until` | `E408` | Failing loudly once a year beats silently wrong verdicts for a year. Only *looking up* later dates warns (`W005`). |
+| Evaluation happens after `valid_until` | `E408` | Failing loudly once a year beats silently wrong verdicts for a year. Consulting later dates for the next releases warns (`W005`) instead; see "Calendar validity and the W005 notice window". |
 | Several holiday calendars are listed | Union: a date is a holiday if any calendar contains it | A source that needs both London and TARGET open needs both calendars. |
 | A month-day/leap-day-only schedule | Works; leap days and year boundaries need no special handling | Generation iterates real dates. |
 
@@ -154,6 +173,13 @@ comparisons that produced the status.
   check, including a backfill of old rows, and a late arrival that is present now is
   `ON_TIME`. `filter` restricts what counts as a delivery; `freshcal explain` shows exactly
   which comparison was made. Per-period checks are a roadmap item.
+- **An early publication never counts for its release.** Arrival is `O ≥ R`, so data loaded
+  before the release time does not satisfy it: a schedule time later than the real earliest
+  publication reports the release missing — `OVERDUE` after the deadline — until a load at
+  or after `R`. On 2026-09-28 the ECB's daily file was observably available at 15:56:44
+  CEST (the `Last-Modified` proxy, not proof of publication; `docs/validation.md` section
+  B). Declare the earliest time your loader can see the data and widen the grace window if
+  needed (BLUEPRINT.md §3.6).
 - **Wall-clock grace.** A Friday 22:00 release with 6 h grace is due Saturday 04:00.
   Business-time grace is a roadmap item.
 - **One obligation per instant.** Releases that roll onto the same instant count once.

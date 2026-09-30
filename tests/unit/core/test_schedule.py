@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import zoneinfo
 from datetime import UTC, date, datetime, time, timedelta
 from itertools import pairwise
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, _zoneinfo
 
 import pytest
 from tests.conftest import FakeCalendarProvider
@@ -24,6 +25,7 @@ from freshcal.core.model import (
 )
 from freshcal.core.schedule import (
     HOLD_BACK,
+    MAX_OFFSET,
     MAX_ROLL_DAYS,
     next_release_after,
     previous_release_at_or_before,
@@ -208,9 +210,25 @@ def test_u_sch_12_never_firing_cron_is_e209() -> None:
         )
     issue = excinfo.value.issue
     assert issue.code == "E209"
+    # T-7.11 / §4.6: the message names the search instant, not a padded window start
+    # (T-7.2 named the window start here, which was the last date the search rewrote).
     assert issue.message == (
-        "schedule produces no release within 1830 days before or after 2025-12-30"
+        "schedule produces no release within 1830 days before or after 2026-01-01T00:00:00Z"
     )
+
+
+def test_sem_08_e209_names_the_search_instant_in_every_path() -> None:
+    """SEM-08: both searches report the instant they were asked about, never a window edge."""
+    rule = make_rule(CronSchedule("0 0 30 2 *", UTC_ZONE))
+    calendar = make_calendar()
+    now = datetime(2026, 2, 10, 12, 0, tzinfo=UTC)
+    expected = "schedule produces no release within 1830 days before or after 2026-02-10T12:00:00Z"
+    with pytest.raises(ConfigError) as excinfo:
+        previous_release_at_or_before(rule, now, calendar)
+    assert excinfo.value.issue.message == expected
+    with pytest.raises(ConfigError) as excinfo:
+        next_release_after(rule, now, calendar)
+    assert excinfo.value.issue.message == expected
 
 
 def test_u_sch_15_window_edges_are_inclusive() -> None:
@@ -513,37 +531,176 @@ def test_business_day_releases_never_visit_non_business_days() -> None:
     ]
 
 
-def test_dst_transitions_are_further_apart_than_the_hold_back() -> None:
-    """The search's transition guard assumes no zone changes offset twice within HOLD_BACK.
+def test_u_sch_17_tzdata_bounds_hold_for_the_search_constants() -> None:
+    """U-SCH-17: the constants the searches rely on really hold in this tzdata (T-7.2).
 
-    Sampling every six hours across 2026 for the zones the tests use: consecutive offset
-    changes are months or years apart, never hours. (The same check over every tzdata zone
-    from 1900 to 2100 gives six days as the smallest gap; see Amendment A-5.)
+    Derived from every zone's explicit TZif table, 1900-2100 (the same source
+    ``review/v0.1.0/A-semantics/tz_transitions.py`` used to find the T-6.1 regressions):
+
+    * no two consecutive offset changes are closer than ``4 * MAX_OFFSET`` (104 h), so a
+      two-point offset comparison spanning ``2 * MAX_OFFSET`` detects every nearby
+      transition - that is the guard the searches use;
+    * the largest forward jump is below ``HOLD_BACK``; and the largest per-zone offset
+      spread is at most ``HOLD_BACK``, so the streaming generator's hold-back is sound;
+    * no offset is larger than ``MAX_OFFSET`` in absolute value, so a nominal cannot resolve
+      further than ``MAX_OFFSET`` from its own wall time (the scan padding).
     """
-    zone_names = (
-        "UTC",
-        "Europe/Berlin",
-        "America/New_York",
-        "America/Santiago",
-        "Australia/Lord_Howe",
-        "Asia/Kathmandu",
-        "Pacific/Chatham",
-        "Asia/Shanghai",
-        "Pacific/Kiritimati",
+    smallest_step: tuple[timedelta, str, datetime] | None = None
+    largest_jump: tuple[timedelta, str, datetime] | None = None
+    largest_offset: tuple[timedelta, str] | None = None
+    largest_spread: tuple[timedelta, str] | None = None
+    for name in sorted(zoneinfo.available_timezones()):
+        zone = _zoneinfo.ZoneInfo.no_cache(name)
+        epochs = zone._trans_utc
+        offsets = tuple(info.utcoff for info in zone._ttinfos)
+        initial = zone._tti_before.utcoff if zone._tti_before else None
+        table = ((initial,) if initial is not None else ()) + offsets
+        if not table:  # fixed zones such as UTC carry no explicit table
+            probe = ZoneInfo(name).utcoffset(datetime(2000, 1, 1))
+            table = (probe or timedelta(0),)
+        if largest_offset is None or abs(table[0]) > abs(largest_offset[0]):
+            largest_offset = (table[0], name)
+        spread = max(table) - min(table)
+        if largest_spread is None or spread > largest_spread[0]:
+            largest_spread = (spread, name)
+        for offset in table:
+            if abs(offset) > abs(largest_offset[0]):
+                largest_offset = (offset, name)
+        changes: list[tuple[float, timedelta, timedelta]] = []
+        previous = initial
+        for epoch, offset in zip(epochs, offsets, strict=False):
+            if previous is not None and offset != previous:
+                moment = datetime.fromtimestamp(epoch, UTC)
+                if 1900 <= moment.year <= 2100:
+                    changes.append((epoch, previous, offset))
+            previous = offset
+        for (first, _, _), (second, _, _) in pairwise(changes):
+            step = timedelta(seconds=second - first)
+            if smallest_step is None or step < smallest_step[0]:
+                smallest_step = (step, name, datetime.fromtimestamp(first, UTC))
+        for epoch, before, after in changes:
+            if after > before:
+                jump = after - before
+                if largest_jump is None or jump > largest_jump[0]:
+                    largest_jump = (jump, name, datetime.fromtimestamp(epoch, UTC))
+
+    assert smallest_step is not None
+    assert largest_jump is not None
+    assert largest_spread is not None
+    assert largest_offset is not None
+    assert smallest_step[0] > 4 * MAX_OFFSET, smallest_step
+    assert largest_jump[0] < HOLD_BACK, largest_jump
+    assert largest_spread[0] <= HOLD_BACK, largest_spread
+    assert abs(largest_offset[0]) < MAX_OFFSET, largest_offset
+
+
+def test_u_sch_18_lord_howe_half_hour_gap() -> None:
+    """U-SCH-18: a 30-minute gap with two daily fires keeps both releases, in order."""
+    zone = ZoneInfo("Australia/Lord_Howe")
+    rule = make_rule(CronSchedule("10,30 2 * * *", zone))
+    calendar = make_calendar()
+    # 2026-10-04 02:00 -> 02:30 local: the 02:10 nominal falls inside the half-hour gap and
+    # resolves to 02:40 (+11), *after* the 02:30 nominal's 15:30Z - the one inversion the
+    # hold-back exists for. The list below is instant order, which is what callers get.
+    start = datetime(2026, 10, 3, 15, 0, tzinfo=UTC)
+    end = datetime(2026, 10, 4, 16, 0, tzinfo=UTC)
+    releases = releases_between(rule, start, end, calendar)
+    instants = [release.instant for release in releases]
+    assert instants == sorted(instants)
+    assert [release.local.strftime("%Y-%m-%d %H:%M") for release in releases] == [
+        "2026-10-04 02:30",
+        "2026-10-04 02:40",
+        "2026-10-05 02:10",
+        "2026-10-05 02:30",
+    ]
+    assert [release.dst for release in releases] == ["normal", "gap", "normal", "normal"]
+    upcoming = next_release_after(rule, datetime(2026, 10, 3, 15, 0, tzinfo=UTC), calendar)
+    assert upcoming is not None
+    assert (
+        upcoming.instant == releases[0].instant == resolve_local(datetime(2026, 10, 4, 2, 30), zone)
     )
-    step = timedelta(hours=6)
-    start = datetime(2026, 1, 1)
-    end = datetime(2027, 1, 1)
-    for name in zone_names:
-        tz = ZoneInfo(name)
-        transitions: list[datetime] = []
-        cursor = start
-        previous_offset = tz.utcoffset(cursor)
-        while cursor < end:
-            cursor += step
-            offset = tz.utcoffset(cursor)
-            if offset != previous_offset:
-                transitions.append(cursor)
-            previous_offset = offset
-        for earlier, later in pairwise(transitions):
-            assert later - earlier > HOLD_BACK, (name, earlier, later)
+
+
+def test_u_sch_19_casey_1969_releases_stay_sorted() -> None:
+    """U-SCH-19: an 8-hour forward jump (Antarctica/Casey 1969) cannot unsort releases."""
+    zone = ZoneInfo("Antarctica/Casey")
+    rule = make_rule(CronSchedule("30 1,7,8 * * *", zone))
+    calendar = make_calendar()
+    releases = releases_between(
+        rule,
+        datetime(1968, 12, 31, 20, 0, tzinfo=UTC),
+        datetime(1969, 1, 1, 9, 0, tzinfo=UTC),
+        calendar,
+    )
+    instants = [release.instant for release in releases]
+    assert instants == sorted(instants)
+    assert [instant.strftime("%m-%d %H:%MZ") for instant in instants] == [
+        "01-01 00:30Z",
+        "01-01 01:30Z",
+        "01-01 07:30Z",
+    ]
+
+
+def test_u_sch_20_rolled_release_at_a_window_edge() -> None:
+    """U-SCH-20: a `following` roll into the window is found from both sides of the edge.
+
+    Kills the padding and look-back mutants (S4, S11): the nominal sits a weekend and a
+    holiday before the window start, so a search that only pads by two days or only looks
+    back for rolling policies when the window itself is wide misses it.
+    """
+    zone = ZoneInfo("UTC")
+    holidays = {
+        ("country DE", 2026): {
+            date(2026, 1, 5): "Bridge Monday",
+            date(2026, 1, 6): "Bridge Tuesday",
+            date(2026, 1, 7): "Bridge Wednesday",
+        }
+    }
+    rule = make_rule(
+        CronSchedule("0 6 * * 6", zone, NonBusinessDayPolicy.FOLLOWING),
+        calendar=CalendarSpec(holiday_calendars=(DE,)),
+    )
+    calendar = make_calendar(rule.calendar, holidays)
+    # Saturday 2026-01-03 rolls forward over the weekend and three bridge holidays (Mon 01-05,
+    # Tue 01-06, Wed 01-07) to Thursday 2026-01-08 (adjusted_from 2026-01-03) - five days after
+    # the nominal, so a search that only pads by two days (or does not look back for a rolling
+    # policy) misses it.
+    nominal = datetime(2026, 1, 3, 6, 0, tzinfo=UTC)
+    expected = datetime(2026, 1, 8, 6, 0, tzinfo=UTC)
+
+    inside = releases_between(
+        rule, datetime(2026, 1, 8, tzinfo=UTC), datetime(2026, 1, 9, tzinfo=UTC), calendar
+    )
+    assert [release.instant for release in inside] == [expected]
+    assert inside[0].adjusted_from == nominal.date()
+
+    found = next_release_after(rule, nominal + timedelta(minutes=1), calendar)
+    assert found is not None
+    assert found.instant == expected
+    found = next_release_after(rule, datetime(2026, 1, 7, 23, 59, 59, tzinfo=UTC), calendar)
+    assert found is not None
+    assert found.instant == expected
+    assert previous_release_at_or_before(rule, expected, calendar) == found
+
+
+def test_s6_s7_equal_to_the_business_day_count_is_not_clamped() -> None:
+    """Kills mutants S6 and S7: ``clamped`` needs N to *exceed* the business-day count.
+
+    February 2026 has exactly 20 business days, so ``business_day: 20`` selects the last
+    one (2026-02-27) and ``business_day: -20`` the first (2026-02-02) as exact matches;
+    only 21 / -21 clamp. The ``>=`` mutants flag the exact matches as clamped, which
+    would present a regular release as a short-month fallback in reports and traces.
+    """
+    calendar = make_calendar()
+    window_start = datetime(2026, 2, 1, tzinfo=UTC_ZONE)
+    window_end = datetime(2026, 2, 28, 23, 59, 59, tzinfo=UTC_ZONE)
+
+    for index, expected in ((20, "2026-02-27"), (-20, "2026-02-02")):
+        releases = releases_between(monthly_rule(index), window_start, window_end, calendar)
+        assert [release.local.date().isoformat() for release in releases] == [expected]
+        assert releases[0].clamped is False, index
+
+    for index, expected in ((21, "2026-02-27"), (-21, "2026-02-02")):
+        releases = releases_between(monthly_rule(index), window_start, window_end, calendar)
+        assert [release.local.date().isoformat() for release in releases] == [expected]
+        assert releases[0].clamped is True, index

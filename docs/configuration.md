@@ -9,7 +9,13 @@ to BLUEPRINT.md §4.
 - Relative paths inside a config file (`connection.path`, `dbt.manifest`, an override
   `file`) resolve against the **directory containing the config file**, not the working
   directory. The DuckDB adapter also sets DuckDB's `file_search_path` to that directory,
-  so `read_csv('fx_rates.csv')` in a `relation` resolves the same way.
+  so `read_csv('fx_rates.csv')` in a `relation` resolves the same way. The adapter then
+  locks the session down: DuckDB's `allowed_directories` becomes the config directory and
+  the process working directory, `enable_external_access = false` refuses every other
+  file, extension and `ATTACH`, and `lock_configuration = true` stops a query fragment
+  from changing any of it (including `SET TimeZone`). A config directory whose path
+  contains a comma cannot be expressed in DuckDB's comma-separated `file_search_path`
+  and is refused with `E501`.
 - YAML is read with a safe loader that keeps `2026-01-04` a string (no implicit
   timestamps) and `16:00` a string (no base-60 numbers). Quote times explicitly:
   `time: "16:00"`.
@@ -22,14 +28,17 @@ to BLUEPRINT.md §4.
   are still evaluated and the run still exits 2.
 - **Secrets never belong in a config file.** The only thing you may write is the *name* of
   an environment variable holding a DSN (`connection.dsn_env`). Fields such as `dsn`,
-  `password`, `url`, `uri`, `conninfo`, and `user` are rejected with `E105`.
+  `password`, `url`, `uri`, `conninfo`, and `user` are rejected with `E105`. The DSN is
+  parsed before connecting; a malformed DSN reports a fixed `E501` message naming the
+  variable, and FreshCal replaces the DSN, the password and its percent-encoded forms in
+  every driver message that reaches `E501`/`E502`.
 
 ## Top level
 
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `version` | `1` | yes | Config format version. |
-| `connection` | mapping | for `check` and `explain` (unless `--observed`) | `duckdb` or `postgres`. Missing → `E213`. |
+| `connection` | mapping | for `check`, `next` and `explain` (unless `--observed`) | `duckdb` or `postgres`. Missing → `E213` (exit 2, no report is produced). |
 | `dbt.manifest` | path | no | A `manifest.json` (schema v12) to read rules from. |
 | `defaults` | mapping | no | `timezone`, `grace`, `calendar`, `observed_timezone` for every source. |
 | `calendars` | mapping name → calendar | no | Named calendars, reused by several sources. |
@@ -45,10 +54,27 @@ to BLUEPRINT.md §4.
 | `statement_timeout_seconds` | PostgreSQL | 1–3600, default 30. |
 
 FreshCal never writes to the warehouse: DuckDB opens the file read-only, and PostgreSQL
-runs every read inside a read-only transaction that is always rolled back. Both adapters
-set the session time zone to UTC. `relation`, `loaded_at_field`, and `filter` are SQL
-fragments inserted verbatim — treat config files as code (see
-[../SECURITY.md](../SECURITY.md)).
+runs every read inside a read-only transaction. For PostgreSQL the connection is opened
+with `default_transaction_read_only=on` (the whole session, not only one transaction) and
+the freshness query is sent as a single prepared statement, so a `relation` or `filter`
+that contains `;` (for example `t; COMMIT; CREATE TABLE x(a int)`) is rejected by the
+server before anything runs — a fragment cannot lift the `statement_timeout` either
+(`; SET LOCAL statement_timeout = 0; …` is several statements). A lost connection becomes
+a per-source `E502` for that and every later read, never a crash. Both adapters set the
+session time zone to UTC. `relation`, `loaded_at_field`, and `filter` are SQL fragments
+inserted verbatim — treat config files as code and give the FreshCal connection a
+`SELECT`-only PostgreSQL role (see [../SECURITY.md](../SECURITY.md) and the README's
+[PostgreSQL section](../README.md#postgresql-use-a-select-only-role), which also shows the
+composite index that keeps `max(loaded_at_field)` cheap).
+
+DuckDB has no statement splitter, so a fragment can contain several statements; the
+lock-down described under "Loading rules" bounds what they can reach (the config
+directory and the working directory) and a fragment cannot lift it. A value that cannot
+be a load time is that source's `E502`: DuckDB's `±infinity` (`datetime.max` /
+`datetime.min`, for `TIMESTAMP` and `TIMESTAMPTZ`) is refused as an infinite timestamp,
+and an overflow while interpreting a value in its configured zone (for example
+`timestamp '9999-12-31 22:00'` with `observed_timezone: America/New_York`) is refused
+naming the value. The other sources of the run are still evaluated.
 
 ## Source
 
@@ -105,7 +131,7 @@ calendars. A date listed in both override sets is a configuration error (`E403`)
 | `weekend` | Any subset of `mon`…`sun`, at most six entries; `[]` means no weekend. |
 | `holidays` | Public calendars (`country` + optional `subdivision` and `categories`) or financial markets (`financial: XECB`); validated against the `holidays` library (`E401`, `E402`). |
 | `overrides` | Inline lists and/or override files (paths relative to the config file). A missing, unreadable, malformed, or schema-invalid file is `E404`. |
-| `valid_until` | The last date whose holidays and overrides a person has checked. Evaluating after it fails with `E408`; merely looking up later dates (for the next expected arrival) warns with `W005`. Overrides without it warn at load time (`W006`). |
+| `valid_until` | The last date whose holidays and overrides a person has checked. Evaluating after it fails with `E408`; consulting later dates warns with `W005` — the notice window is the 34 days after `now` (`CHUNK + DATE_PADDING_DAYS`), declared explicitly, so `check`, `next` and `validate` agree. A plain `cron` with `on_non_business_day: none` never consults the calendar and never warns. Overrides without it warn at load time (`W006`). |
 
 An override file is a small YAML document:
 
@@ -123,16 +149,18 @@ not "the same local time tomorrow".
 ## Issues
 
 Every message has a code and a location, and the CLI prints `CODE location: message`
-(per-source issues appear inside the report). The catalog is in BLUEPRINT.md §4.6; the
-most common ones:
+(per-source issues appear inside the report; `validate` prints one issue per line with
+its location, and `--output` is opened before any query runs). The catalog is in
+BLUEPRINT.md §4.6; the most common ones:
 
 | Code | Meaning |
 |---|---|
-| `E100`, `E110` | YAML syntax error; config file missing. |
+| `E100`, `E110` | YAML syntax error; config file unreadable (missing, directory, permissions, not UTF-8). |
 | `E101`–`E106` | Unknown field, missing field, wrong type, value not allowed, secret in config, bad format/range. |
 | `E201`, `E202`, `E203` | Unknown time zone; invalid cron; duration too long. |
 | `E204`–`E208` | Bad `business_day`; policy on the wrong kind; duplicate source ID; unknown calendar; required field unresolved. |
 | `E209`, `E214`, `E215` | The schedule has no release in a 1830-day window; a naive timestamp without a zone; an undecidable gap. |
+| `E213`, `E216`, `E217` | Missing `connection`; no sources to evaluate; a report output file cannot be written. |
 | `E301`–`E304` | Manifest version, readability, missing `loaded_at_field`, forbidden `meta.freshcal` field. |
 | `E401`–`E408` | Holiday codes, override files, date conflicts, out-of-range data, roll failures, calendar expiry. |
 | `E501`–`E505` | Connection, query, value type, `dsn_env`, and optional-dependency failures. |
