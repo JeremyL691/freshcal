@@ -135,6 +135,25 @@ def test_u_load_03_duration_too_long_is_e203() -> None:
     assert error.issue.message == "sources[0].grace: duration '367d' exceeds the maximum of 366d"
 
 
+def test_cfg_10_huge_duration_is_e203_not_overflow() -> None:
+    """CFG-10: a duration too large for ``timedelta`` is E203, never an OverflowError."""
+    error = error_of(lambda: parse_duration("99999999999999d", "defaults.grace"))
+    assert error.issue.code == "E203"
+    assert error.issue.message == (
+        "defaults.grace: duration '99999999999999d' exceeds the maximum of 366d"
+    )
+
+
+def test_cfg_10_huge_duration_in_a_config_is_e203(tmp_path: Path) -> None:
+    """CFG-10 end to end: the loader reports E203 for the huge duration."""
+    config = write_config(tmp_path, "version: 1\ndefaults: {grace: 99999999999999d}\n")
+    error = error_of(lambda: load_config(config))
+    assert [issue.code for issue in error.issues] == ["E203"]
+    assert error.issues[0].message == (
+        "defaults.grace: duration '99999999999999d' exceeds the maximum of 366d"
+    )
+
+
 def test_u_load_03_malformed_duration_is_e106() -> None:
     error = error_of(lambda: parse_duration("2x", "grace"))
     assert error.issue.code == "E106"
@@ -145,6 +164,39 @@ def test_u_load_04_unknown_timezone_is_e201(value: str) -> None:
     error = error_of(lambda: parse_timezone(value, "sources[0].schedule.timezone"))
     assert error.issue.code == "E201"
     assert error.issue.message == f"sources[0].schedule.timezone: unknown time zone '{value}'"
+
+
+def test_cfg_19_zone_names_are_case_sensitive() -> None:
+    """CFG-19: zone lookup uses ``available_timezones()``, so it never depends on the OS.
+
+    macOS resolves ``europe/berlin`` through its case-insensitive file system; the
+    membership check makes the answer the same everywhere.
+    """
+    error = error_of(lambda: parse_timezone("europe/berlin", "sources[0].schedule.timezone"))
+    assert error.issue.code == "E201"
+    assert error.issue.message == (
+        "sources[0].schedule.timezone: unknown time zone 'europe/berlin'"
+    )
+    assert parse_timezone("Europe/Berlin", "tz").key == "Europe/Berlin"
+    assert parse_timezone("UTC", "tz").key == "UTC"
+
+
+def test_cfg_19_lowercase_zone_in_a_source_is_e201(tmp_path: Path) -> None:
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+sources:
+  - name: a.b
+    relation: raw.a
+    loaded_at_field: _loaded_at
+    schedule: {kind: business_days, time: "16:00", timezone: europe/berlin}
+    grace: 1h
+""",
+    )
+    entry = load_config(config).entries[0]
+    assert entry.rule is None
+    assert [issue.code for issue in entry.errors] == ["E201"]
 
 
 @pytest.mark.parametrize(
@@ -551,7 +603,30 @@ def test_yaml_document_that_is_not_a_mapping(tmp_path: Path) -> None:
     config = write_config(tmp_path, "- just\n- a list\n")
     error = error_of(lambda: load_config(config))
     assert error.issue.code == "E103"
-    assert error.issue.message == "expected object, got list"
+    assert error.issue.message == f"{config}: expected object, got list"
+
+
+def test_cli_19_top_level_errors_name_the_file(tmp_path: Path) -> None:
+    """CLI-19: an empty config's message names the file, not just the type.
+
+    Document-level errors have no in-file location, so the config path is the location;
+    errors with a location keep the existing ``{loc}: {message}`` shape.
+    """
+    empty = tmp_path / "empty.yml"
+    empty.write_text("", encoding="utf-8")
+    error = error_of(lambda: load_config(empty))
+    assert error.issue.code == "E103"
+    assert error.issue.message == f"{empty}: expected object, got NoneType"
+    assert error.issue.location == str(empty)
+
+    unknown = write_config(tmp_path, "version: 1\nunknown_section: {}\n", name="unknown.yml")
+    error = error_of(lambda: load_config(unknown))
+    assert error.issue.code == "E101"
+    assert error.issue.message == f"{unknown}: unknown field 'unknown_section'"
+
+    located = write_config(tmp_path, "version: 2\n", name="version.yml")
+    error = error_of(lambda: load_config(located))
+    assert error.issue.message == "version: unsupported config version; expected 1"
 
 
 def test_load_yaml_helpers_are_used(tmp_path: Path) -> None:

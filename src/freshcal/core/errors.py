@@ -3,10 +3,16 @@
 Every diagnostic FreshCal emits is an :class:`Issue` with a code from
 ``ISSUE_CODES``. Errors raise one of the :class:`FreshCalError` subclasses; the
 application layer turns them into statuses and exit codes.
+
+The two rendering helpers keep a message's size independent of its input: a YAML alias
+bomb is 380 bytes and expands to hundreds of megabytes, so a value that reaches a
+message is always rendered through :func:`render_value` (``reprlib``, bounded) and any
+other interpolated text through :func:`truncate` (CFG-13).
 """
 
 from __future__ import annotations
 
+import reprlib
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
@@ -14,12 +20,66 @@ from typing import Final
 
 __all__ = [
     "ISSUE_CODES",
+    "MAX_RENDER_LENGTH",
     "CalendarError",
     "ConfigError",
     "FreshCalError",
     "Issue",
     "QueryError",
+    "read_failure_reason",
+    "render_value",
+    "truncate",
 ]
+
+#: Longest rendering of one value in a message (CFG-13).
+MAX_RENDER_LENGTH: Final[int] = 80
+
+_RENDERER: Final[reprlib.Repr] = reprlib.Repr()
+_RENDERER.maxlevel = 4
+_RENDERER.maxstring = 60
+_RENDERER.maxother = 60
+_RENDERER.maxlist = 6
+_RENDERER.maxtuple = 6
+_RENDERER.maxdict = 6
+_RENDERER.maxset = 6
+_RENDERER.maxfrozenset = 6
+_RENDERER.maxdeque = 6
+_RENDERER.maxarray = 6
+
+
+def truncate(text: str, limit: int = MAX_RENDER_LENGTH) -> str:
+    """Truncate ``text`` to ``limit`` characters with a trailing ``...``."""
+    if len(text) <= limit:
+        return text
+    return text[: limit - 3] + "..."
+
+
+def render_value(value: object, limit: int = MAX_RENDER_LENGTH) -> str:
+    """Render ``value`` for a message: ``reprlib`` (bounded, cycle-safe, shared-safe).
+
+    ``reprlib`` replaces deep or long parts with ``...`` and never expands an alias
+    structure, so the result is short even for a YAML alias bomb; the final ``limit``
+    keeps every message small (CFG-13).
+    """
+    return truncate(_RENDERER.repr(value), limit)
+
+
+def read_failure_reason(error: BaseException) -> str:
+    """A short, stable reason for a failed ``Path.read_text(encoding="utf-8")``.
+
+    Callers wrap it in their own code (``E110`` for the config file, ``E404`` for
+    override files, ``E302`` for a dbt manifest) so the reason wording is identical
+    everywhere (CFG-09).
+    """
+    if isinstance(error, FileNotFoundError):
+        return "file not found"
+    if isinstance(error, IsADirectoryError):
+        return "is a directory"
+    if isinstance(error, PermissionError):
+        return "permission denied"
+    if isinstance(error, UnicodeDecodeError):
+        return "not valid UTF-8"
+    return truncate(str(error))
 
 
 @dataclass(frozen=True, slots=True)

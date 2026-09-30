@@ -25,7 +25,7 @@ from typing import cast
 
 from freshcal.config.loader import Defaults, build_rule, calendar_warnings
 from freshcal.config.schema import validate_dbt_rule
-from freshcal.core.errors import ConfigError, Issue
+from freshcal.core.errors import ConfigError, Issue, read_failure_reason, truncate
 from freshcal.core.model import CalendarSpec, Origin, SourceEntry
 from freshcal.core.ports import SourceCatalog
 
@@ -67,6 +67,16 @@ class DbtManifestCatalog(SourceCatalog):
         attributable to one node becomes that entry's error.
         """
         document = self._read()
+        try:
+            return self._entries_from(document)
+        except (RecursionError, ValueError) as error:
+            # A manifest whose *contents* overflow the parser (deep nesting, aliased
+            # structures) is unreadable, not an internal error (CFG-09).
+            raise ConfigError(
+                Issue("E302", f"{self._path}: cannot read dbt manifest: {_decode_reason(error)}")
+            ) from error
+
+    def _entries_from(self, document: dict[str, object]) -> list[SourceEntry]:
         sources = cast("dict[str, object]", document["sources"])
         entries: list[SourceEntry] = []
         for unique_id, raw_node in sources.items():
@@ -82,15 +92,18 @@ class DbtManifestCatalog(SourceCatalog):
     def _read(self) -> dict[str, object]:
         try:
             text = self._path.read_text(encoding="utf-8")
-        except OSError as error:
+        except (OSError, UnicodeDecodeError) as error:
             raise ConfigError(
-                Issue("E302", f"{self._path}: cannot read dbt manifest: {error}")
+                Issue(
+                    "E302",
+                    f"{self._path}: cannot read dbt manifest: {read_failure_reason(error)}",
+                )
             ) from error
         try:
             loaded = json.loads(text)
-        except json.JSONDecodeError as error:
+        except (RecursionError, ValueError) as error:
             raise ConfigError(
-                Issue("E302", f"{self._path}: cannot read dbt manifest: {error}")
+                Issue("E302", f"{self._path}: cannot read dbt manifest: {_decode_reason(error)}")
             ) from error
         if not isinstance(loaded, dict) or not isinstance(loaded.get("sources"), dict):
             raise ConfigError(
@@ -198,6 +211,13 @@ class DbtManifestCatalog(SourceCatalog):
             warnings=calendar_warnings(rule.calendar, source_id=source_id, location=source_id),
             location=node_location,
         )
+
+
+def _decode_reason(error: BaseException) -> str:
+    """A bounded detail for an ``E302`` decode failure (CFG-09)."""
+    if isinstance(error, RecursionError):
+        return "document is too deeply nested"
+    return truncate(str(error))
 
 
 def _rule_value(node: Mapping[str, object]) -> tuple[object, str] | None:

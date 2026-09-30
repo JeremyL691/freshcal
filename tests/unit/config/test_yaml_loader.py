@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime
+import os
 from pathlib import Path
 
 import pytest
@@ -79,7 +80,78 @@ def test_u_yaml_06_missing_file_is_e110(tmp_path: Path) -> None:
         load_yaml_file(missing)
     issue = excinfo.value.issue
     assert issue.code == "E110"
-    assert issue.message == f"config file not found: {missing}"
+    assert issue.message == f"cannot read config file {missing}: file not found"
+    assert issue.location == str(missing)
+
+
+def test_cfg_09_directory_is_e110_not_e599(tmp_path: Path) -> None:
+    """CFG-09: a config path that is a directory is an E110 read failure, not E599."""
+    with pytest.raises(ConfigError) as excinfo:
+        load_yaml_file(tmp_path)
+    issue = excinfo.value.issue
+    assert issue.code == "E110"
+    assert issue.message == f"cannot read config file {tmp_path}: is a directory"
+
+
+def test_cfg_09_non_utf8_file_is_e110(tmp_path: Path) -> None:
+    """CFG-09: a config file that is not valid UTF-8 is an E110 read failure."""
+    path = tmp_path / "latin1.yml"
+    path.write_bytes(b"version: 1\n# caf\xe9\n")
+    with pytest.raises(ConfigError) as excinfo:
+        load_yaml_file(path)
+    issue = excinfo.value.issue
+    assert issue.code == "E110"
+    assert issue.message == f"cannot read config file {path}: not valid UTF-8"
+
+
+def test_cfg_09_unreadable_file_is_e110(tmp_path: Path) -> None:
+    """CFG-09: a permission error is an E110 read failure, not E599."""
+    if os.geteuid() == 0:
+        pytest.skip("running as root, permissions are not enforced")
+    path = tmp_path / "secret.yml"
+    path.write_text("version: 1\n", encoding="utf-8")
+    path.chmod(0)
+    try:
+        with pytest.raises(ConfigError) as excinfo:
+            load_yaml_file(path)
+    finally:
+        path.chmod(0o600)
+    issue = excinfo.value.issue
+    assert issue.code == "E110"
+    assert issue.message == f"cannot read config file {path}: permission denied"
+
+
+def test_cfg_16_duplicate_mapping_key_is_e100_with_line_and_column() -> None:
+    """CFG-16: a duplicate mapping key is a YAML error with the second key's position."""
+    with pytest.raises(ConfigError) as excinfo:
+        load_yaml("version: 1\nsources: []\nversion: 2\n", source="conf.yml")
+    issue = excinfo.value.issue
+    assert issue.code == "E100"
+    assert issue.message.startswith("conf.yml: YAML syntax error:")
+    assert "duplicate key 'version'" in issue.message
+    assert "line 3" in issue.message
+    assert "column 1" in issue.message
+
+
+def test_cfg_16_duplicate_nested_key_is_e100() -> None:
+    """CFG-16: the check runs for every mapping, not only the document root."""
+    text = "version: 1\nsources:\n  - name: a.b\n    grace: 1h\n    grace: 300d\n"
+    with pytest.raises(ConfigError) as excinfo:
+        load_yaml(text, source="conf.yml")
+    assert excinfo.value.issue.code == "E100"
+    assert "duplicate key 'grace'" in excinfo.value.issue.message
+
+
+def test_cfg_16_merge_keys_are_not_duplicates() -> None:
+    """CFG-16: ``<<`` is YAML's documented default mechanism, so an override is legal."""
+    loaded = load_yaml(
+        "defaults: &d {grace: 1h, timezone: UTC}\nsource:\n  <<: *d\n  grace: 2h\n",
+        source="t",
+    )
+    assert loaded == {
+        "defaults": {"grace": "1h", "timezone": "UTC"},
+        "source": {"grace": "2h", "timezone": "UTC"},
+    }
 
 
 def test_u_yaml_07_python_object_tag_is_rejected() -> None:
@@ -92,6 +164,15 @@ def test_load_yaml_file_reads_documents(tmp_path: Path) -> None:
     path = tmp_path / "config.yml"
     path.write_text("version: 1\nsources: []\n", encoding="utf-8")
     assert load_yaml_file(path) == {"version": 1, "sources": []}
+
+
+def test_cfg_09_over_deep_yaml_is_e100_not_recursion_error() -> None:
+    """CFG-09: a document the parser cannot descend is a decode error, not E599."""
+    with pytest.raises(ConfigError) as excinfo:
+        load_yaml("[" * 100_000 + "]" * 100_000, source="deep.yml")
+    issue = excinfo.value.issue
+    assert issue.code == "E100"
+    assert issue.message.startswith("deep.yml: YAML syntax error:")
 
 
 def test_loader_does_not_mutate_safeloader() -> None:

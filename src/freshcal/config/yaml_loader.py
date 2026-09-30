@@ -12,16 +12,22 @@ our own messages. This affects only FreshCal's own files: dbt has already parsed
 ``meta.freshcal`` with standard YAML 1.1 rules before FreshCal sees the manifest
 (§4.1), which is why the manifest adapter reports E103 with a "quote it" hint instead
 of guessing.
+
+Two hardenings come from the v0.1.0 audit (CFG-09, CFG-16): a duplicate mapping key is
+rejected with the second key's line and column instead of silently keeping the last
+value, and every read failure of the config file is an ``E110`` with a reason.
 """
 
 from __future__ import annotations
 
 import re
+from collections.abc import Hashable
 from pathlib import Path
+from typing import Any
 
 import yaml
 
-from freshcal.core.errors import ConfigError, Issue
+from freshcal.core.errors import ConfigError, Issue, read_failure_reason
 
 __all__ = ["load_yaml", "load_yaml_file"]
 
@@ -50,10 +56,41 @@ _REPLACED_TAGS = frozenset(
         "tag:yaml.org,2002:float",
     }
 )
+_MERGE_TAG = "tag:yaml.org,2002:merge"
 
 
 class FreshCalLoader(yaml.SafeLoader):
     """``SafeLoader`` with the timestamp and base-60 resolvers replaced."""
+
+    def construct_mapping(self, node: Any, deep: bool = False) -> dict[object, object]:
+        """Build a mapping, rejecting a literal duplicate key (CFG-16).
+
+        PyYAML's ``SafeConstructor`` keeps the last value silently. The duplicate is a
+        configuration mistake (``grace: 1h`` followed by ``grace: 300d``), so it is a
+        YAML error whose message carries the second key's line and column. The check
+        runs before ``flatten_mapping``: a key overridden through a YAML merge key
+        (``<<``) is the language's documented default mechanism, not a duplicate.
+        """
+        if isinstance(node, yaml.MappingNode):
+            self._reject_duplicate_keys(node)
+        return super().construct_mapping(node, deep)
+
+    def _reject_duplicate_keys(self, node: yaml.MappingNode) -> None:
+        seen: set[object] = set()
+        for key_node, _ in node.value:
+            if key_node.tag == _MERGE_TAG:
+                continue  # ``flatten_mapping`` consumes merge keys before construction
+            key = self.construct_object(key_node, deep=True)
+            if not isinstance(key, Hashable):
+                continue  # the base constructor reports the unhashable key itself
+            if key in seen:
+                raise yaml.constructor.ConstructorError(
+                    "while constructing a mapping",
+                    node.start_mark,
+                    f"found duplicate key {key!r}",
+                    key_node.start_mark,
+                )
+            seen.add(key)
 
 
 def _install_resolvers(cls: type[yaml.SafeLoader]) -> None:
@@ -85,19 +122,26 @@ def _syntax_issue(error: yaml.YAMLError, source: str) -> Issue:
 def load_yaml(text: str, *, source: str) -> object:
     """Parse ``text`` as YAML; ``source`` names the origin in error messages.
 
-    Raises :class:`ConfigError` with code ``E100`` for any syntax, resolver, or
-    constructor error.
+    Raises :class:`ConfigError` with code ``E100`` for any syntax, resolver,
+    constructor, or over-deep error.
     """
     try:
         return yaml.load(text, Loader=FreshCalLoader)
     except yaml.YAMLError as error:
         raise ConfigError(_syntax_issue(error, source)) from error
+    except RecursionError as error:
+        raise ConfigError(
+            Issue("E100", f"{source}: YAML syntax error: document is too deeply nested", source)
+        ) from error
 
 
 def load_yaml_file(path: Path) -> object:
-    """Read and parse ``path``; a missing file raises ``ConfigError`` ``E110``."""
+    """Read and parse ``path``; any read failure is an ``E110`` with a reason (CFG-09)."""
     try:
         text = path.read_text(encoding="utf-8")
-    except FileNotFoundError as error:
-        raise ConfigError(Issue("E110", f"config file not found: {path}", str(path))) from error
+    except (OSError, UnicodeDecodeError) as error:
+        reason = read_failure_reason(error)
+        raise ConfigError(
+            Issue("E110", f"cannot read config file {path}: {reason}", str(path))
+        ) from error
     return load_yaml(text, source=str(path))

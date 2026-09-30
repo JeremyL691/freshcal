@@ -23,6 +23,7 @@ from freshcal.core.model import (
     NextReport,
     Status,
 )
+from freshcal.core.ports import Reporter
 from freshcal.core.timeutil import format_local, format_utc
 
 __all__ = ["TableReporter"]
@@ -66,7 +67,7 @@ def _issue_line(issue: Issue) -> str:
     return f"  {issue.code} {issue.message}"
 
 
-class TableReporter:
+class TableReporter(Reporter):
     """Renders check and next reports as plain text tables."""
 
     def render(self, report: CheckReport) -> str:

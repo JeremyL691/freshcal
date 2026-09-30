@@ -10,18 +10,19 @@ override conflicts — and on producing exactly one coded :class:`Issue` per pro
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import date, time, timedelta
+from functools import lru_cache
 from pathlib import Path
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError, available_timezones
 
 from croniter import CroniterBadCronError, CroniterBadDateError, croniter
 
 from freshcal.adapters.holidays_provider import validate_ref
 from freshcal.config.schema import validate_document, validate_override_file, validate_source
 from freshcal.config.yaml_loader import load_yaml, load_yaml_file
-from freshcal.core.errors import ConfigError, Issue
+from freshcal.core.errors import ConfigError, Issue, read_failure_reason, render_value, truncate
 from freshcal.core.model import (
     BusinessDaysSchedule,
     CalendarSpec,
@@ -71,19 +72,42 @@ def _issue(code: str, location: str, text: str) -> Issue:
     return Issue(code, f"{location}: {text}" if location else text, location)
 
 
+def _value_text(value: object) -> str:
+    """The quoted form used inside messages that read ``invalid value '…'``."""
+    if isinstance(value, str):
+        return f"'{truncate(value)}'"
+    return render_value(value)
+
+
+@lru_cache(maxsize=1)
+def _available_zones() -> frozenset[str]:
+    """Every IANA zone name ``zoneinfo`` can serve, as a set for exact membership.
+
+    ``available_timezones()`` enumerates the zone database once (the result is cached);
+    membership is case-sensitive on every platform, unlike ``ZoneInfo``'s file lookup,
+    which on macOS resolves ``europe/berlin`` through the case-insensitive file system
+    (CFG-19).
+    """
+    return frozenset(available_timezones())
+
+
 def parse_date(value: object, location: str) -> date:
     """Parse ``YYYY-MM-DD`` into a real calendar date, or raise ``E106``."""
     if isinstance(value, date):
         return value
     if not isinstance(value, str) or not _ISO_DATE.match(value):
         raise ConfigError(
-            _issue("E106", location, f'invalid value {value!r}: expected "YYYY-MM-DD"')
+            _issue("E106", location, f'invalid value {_value_text(value)}: expected "YYYY-MM-DD"')
         )
     try:
         return date.fromisoformat(value)
     except ValueError as error:
         raise ConfigError(
-            _issue("E106", location, f"invalid value {value!r}: not a valid calendar date")
+            _issue(
+                "E106",
+                location,
+                f"invalid value {_value_text(value)}: not a valid calendar date",
+            )
         ) from error
 
 
@@ -92,18 +116,18 @@ def parse_weekend(value: object, location: str) -> frozenset[Weekday]:
     if value is None:
         return frozenset({Weekday.SAT, Weekday.SUN})
     if not isinstance(value, Sequence) or isinstance(value, str):
-        raise ConfigError(_issue("E106", location, f"invalid value {value!r}"))
+        raise ConfigError(_issue("E106", location, f"invalid value {_value_text(value)}"))
     weekdays: set[Weekday] = set()
     for entry in value:
         if not isinstance(entry, str) or entry not in _WEEKDAYS:
-            raise ConfigError(_issue("E106", location, f"invalid value {entry!r}"))
+            raise ConfigError(_issue("E106", location, f"invalid value {_value_text(entry)}"))
         weekdays.add(_WEEKDAYS[entry])
     return frozenset(weekdays)
 
 
 def _parse_holiday_ref(entry: object, location: str) -> HolidayCalendarRef:
     if not isinstance(entry, Mapping):
-        raise ConfigError(_issue("E106", location, f"invalid value {entry!r}"))
+        raise ConfigError(_issue("E106", location, f"invalid value {_value_text(entry)}"))
     if "financial" in entry:
         ref = HolidayCalendarRef(kind="financial", code=str(entry["financial"]))
     else:
@@ -121,13 +145,16 @@ def _parse_holiday_ref(entry: object, location: str) -> HolidayCalendarRef:
 
 
 def _read_override_file(path: Path, location: str) -> object:
-    """Read and validate an override file, mapping every failure to ``E404``."""
+    """Read and validate an override file, mapping every failure to ``E404``.
+
+    Every read failure (missing file, directory, permissions, not UTF-8) is E404 with a
+    reason; a read error must never escape as E599 (CFG-09).
+    """
     try:
         text = path.read_text(encoding="utf-8")
-    except FileNotFoundError as error:
-        raise ConfigError(
-            _issue("E404", location, f"override file '{path}': file not found")
-        ) from error
+    except (OSError, UnicodeDecodeError) as error:
+        reason = read_failure_reason(error)
+        raise ConfigError(_issue("E404", location, f"override file '{path}': {reason}")) from error
     try:
         document = load_yaml(text, source=str(path))
     except ConfigError as error:
@@ -142,7 +169,7 @@ def _read_override_file(path: Path, location: str) -> object:
 def _override_days(document: object, location: str) -> tuple[set[date], set[date]]:
     """Extract ``working_days`` and ``non_working_days`` from an override document."""
     if not isinstance(document, Mapping):
-        raise ConfigError(_issue("E106", location, f"invalid value {document!r}"))
+        raise ConfigError(_issue("E106", location, f"invalid value {_value_text(document)}"))
     working = {
         parse_date(value, f"{location}.working_days") for value in document.get("working_days", ())
     }
@@ -157,13 +184,13 @@ def _parse_overrides(
     entries: object, location: str, config_dir: Path
 ) -> tuple[frozenset[date], frozenset[date]]:
     if not isinstance(entries, Sequence) or isinstance(entries, str):
-        raise ConfigError(_issue("E106", location, f"invalid value {entries!r}"))
+        raise ConfigError(_issue("E106", location, f"invalid value {_value_text(entries)}"))
     working: set[date] = set()
     non_working: set[date] = set()
     for index, entry in enumerate(entries):
         entry_location = f"{location}.overrides[{index}]"
         if not isinstance(entry, Mapping):
-            raise ConfigError(_issue("E106", entry_location, f"invalid value {entry!r}"))
+            raise ConfigError(_issue("E106", entry_location, f"invalid value {_value_text(entry)}"))
         if "file" in entry:
             path = config_dir / str(entry["file"])
             document = _read_override_file(path, entry_location)
@@ -191,7 +218,7 @@ def _calendar_from_mapping(
     holiday_entries = value.get("holidays") or ()
     if not isinstance(holiday_entries, Sequence) or isinstance(holiday_entries, str):
         raise ConfigError(
-            _issue("E106", f"{location}.holidays", f"invalid value {holiday_entries!r}")
+            _issue("E106", f"{location}.holidays", f"invalid value {_value_text(holiday_entries)}")
         )
     holiday_calendars = tuple(
         _parse_holiday_ref(entry, f"{location}.holidays[{index}]")
@@ -241,7 +268,7 @@ def parse_named_calendars(
     for name, value in entries.items():
         location = f"calendars.{name}" if not loc else f"{loc}.calendars.{name}"
         if not isinstance(value, Mapping):
-            issues.append(_issue("E106", location, f"invalid value {value!r}"))
+            issues.append(_issue("E106", location, f"invalid value {_value_text(value)}"))
             continue
         try:
             named[str(name)] = _calendar_from_mapping(value, location, config_dir, name=str(name))
@@ -270,7 +297,7 @@ def parse_calendar(
         return named[value]
     if isinstance(value, Mapping):
         return _calendar_from_mapping(value, loc, config_dir, name=None)
-    raise ConfigError(_issue("E106", loc, f"invalid value {value!r}"))
+    raise ConfigError(_issue("E106", loc, f"invalid value {_value_text(value)}"))
 
 
 def calendar_label(spec: CalendarSpec, source_id: str | None = None) -> str:
@@ -355,40 +382,65 @@ def parse_duration(value: object, location: str) -> timedelta:
             _issue(
                 "E106",
                 location,
-                f'invalid value {value!r}: expected a duration such as "90m", "2h", "1d6h"',
+                f"invalid value {_value_text(value)}: expected a duration such as "
+                '"90m", "2h", "1d6h"',
             )
         )
     match = _DURATION_RE.match(value)
     assert match is not None  # the pattern was checked above
     days, hours, minutes = (int(part) if part else 0 for part in match.groups())
-    total = timedelta(days=days, hours=hours, minutes=minutes)
+    try:
+        total = timedelta(days=days, hours=hours, minutes=minutes)
+    except OverflowError as error:
+        # ``timedelta`` cannot even represent the number (CFG-10): the duration is too
+        # long, which is E203 — not an internal error.
+        raise ConfigError(
+            _issue("E203", location, f"duration '{truncate(value)}' exceeds the maximum of 366d")
+        ) from error
     if total > MAX_DURATION:
         raise ConfigError(
-            _issue("E203", location, f"duration '{value}' exceeds the maximum of 366d")
+            _issue("E203", location, f"duration '{truncate(value)}' exceeds the maximum of 366d")
         )
     return total
 
 
 def parse_timezone(value: object, location: str) -> ZoneInfo:
-    """Return the IANA zone or raise ``E201``."""
-    if not isinstance(value, str) or not value:
-        raise ConfigError(_issue("E201", location, f"unknown time zone '{value}'"))
+    """Return the IANA zone or raise ``E201``.
+
+    The name must be a member of ``zoneinfo.available_timezones()``: the membership test
+    is case-sensitive everywhere, while ``ZoneInfo`` itself follows the OS (macOS
+    resolves ``europe/berlin``; Linux does not), so a config that loads on one platform
+    must load identically on the other (CFG-19).
+    """
+    if not isinstance(value, str) or not value or value not in _available_zones():
+        text = f"'{truncate(value)}'" if isinstance(value, str) else f"'{render_value(value)}'"
+        raise ConfigError(_issue("E201", location, f"unknown time zone {text}"))
     try:
         return ZoneInfo(value)
     except (ZoneInfoNotFoundError, ValueError) as error:
-        raise ConfigError(_issue("E201", location, f"unknown time zone '{value}'")) from error
+        raise ConfigError(
+            _issue("E201", location, f"unknown time zone '{truncate(value)}'")
+        ) from error
 
 
 def validate_cron(expression: object, location: str) -> str:
     """Validate a 5-field cron expression and return it; failures are ``E202``."""
     if not isinstance(expression, str):
         raise ConfigError(
-            _issue("E202", location, f"invalid cron expression {expression!r}: expected a string")
+            _issue(
+                "E202",
+                location,
+                f"invalid cron expression {render_value(expression)}: expected a string",
+            )
         )
 
     def invalid(reason: str) -> ConfigError:
         return ConfigError(
-            _issue("E202", location, f"invalid cron expression '{expression}': {reason}")
+            _issue(
+                "E202",
+                location,
+                f"invalid cron expression '{truncate(expression)}': {reason}",
+            )
         )
 
     fields = expression.split()
@@ -421,7 +473,7 @@ def _parse_time_of_day(value: object, location: str) -> time:
             _issue(
                 "E106",
                 location,
-                f'invalid value {value!r}: expected "HH:MM" (24-hour), e.g. "16:00"',
+                f'invalid value {_value_text(value)}: expected "HH:MM" (24-hour), e.g. "16:00"',
             )
         ) from error
 
@@ -700,6 +752,19 @@ def _parse_source_entry(
     )
 
 
+def _named_after(issues: Iterable[Issue], path: Path) -> list[Issue]:
+    """Give document-level issues the config path as their location (CLI-19).
+
+    An empty config file produced ``E103 expected object, got NoneType`` without naming
+    the file; a document-level issue has no in-file location, so the path is the
+    location. Issues that already point inside the document keep theirs.
+    """
+    return [
+        Issue(issue.code, f"{path}: {issue.message}", str(path)) if not issue.location else issue
+        for issue in issues
+    ]
+
+
 def load_config(path: Path) -> AppConfig:
     """Load a FreshCal config file into an :class:`AppConfig`.
 
@@ -710,8 +775,12 @@ def load_config(path: Path) -> AppConfig:
     """
     document = load_yaml_file(path)
     if not isinstance(document, Mapping):
-        raise ConfigError(_issue("E103", "", f"expected object, got {type(document).__name__}"))
-    top_level_issues = validate_document(document)
+        raise ConfigError(
+            _named_after(
+                [_issue("E103", "", f"expected object, got {type(document).__name__}")], path
+            )
+        )
+    top_level_issues = _named_after(validate_document(document), path)
     if top_level_issues:
         raise ConfigError(top_level_issues)
 

@@ -10,10 +10,12 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import UTC, datetime
 
+from freshcal.core.ports import Clock
+
 __all__ = ["FixedClock", "SystemClock"]
 
 
-class SystemClock:
+class SystemClock(Clock):
     """Returns the current instant as an aware UTC datetime."""
 
     def now(self) -> datetime:
@@ -21,7 +23,7 @@ class SystemClock:
 
 
 @dataclass(frozen=True, slots=True)
-class FixedClock:
+class FixedClock(Clock):
     """Returns a fixed instant; used by ``--now`` and by tests."""
 
     instant: datetime

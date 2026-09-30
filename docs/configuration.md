@@ -152,7 +152,7 @@ most common ones:
 
 | Code | Meaning |
 |---|---|
-| `E100`, `E110` | YAML syntax error; config file missing. |
+| `E100`, `E110` | YAML syntax error; config file unreadable (missing, directory, permissions, not UTF-8). |
 | `E101`–`E106` | Unknown field, missing field, wrong type, value not allowed, secret in config, bad format/range. |
 | `E201`, `E202`, `E203` | Unknown time zone; invalid cron; duration too long. |
 | `E204`–`E208` | Bad `business_day`; policy on the wrong kind; duplicate source ID; unknown calendar; required field unresolved. |

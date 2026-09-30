@@ -199,6 +199,28 @@ def test_u_dbt_03_document_without_sources_is_e302(tmp_path: Path) -> None:
     assert excinfo.value.issue.code == "E302"
 
 
+def test_cfg_09_non_utf8_manifest_is_e302(tmp_path: Path) -> None:
+    """CFG-09: a manifest that is not valid UTF-8 is E302, not an E599 crash."""
+    path = tmp_path / "manifest.json"
+    path.write_bytes(b"\xff\xfe{}")
+    with pytest.raises(ConfigError) as excinfo:
+        catalog_for(path).entries()
+    issue = excinfo.value.issue
+    assert issue.code == "E302"
+    assert issue.message == f"{path}: cannot read dbt manifest: not valid UTF-8"
+
+
+def test_cfg_09_deeply_nested_manifest_is_e302(tmp_path: Path) -> None:
+    """CFG-09: a ``RecursionError`` while decoding is E302, not an E599 crash."""
+    path = tmp_path / "manifest.json"
+    path.write_text("[" * 100_000 + "]" * 100_000, encoding="utf-8")
+    with pytest.raises(ConfigError) as excinfo:
+        catalog_for(path).entries()
+    issue = excinfo.value.issue
+    assert issue.code == "E302"
+    assert issue.message.startswith(f"{path}: cannot read dbt manifest: ")
+
+
 def test_u_dbt_04_rule_under_config_meta_is_read(tmp_path: Path) -> None:
     document = manifest_with(
         {"source.p.ecb.fx": node("ecb", "fx", config_meta={"freshcal": ECB_RULE})}
