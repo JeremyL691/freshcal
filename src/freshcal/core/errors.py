@@ -93,8 +93,12 @@ def path_failure_reason(path: str) -> str | None:
     system cannot express such a name at all — and ``OSError`` for filesystem-level
     failures such as a symbolic-link loop. Both are configuration mistakes with a coded
     diagnostic, so the responsible boundary asks this *before* it touches the filesystem
-    and never lets the exception escape as an internal error.
+    and never lets the exception escape as an internal error. The NUL case is named here
+    rather than taken from the exception, whose wording differs between Python versions
+    ("embedded null byte" up to 3.12, "lstat: embedded null character in path" after).
     """
+    if "\x00" in path:
+        return "embedded null byte"
     try:
         Path(path).resolve()
     except ValueError as error:
