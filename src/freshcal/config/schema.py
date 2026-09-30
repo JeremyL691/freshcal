@@ -295,6 +295,19 @@ def _map_error(error: ValidationError, prefix: str, *, dbt_rule: bool) -> list[I
                     f"got {error.instance}",
                 )
             ]
+        if field == "dsn_env":
+            # AUD-03: a wrong dsn_env value *is* a connection string, so rendering it would
+            # print the DSN, its URI userinfo and any password to the terminal. The location
+            # and the shape hint are everything the operator needs, and they must never be
+            # replaced by a truncated value — truncation is not redaction.
+            return [
+                _issue(
+                    "E106",
+                    location,
+                    "invalid value: expected an environment variable name such as "
+                    "FRESHCAL_PG_DSN, not the connection string itself",
+                )
+            ]
         # A weekend list with more than six entries is E406 however the schema reports
         # it: with only seven weekday names, seven entries always repeat one, so
         # ``uniqueItems`` can fire before ``maxItems`` (found on 2026-09-29). CFG-11:

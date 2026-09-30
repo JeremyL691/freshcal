@@ -811,3 +811,63 @@ def test_aud02_alias_expanded_source_names_stay_bounded(capsys: pytest.CaptureFi
     assert [row["source_id"] for row in report["results"]] == [
         f"sources[{index}]" for index in range(5)
     ]
+
+
+AUD03_URI = """version: 1
+connection:
+  type: postgres
+  dsn_env: postgresql://audit:TEST_ONLY_VALUE@invalid.example/db
+sources:
+  - name: s
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+"""
+
+AUD03_KEYWORD = """version: 1
+connection:
+  type: postgres
+  dsn_env: "host=invalid.example user=audit password=TEST_ONLY_KEYWORD dbname=db"
+sources:
+  - name: s
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+"""
+
+
+@pytest.mark.parametrize(
+    ("name", "text", "marker"),
+    [
+        ("dsn_env_uri.yml", AUD03_URI, "TEST_ONLY_VALUE"),
+        ("dsn_env_keyword.yml", AUD03_KEYWORD, "TEST_ONLY_KEYWORD"),
+    ],
+)
+@pytest.mark.parametrize("command", ["check", "next", "validate", "explain"])
+def test_aud03_no_command_echoes_the_connection_string(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    name: str,
+    text: str,
+    marker: str,
+    command: str,
+) -> None:
+    """AUD-03: E106/exit 2 for every command, and the synthetic marker never reaches output.
+
+    The value is a synthetic URI and a synthetic keyword string, never a real credential.
+    """
+    config = tmp_path / name
+    config.write_text(text, encoding="utf-8")
+    argv = [command, "-c", str(config), "--now", "2026-01-01T10:00:00Z"]
+    if command == "explain":
+        argv.append("s")
+    code, out, err = run(argv, capsys)
+    blob = out + err
+    assert code == 2, (command, code, blob)
+    assert "E106" in blob
+    assert "dsn_env" in blob
+    assert "environment variable name" in blob
+    for leaked in (marker, "audit", "invalid.example", "password"):
+        assert leaked not in blob, (command, leaked, blob)

@@ -225,11 +225,43 @@ def test_u_schema_02_dsn_env_format_is_e106() -> None:
     assert validate_document(document) == [
         Issue(
             "E106",
-            "connection.dsn_env: invalid value 'bad-name': expected an environment "
-            "variable name such as FRESHCAL_PG_DSN",
+            "connection.dsn_env: invalid value: expected an environment variable name such "
+            "as FRESHCAL_PG_DSN, not the connection string itself",
             "connection.dsn_env",
         )
     ]
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "postgresql://audit:TEST_ONLY_VALUE@invalid.example/db",
+        "host=invalid.example user=audit password=TEST_ONLY_KEYWORD dbname=db",
+        "bad-name",
+        "9starts_with_a_digit",
+    ],
+)
+def test_aud03_dsn_env_diagnostic_never_echoes_the_value(value: str) -> None:
+    """AUD-03: a wrong `dsn_env` is a connection string, so it must not be rendered.
+
+    The message keeps the field location and the environment-variable-name hint; the DSN,
+    its URI userinfo and any password never appear — not even truncated, because truncation
+    is not redaction.
+    """
+    document = {"version": 1, "connection": {"type": "postgres", "dsn_env": value}}
+    issues = validate_document(document)
+    assert [issue.code for issue in issues] == ["E106"]
+    assert issues[0].location == "connection.dsn_env"
+    assert "environment variable name" in issues[0].message
+    for marker in ("TEST_ONLY_VALUE", "TEST_ONLY_KEYWORD", "audit", "invalid.example", "password"):
+        assert marker not in issues[0].message, issues[0].message
+    assert value not in issues[0].message
+
+
+def test_aud03_a_valid_dsn_env_is_unchanged() -> None:
+    """AUD-03: valid handling is untouched."""
+    document = {"version": 1, "connection": {"type": "postgres", "dsn_env": "FRESHCAL_PG_DSN"}}
+    assert validate_document(document) == []
 
 
 def test_u_schema_02_dbt_rule_forbids_name_and_relation() -> None:
