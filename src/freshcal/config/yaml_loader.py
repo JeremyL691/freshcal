@@ -28,7 +28,13 @@ from typing import Any
 
 import yaml
 
-from freshcal.core.errors import ConfigError, Issue, read_failure_reason
+from freshcal.core.errors import (
+    ConfigError,
+    Issue,
+    path_failure_reason,
+    read_failure_reason,
+    render_path,
+)
 
 __all__ = ["load_yaml", "load_yaml_file"]
 
@@ -196,7 +202,17 @@ def load_yaml(text: str, *, source: str) -> object:
 
 
 def load_yaml_file(path: Path) -> object:
-    """Read and parse ``path``; any read failure is an ``E110`` with a reason (CFG-09)."""
+    """Read and parse ``path``; any read failure is an ``E110`` with a reason (CFG-09).
+
+    A path the operating system cannot express at all (an embedded NUL byte) is checked
+    before the read, so it becomes the same ``E110`` instead of a ``ValueError`` escaping
+    as an internal error (AUD-09).
+    """
+    reason = path_failure_reason(str(path))
+    if reason is not None:
+        raise ConfigError(
+            Issue("E110", f"cannot read config file {render_path(path)}: {reason}", str(path))
+        )
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as error:

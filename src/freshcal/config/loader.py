@@ -22,7 +22,15 @@ from croniter import CroniterBadCronError, CroniterBadDateError, croniter
 from freshcal.adapters.holidays_provider import validate_ref
 from freshcal.config.schema import validate_document, validate_override_file, validate_source
 from freshcal.config.yaml_loader import load_yaml, load_yaml_file
-from freshcal.core.errors import ConfigError, Issue, read_failure_reason, render_value, truncate
+from freshcal.core.errors import (
+    ConfigError,
+    Issue,
+    path_failure_reason,
+    read_failure_reason,
+    render_path,
+    render_value,
+    truncate,
+)
 from freshcal.core.model import (
     BusinessDaysSchedule,
     CalendarSpec,
@@ -150,11 +158,19 @@ def _read_override_file(path: Path, location: str) -> object:
     Every read failure (missing file, directory, permissions, not UTF-8) is E404 with a
     reason; a read error must never escape as E599 (CFG-09).
     """
+    reason = path_failure_reason(str(path))
+    if reason is not None:
+        # AUD-09: an unrepresentable override path is the same E404 as an unreadable one.
+        raise ConfigError(
+            _issue("E404", location, f"override file '{render_path(path)}': {reason}")
+        )
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as error:
         reason = read_failure_reason(error)
-        raise ConfigError(_issue("E404", location, f"override file '{path}': {reason}")) from error
+        raise ConfigError(
+            _issue("E404", location, f"override file '{render_path(path)}': {reason}")
+        ) from error
     try:
         document = load_yaml(text, source=str(path))
     except ConfigError as error:
@@ -654,6 +670,18 @@ def _parse_connection(
         path = str(_required(value, "path", f"{location}.path"))
         if path == ":memory:":
             return DuckDBConnection(path=path)
+        reason = path_failure_reason(path)
+        if reason is not None:
+            # AUD-09: the OS cannot express this path at all, so there is nothing to open;
+            # the diagnostic names the field and the reason, and renders the value with
+            # control characters escaped.
+            raise ConfigError(
+                _issue(
+                    "E106",
+                    f"{location}.path",
+                    f"invalid path {render_value(path)}: {reason}",
+                )
+            )
         candidate = Path(path)
         resolved = candidate if candidate.is_absolute() else directory / candidate
         return DuckDBConnection(path=str(resolved.resolve()))
@@ -830,7 +858,18 @@ def load_config(path: Path) -> AppConfig:
     dbt_section = document.get("dbt")
     dbt_manifest: Path | None = None
     if isinstance(dbt_section, Mapping) and dbt_section.get("manifest") is not None:
-        candidate = Path(str(dbt_section["manifest"]))
+        manifest_text = str(dbt_section["manifest"])
+        reason = path_failure_reason(manifest_text)
+        if reason is not None:
+            # AUD-09: same boundary, the manifest's own code.
+            raise ConfigError(
+                _issue(
+                    "E302",
+                    "dbt.manifest",
+                    f"invalid manifest path {render_value(manifest_text)}: {reason}",
+                )
+            )
+        candidate = Path(manifest_text)
         dbt_manifest = candidate if candidate.is_absolute() else (directory / candidate).resolve()
     defaults = _parse_defaults(document.get("defaults"), named, directory)
 

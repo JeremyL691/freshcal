@@ -957,3 +957,112 @@ sources:
     error = error_of(lambda: load_config(config))
     assert error.issue.code == "E203"
     assert "defaults.grace" in error.issue.message
+
+
+# ---------------------------------------------------------------------------
+# AUD-09: an invalid path is a coded error, never a filesystem exception
+# ---------------------------------------------------------------------------
+
+
+def test_aud09_a_nul_connection_path_is_e106(tmp_path: Path) -> None:
+    """AUD-09: `connection.path` with an embedded NUL is E106 at that field, exit 2."""
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+connection: {type: duckdb, path: "a\\0b"}
+sources:
+  - name: s
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+""",
+    )
+    error = error_of(lambda: load_config(config))
+    assert error.issue.code == "E106"
+    assert error.issue.location == "connection.path"
+    assert "embedded null byte" in error.issue.message
+    assert "a\\x00b" in error.issue.message  # rendered escaped
+    assert "\x00" not in error.issue.message  # never a raw NUL
+
+
+def test_aud09_a_nul_manifest_path_is_e302(tmp_path: Path) -> None:
+    """AUD-09: `dbt.manifest` with an embedded NUL is E302 naming the manifest field."""
+    config = write_config(tmp_path, 'version: 1\ndbt: {manifest: "a\\0b"}\n')
+    error = error_of(lambda: load_config(config))
+    assert error.issue.code == "E302"
+    assert error.issue.location == "dbt.manifest"
+    assert "embedded null byte" in error.issue.message
+    assert "\x00" not in error.issue.message
+
+
+def test_aud09_a_nul_config_path_is_e110() -> None:
+    """AUD-09: the config file itself is E110 when the OS cannot express its name."""
+    error = error_of(lambda: load_config(Path("a\x00b.yml")))
+    assert error.issue.code == "E110"
+    assert "embedded null byte" in error.issue.message
+    assert "\x00" not in error.issue.message
+
+
+def test_aud09_a_nul_override_path_is_e404(tmp_path: Path) -> None:
+    """AUD-09: an override file with an embedded NUL is E404 with the same reason."""
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+calendars:
+  xcal:
+    overrides:
+      - file: "a\\0b.yml"
+sources:
+  - name: s
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    calendar: xcal
+    grace: 1h
+""",
+    )
+    error = error_of(lambda: load_config(config))
+    assert error.issue.code == "E404"
+    assert "embedded null byte" in error.issue.message
+    assert "\x00" not in error.issue.message
+
+
+def test_aud09_valid_relative_paths_still_resolve(tmp_path: Path) -> None:
+    """AUD-09: the guard is narrow — a normal relative path resolves as before."""
+    (tmp_path / "data.duckdb").write_bytes(b"")
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+connection: {type: duckdb, path: "data.duckdb"}
+sources:
+  - name: s
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+""",
+    )
+    loaded = load_config(config)
+    assert loaded.connection is not None
+    assert loaded.connection.path == str(tmp_path / "data.duckdb")
+
+
+def test_aud09_existing_read_diagnostics_are_unchanged(tmp_path: Path) -> None:
+    """AUD-09: missing, directory and non-UTF-8 keep their CFG-09 wording."""
+    error = error_of(lambda: load_config(tmp_path / "missing.yml"))
+    assert error.issue.code == "E110"
+    assert "file not found" in error.issue.message
+
+    error = error_of(lambda: load_config(tmp_path))
+    assert error.issue.code == "E110"
+    assert "is a directory" in error.issue.message
+
+    bad = tmp_path / "bad.yml"
+    bad.write_bytes(b"\xff\xfe\x00\x01")
+    error = error_of(lambda: load_config(bad))
+    assert error.issue.code == "E110"
+    assert "not valid UTF-8" in error.issue.message

@@ -1002,3 +1002,50 @@ def test_aud07_malformed_numeric_tags_exit_two_not_three(
         assert "E100" in err
         assert "E599" not in err
         assert out == ""
+
+
+AUD09_PATH = """version: 1
+connection: {type: duckdb, path: "a\\0b"}
+sources:
+  - name: s
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+"""
+
+AUD09_MANIFEST = """version: 1
+dbt: {manifest: "a\\0b"}
+sources:
+  - name: s
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+"""
+
+
+@pytest.mark.parametrize(
+    ("name", "text", "code", "field"),
+    [
+        ("nul_path.yml", AUD09_PATH, "E106", "connection.path"),
+        ("nul_manifest.yml", AUD09_MANIFEST, "E302", "dbt.manifest"),
+    ],
+)
+def test_aud09_nul_paths_exit_two_without_writing_nul(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], name: str, text: str, code: str, field: str
+) -> None:
+    """AUD-09: a NUL path is the coded configuration error, and never a raw NUL byte."""
+    config = tmp_path / name
+    config.write_text(text, encoding="utf-8")
+    for command in ("check", "next", "validate"):
+        exit_code, out, err = run(
+            [command, "-c", str(config), "--now", "2026-01-01T10:00:00Z"], capsys
+        )
+        blob = out + err
+        assert exit_code == 2, (command, exit_code)
+        assert code in blob, (command, blob)
+        assert field in blob, (command, blob)
+        assert "E599" not in blob, (command, blob)
+        assert "\x00" not in blob, (command, blob)
+        assert "\\x00" in blob, (command, blob)  # the value is rendered escaped
