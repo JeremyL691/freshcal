@@ -23,8 +23,9 @@ DOCS = sorted((REPOSITORY_ROOT / "docs").glob("*.md"))
 #: after a CI run on another OS or Python) means updating this constant and the README
 #: together, quoting the run that backs it.
 PLATFORM_SENTENCE = (
-    "Tested on macOS with Python 3.11 (full suite); the CI workflow targets Linux "
-    "and Python 3.11-3.14 but has not run yet."
+    "Tested on macOS with Python 3.11 and in GitHub Actions on Ubuntu 24.04 with Python "
+    "3.11-3.14 (full suite, including the PostgreSQL tests and the 10 000-case oracle "
+    "campaign)."
 )
 
 BANNED_PHRASES = (

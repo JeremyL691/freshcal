@@ -317,8 +317,9 @@ to your existing checks until you have seen it agree with reality for a few week
 - **Naive timestamps need `observed_timezone`**; without it the result is `E214` — a
   configuration error, never a guess.
 - **DuckDB and PostgreSQL only**, and DuckDB has no statement timeout in v0.1.
-- Tested on macOS with Python 3.11 (full suite); the CI workflow targets Linux and
-  Python 3.11-3.14 but has not run yet. Windows is not tested in v0.1.
+- Tested on macOS with Python 3.11 and in GitHub Actions on Ubuntu 24.04 with Python
+  3.11-3.14 (full suite, including the PostgreSQL tests and the 10 000-case oracle
+  campaign). Windows is not tested in v0.1.
 
 ## Roadmap
 
