@@ -868,3 +868,92 @@ sources:
     )
     loaded = load_config(config)
     assert _entry_ids(loaded) == ["sources[0]"]
+
+
+# ---------------------------------------------------------------------------
+# AUD-08: an oversized duration component is E203, not an int() failure
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "9" * 5000 + "d",  # the audit's fixture: past CPython's 4300-digit limit
+        "9" * 4300 + "h",
+        "9" * 4300 + "m",
+        "1d" + "9" * 5000 + "h",  # a long component anywhere in the string
+        "0" * 5000 + "9" * 10 + "d",  # leading zeros do not hide the significant digits
+        "9" * 4000 + "d",  # below the digit limit: timedelta's OverflowError path
+        "999999999d",  # nine digits: past 366 days, converted and then rejected
+    ],
+)
+def test_aud08_an_oversized_component_is_e203(value: str) -> None:
+    """AUD-08: `int()`'s digit-limit ValueError never escapes as E599."""
+    error = error_of(lambda: parse_duration(value, "sources[0].grace"))
+    assert error.issue.code == "E203"
+    assert "exceeds the maximum of 366d" in error.issue.message
+    assert len(error.issue.message) < 200  # the value itself is bounded
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("0d0h0m", timedelta(0)),
+        ("0000000001d", timedelta(days=1)),
+        ("0" * 5000 + "1d", timedelta(days=1)),  # leading zeros are not significant digits
+        ("1d" + "0" * 5000 + "h", timedelta(days=1)),
+        ("366d", timedelta(days=366)),  # the exact boundary is allowed
+        ("365d23h59m", timedelta(days=365, hours=23, minutes=59)),
+        ("90m", timedelta(minutes=90)),
+        ("2h", timedelta(hours=2)),
+        ("1d6h", timedelta(days=1, hours=6)),
+    ],
+)
+def test_aud08_valid_durations_are_unchanged(value: str, expected: timedelta) -> None:
+    """AUD-08: normal values, the boundary and leading zeros keep working."""
+    assert parse_duration(value, "sources[0].grace") == expected
+
+
+def test_aud08_a_bad_component_per_source_keeps_the_healthy_source(tmp_path: Path) -> None:
+    """AUD-08: a per-source E203 marks only that source; the others still load."""
+    config = write_config(
+        tmp_path,
+        f"""
+version: 1
+sources:
+  - name: bad.source
+    relation: t
+    loaded_at_field: x
+    schedule: {{kind: business_days, time: "12:00", timezone: UTC}}
+    grace: "{"9" * 5000}d"
+  - name: good.source
+    relation: t
+    loaded_at_field: x
+    schedule: {{kind: business_days, time: "12:00", timezone: UTC}}
+    grace: 1h
+""",
+    )
+    loaded = load_config(config)
+    assert [entry.source_id for entry in loaded.entries] == ["bad.source", "good.source"]
+    assert [issue.code for issue in loaded.entries[0].errors] == ["E203"]
+    assert loaded.entries[1].rule is not None
+    assert loaded.entries[1].rule.grace == timedelta(hours=1)
+
+
+def test_aud08_a_bad_defaults_grace_is_a_fatal_e203(tmp_path: Path) -> None:
+    """AUD-08: under `defaults` the same value is a fatal configuration error (exit 2)."""
+    config = write_config(
+        tmp_path,
+        f"""
+version: 1
+defaults: {{timezone: UTC, grace: "{"9" * 5000}d"}}
+sources:
+  - name: s
+    relation: t
+    loaded_at_field: x
+    schedule: {{kind: business_days, time: "12:00"}}
+""",
+    )
+    error = error_of(lambda: load_config(config))
+    assert error.issue.code == "E203"
+    assert "defaults.grace" in error.issue.message

@@ -338,6 +338,11 @@ _CRON_EXTENSION_RE = re.compile(r"^[HR](\(.*\))?(/\d+)?$")
 #: release within croniter's 50-year search from here is refused (SEM-08).
 _CRON_VALIDATION_START = datetime(2026, 1, 1)
 MAX_DURATION = timedelta(days=366)
+#: Longest numeric component accepted before ``int()`` runs: nine digits already
+#: exceed 366 days by orders of magnitude, and CPython refuses to convert more than
+#: 4300 digits at all (AUD-08).
+MAX_DURATION_DIGITS = 9
+
 DEFAULT_STATEMENT_TIMEOUT_SECONDS = 30
 DBS = "duckdb", "postgres"
 
@@ -393,19 +398,29 @@ def parse_duration(value: object, location: str) -> timedelta:
         )
     match = _DURATION_RE.match(value)
     assert match is not None  # the pattern was checked above
-    days, hours, minutes = (int(part) if part else 0 for part in match.groups())
+    too_long = ConfigError(
+        _issue("E203", location, f"duration '{truncate(value)}' exceeds the maximum of 366d")
+    )
+    parts: list[int] = []
+    for part in match.groups():
+        # ``int()`` itself refuses a very long digit string (CPython's 4300-digit limit,
+        # leading zeros included), and that ValueError escaped as E599 (AUD-08). Only the
+        # significant digits matter: a component with more than nine of them is already far
+        # beyond 366 days, so it is rejected before the conversion, and the process-wide
+        # digit limit is never touched. ``0000000001d`` is one day, not a long number.
+        digits = (part or "").lstrip("0")
+        if len(digits) > MAX_DURATION_DIGITS:
+            raise too_long
+        parts.append(int(digits) if digits else 0)
+    days, hours, minutes = parts
     try:
         total = timedelta(days=days, hours=hours, minutes=minutes)
     except OverflowError as error:
         # ``timedelta`` cannot even represent the number (CFG-10): the duration is too
         # long, which is E203 — not an internal error.
-        raise ConfigError(
-            _issue("E203", location, f"duration '{truncate(value)}' exceeds the maximum of 366d")
-        ) from error
+        raise too_long from error
     if total > MAX_DURATION:
-        raise ConfigError(
-            _issue("E203", location, f"duration '{truncate(value)}' exceeds the maximum of 366d")
-        )
+        raise too_long
     return total
 
 
