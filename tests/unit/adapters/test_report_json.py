@@ -1,4 +1,4 @@
-"""Tests for the JSON reporter and the report schema (BLUEPRINT.md §8.1, §8.2)."""
+"""Tests for the JSON reporter and the report schema."""
 
 from __future__ import annotations
 
@@ -25,7 +25,8 @@ from freshcal.core.model import (
     Status,
 )
 
-BLUEPRINT = Path("BLUEPRINT.md")
+#: Frozen copies of the specification's normative blocks (tests/fixtures/spec/README.md).
+SPEC = Path("tests/fixtures/spec")
 SCHEMA_PATH = Path("src/freshcal/schemas/report.v1.schema.json")
 BERLIN = ZoneInfo("Europe/Berlin")
 UTC_ZONE = ZoneInfo("UTC")
@@ -49,13 +50,9 @@ def release(
     )
 
 
-def blueprint_example() -> dict[str, object]:
-    """The §8.2 example report, as JSON."""
-    text = BLUEPRINT.read_text(encoding="utf-8")
-    start = text.index("### 8.2 Example JSON report")
-    block = text.index("```json", start)
-    end = text.index("```", block + 7)
-    loaded = json.loads(text[block + len("```json") : end])
+def spec_example() -> dict[str, object]:
+    """The specification's example report, as JSON."""
+    loaded = json.loads((SPEC / "example_check_report.json").read_text(encoding="utf-8"))
     assert isinstance(loaded, dict)
     return loaded
 
@@ -145,7 +142,7 @@ def validate(document: object) -> None:
 
 def test_u_json_01_example_renders_exactly() -> None:
     rendered = JsonReporter().render(example_report())
-    expected = blueprint_example()
+    expected = spec_example()
     # The blueprint's example was written for the released version string.
     expected["freshcal_version"] = __version__
 
@@ -271,12 +268,9 @@ def test_u_json_02_every_rendered_report_validates() -> None:
         validate(json.loads(JsonReporter().render(report)))
 
 
-def test_u_json_03_test_report_schema_matches_blueprint() -> None:
-    text = BLUEPRINT.read_text(encoding="utf-8")
-    start = text.index("### 8.1 JSON report")
-    block = text.index("```json", start)
-    end = text.index("```", block + len("```json"))
-    assert json.loads(text[block + len("```json") : end]) == schema_document()
+def test_u_json_03_test_report_schema_matches_the_specification() -> None:
+    spec_schema = json.loads((SPEC / "report.v1.schema.json").read_text(encoding="utf-8"))
+    assert spec_schema == schema_document()
 
 
 def test_u_json_04_next_report_validates() -> None:

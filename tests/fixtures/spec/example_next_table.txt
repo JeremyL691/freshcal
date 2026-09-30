@@ -1,0 +1,5 @@
+$ freshcal next -c examples/ecb/freshcal.yml --now 2026-09-28T07:30:00+02:00 --count 3
+SOURCE        RELEASE                    RELEASE (UTC)         DEADLINE
+ecb.fx_rates  Mon 2026-09-28 16:00 CEST  2026-09-28T14:00:00Z  Mon 2026-09-28 18:00 CEST
+ecb.fx_rates  Tue 2026-09-29 16:00 CEST  2026-09-29T14:00:00Z  Tue 2026-09-29 18:00 CEST
+ecb.fx_rates  Wed 2026-09-30 16:00 CEST  2026-09-30T14:00:00Z  Wed 2026-09-30 18:00 CEST

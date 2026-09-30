@@ -15,8 +15,7 @@ make-up workdays announced year by year (China), one-off company closures, excha
 calendars that differ from the national holiday list, and sources whose publisher
 follows a market calendar rather than a national one. Real-data validation shows the
 need concretely: the US Treasury publishes on days that `country: US` marks as
-holidays and skips Good Friday, which the federal calendar does not
-(BLUEPRINT.md §9.10 A). A tool that can only say "use a different country code" fails
+holidays and skips Good Friday, which the federal calendar does not. A tool that can only say "use a different country code" fails
 those users.
 
 ## Decision
@@ -24,7 +23,7 @@ those users.
 Every rule's calendar is a weekend set, a list of holiday-calendar references, and a
 set of overrides: **extra working days** (`working_days`) and **extra non-working
 days** (`non_working_days`), inline or from an override file, with union semantics
-across entries (BLUEPRINT.md §1.5 F5, §3.3, §4.3, §4.5). Precedence is fixed: an
+across entries. Precedence is fixed: an
 explicit working day wins over everything, an explicit non-working day wins over
 weekend and library holidays, and a date in both is an error (E403) caught at load
 time. A calendar with overrides should declare `valid_until` — the last date whose

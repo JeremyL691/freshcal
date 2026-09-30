@@ -21,8 +21,7 @@ conservative failure.
 ## Decision
 
 For `cron`, the default policy is `none`: the expression is authoritative and the
-calendar is not consulted; users opt in to `skip`, `following`, or `preceding`
-(BLUEPRINT.md §3.4.3, §3.8.1). A roll keeps the local time of day, records
+calendar is not consulted; users opt in to `skip`, `following`, or `preceding`. A roll keeps the local time of day, records
 `adjusted_from` (the original date), and fails with E407 if no business day is found
 within 31 days. For `monthly_business_day`, `business_day: N` selects the Nth business
 day and `-N` counts from the end; if the month has fewer than |N| business days the

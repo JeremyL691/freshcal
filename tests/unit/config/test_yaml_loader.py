@@ -1,4 +1,4 @@
-"""Tests for the safe YAML loader (BLUEPRINT.md §4.1)."""
+"""Tests for the safe YAML loader."""
 
 from __future__ import annotations
 

@@ -24,7 +24,7 @@ schema v12, and no v13 existed on 2026-09-28 (Appendix A). dbt ≥ 1.10 also off
 FreshCal reads `manifest.json` schema v12 only, from the path given by
 `dbt.manifest`, and takes rules from each source table's `meta.freshcal` (or
 `config.meta.freshcal`; both appear in the node's `meta`), verified with dbt-core
-1.12.5 and dbt-duckdb 1.11.0 (BLUEPRINT.md §1.5 F6, §4.8). The mapping is fixed:
+1.12.5 and dbt-duckdb 1.11.0. The mapping is fixed:
 source ID from `source_name.name`, `relation` from `relation_name`, `loaded_at_field`
 from `meta.freshcal` then the node's own field, `filter` from `meta.freshcal` then
 `freshness.filter`. `name` and `relation` are rejected in `meta.freshcal` (E304) and a

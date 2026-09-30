@@ -4,14 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "freshcal"
-version = "0.1.1"
+version = "0.1.2"
 description = "Business-calendar-aware data freshness checks: schedules, holidays, grace windows, verdicts."
 readme = "README.md"
 requires-python = ">=3.11"
 license = "Apache-2.0"
 license-files = ["LICENSE"]
 authors = [{ name = "Jeremy Liu" }]
-keywords = ["data-quality", "data-freshness", "dbt", "business-calendar", "holidays", "data-engineering"]
+keywords = ["data-quality", "data-freshness", "dbt", "duckdb", "postgresql", "business-calendar", "holidays", "cron", "data-engineering"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Intended Audience :: Developers",
@@ -33,6 +33,13 @@ dependencies = [
   "tzdata>=2026.4; sys_platform == 'win32'",
 ]
 
+[project.urls]
+Homepage = "https://github.com/JeremyL691/freshcal"
+Repository = "https://github.com/JeremyL691/freshcal"
+Issues = "https://github.com/JeremyL691/freshcal/issues"
+Changelog = "https://github.com/JeremyL691/freshcal/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/JeremyL691/freshcal/tree/main/docs"
+
 [project.optional-dependencies]
 duckdb = ["duckdb>=1.5.6,<2", "pytz>=2026.4"]
 postgres = ["psycopg[binary]>=3.3.6,<4"]
@@ -40,21 +47,24 @@ postgres = ["psycopg[binary]>=3.3.6,<4"]
 [project.scripts]
 freshcal = "freshcal.cli:main"
 
-# The sdist ships the package, the schema, the docs, the examples and the validation data —
-# not the development-only material (agent instructions, the blueprint and this plan, the
-# progress log, the audit evidence, tool caches). CLI-12: 0.1.0's sdist carried all of them.
+# The sdist ships the package, its tests, the docs, the examples and the validation data;
+# tool caches and build output stay out (hatchling also honours .gitignore). Release
+# artifacts are built from the published source tree.
 [tool.hatch.build.targets.sdist]
-exclude = [
-  "/AGENTS.md",
-  "/CLAUDE.md",
-  "/PROGRESS.md",
-  "/BLUEPRINT.md",
-  "/IMPROVEMENT_PLAN.md",
-  "/M8_REMEDIATION_PLAN.md",
-  "/review",
-  "/.import_linter_cache",
-  "/dist",
-  "/docs/milestones",
+only-include = [
+  "src",
+  "tests",
+  "docs",
+  "examples",
+  "validation",
+  "scripts",
+  "README.md",
+  "CHANGELOG.md",
+  "CONTRIBUTING.md",
+  "CODE_OF_CONDUCT.md",
+  "SECURITY.md",
+  "LICENSE",
+  "uv.lock",
 ]
 
 [dependency-groups]
@@ -76,10 +86,8 @@ dev = [
 line-length = 100
 target-version = "py311"
 src = ["src", "tests"]
-# Markdown files contain normative code blocks quoted verbatim (BLUEPRINT.md §4.4
-# and §8.1 are drift-guarded by tests); ruff must never reformat them.
-# review/ holds the owner-issued audit evidence (reviewer scripts and reproducers):
-# reference material, not product code (IMPROVEMENT_PLAN.md T-7.0).
+# Markdown files contain code blocks that are quoted verbatim; ruff must never reformat
+# them. A local `review/` directory (audit material, if present) is not product code.
 extend-exclude = ["*.md", "review"]
 
 [tool.ruff.lint]
@@ -98,9 +106,9 @@ select = ["E", "W", "F", "I", "B", "UP", "SIM", "C4", "RUF", "TID", "PT", "N"]
 # The replay report records the date it was produced; it is a validation report, not
 # FreshCal's engine, so reading the wall clock for its header is intended.
 "validation/replay_ecb.py" = ["TID251"]
-# tests/oracle/oracle.py is the reviewer's independent reference implementation, ported by
-# T-7.1 and kept as close to the audit's `review/v0.1.0/A-semantics/oracle.py` as possible so
-# a reader can diff the two. Its W/A/B/U locals and long lines are part of that fidelity.
+# tests/oracle/oracle.py is an external reviewer's independent reference implementation,
+# ported by T-7.1 and kept as close to the original as possible so the two can be diffed.
+# Its W/A/B/U locals and long lines are part of that fidelity.
 "tests/oracle/oracle.py" = ["N803", "N806", "C408", "E501"]
 
 [tool.mypy]

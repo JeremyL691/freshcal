@@ -1,4 +1,4 @@
-"""Property tests for the verdict engine (P1-P9, P17; BLUEPRINT.md §9.3).
+"""Property tests for the verdict engine (P1-P9, P17).
 
 The invariants are the ones a reader can state without knowing the implementation:
 next expected arrivals are in the future, results do not depend on how an instant is

@@ -1,0 +1,13 @@
+FreshCal 0.1.0 | evaluated at 2026-09-28T05:30:00Z | 3 sources
+
+SOURCE                STATUS   RELEASE                    DEADLINE                   OBSERVED                   NEXT EXPECTED
+ecb.fx_rates          ON_TIME  Fri 2026-09-25 16:00 CEST  Fri 2026-09-25 18:00 CEST  Fri 2026-09-25 16:07 CEST  Mon 2026-09-28 16:00 CEST
+stats.monthly_report  ON_TIME  Thu 2026-09-03 09:00 CEST  Thu 2026-09-03 13:00 CEST  Thu 2026-09-03 09:10 CEST  Mon 2026-10-05 09:00 CEST
+vendor.daily_prices   OVERDUE  Sun 2026-09-27 06:00 UTC   Sun 2026-09-27 07:00 UTC   Sat 2026-09-26 06:03 UTC   Mon 2026-09-28 06:00 UTC
+
+ecb.fx_rates: On time: latest release Fri 2026-09-25 16:00 CEST arrived (observed Fri 2026-09-25 16:07 CEST); next release Mon 2026-09-28 16:00 CEST.
+stats.monthly_report: On time: latest release Thu 2026-09-03 09:00 CEST arrived (observed Thu 2026-09-03 09:10 CEST); next release Mon 2026-10-05 09:00 CEST.
+vendor.daily_prices: Overdue: release Sun 2026-09-27 06:00 UTC missed its deadline Sun 2026-09-27 07:00 UTC; 1 release missed; latest data observed Sat 2026-09-26 06:03 UTC.
+  W002 observed_timezone 'UTC' ignored because the value is timezone-aware
+
+Summary: 2 ON_TIME, 1 OVERDUE | exit code 1

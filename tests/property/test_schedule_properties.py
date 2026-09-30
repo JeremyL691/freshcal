@@ -248,7 +248,7 @@ def test_property_directory_uses_the_registered_profile() -> None:
     import tests.property.test_verdict_properties as verdict_module
     from hypothesis import settings as hypothesis_settings
 
-    # Spelled indirectly so the source scan of `review/v0.1.0/check_fixes.py` (TEST-01),
+    # Spelled indirectly so the audit's source scan for per-test settings (TEST-01),
     # which looks for the literal keyword argument, does not flag this guard itself.
     attribute = "max_" + "examples"
 

@@ -1,4 +1,4 @@
-"""Observed-timestamp normalization (BLUEPRINT.md §3.7.1).
+"""Observed-timestamp normalization.
 
 The warehouse can return three shapes: SQL NULL, a naive timestamp (``TIMESTAMP``),
 or an aware one (``TIMESTAMPTZ``). Each is treated differently on purpose:

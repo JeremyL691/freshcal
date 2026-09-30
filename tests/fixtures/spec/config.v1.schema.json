@@ -1,0 +1,492 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:freshcal:config:v1",
+  "title": "FreshCal configuration, version 1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "version"
+  ],
+  "properties": {
+    "version": {
+      "const": 1
+    },
+    "connection": {
+      "$ref": "#/$defs/connection"
+    },
+    "dbt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "manifest"
+      ],
+      "properties": {
+        "manifest": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "defaults": {
+      "$ref": "#/$defs/defaults"
+    },
+    "calendars": {
+      "type": "object",
+      "propertyNames": {
+        "$ref": "#/$defs/identifier"
+      },
+      "additionalProperties": {
+        "$ref": "#/$defs/calendarSpec"
+      }
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/source"
+      }
+    }
+  },
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+    },
+    "sourceId": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z_][A-Za-z0-9_]*)?$"
+    },
+    "timeOfDay": {
+      "type": "string",
+      "pattern": "^([01][0-9]|2[0-3]):[0-5][0-9]$"
+    },
+    "isoDate": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+    },
+    "duration": {
+      "type": "string",
+      "minLength": 2,
+      "pattern": "^([0-9]+d)?([0-9]+h)?([0-9]+m)?$"
+    },
+    "timezone": {
+      "type": "string",
+      "minLength": 1
+    },
+    "weekday": {
+      "enum": [
+        "mon",
+        "tue",
+        "wed",
+        "thu",
+        "fri",
+        "sat",
+        "sun"
+      ]
+    },
+    "connection": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "type": {
+          "enum": [
+            "duckdb",
+            "postgres"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "duckdb"
+              }
+            }
+          },
+          "then": {
+            "additionalProperties": false,
+            "required": [
+              "path"
+            ],
+            "properties": {
+              "type": true,
+              "path": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "type"
+            ],
+            "properties": {
+              "type": {
+                "const": "postgres"
+              }
+            }
+          },
+          "then": {
+            "additionalProperties": false,
+            "properties": {
+              "type": true,
+              "dsn_env": {
+                "type": "string",
+                "pattern": "^[A-Z_][A-Z0-9_]*$"
+              },
+              "statement_timeout_seconds": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 3600
+              }
+            }
+          }
+        }
+      ]
+    },
+    "holidayCalendar": {
+      "type": "object",
+      "if": {
+        "required": [
+          "financial"
+        ]
+      },
+      "then": {
+        "additionalProperties": false,
+        "required": [
+          "financial"
+        ],
+        "properties": {
+          "financial": {
+            "type": "string",
+            "pattern": "^[A-Z0-9]{2,5}$"
+          }
+        }
+      },
+      "else": {
+        "additionalProperties": false,
+        "required": [
+          "country"
+        ],
+        "properties": {
+          "country": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$"
+          },
+          "subdivision": {
+            "type": "string",
+            "minLength": 1
+          },
+          "categories": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z_]+$"
+            }
+          }
+        }
+      }
+    },
+    "overrideDays": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "working_days": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/isoDate"
+          }
+        },
+        "non_working_days": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/isoDate"
+          }
+        }
+      }
+    },
+    "override": {
+      "type": "object",
+      "if": {
+        "required": [
+          "file"
+        ]
+      },
+      "then": {
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "else": {
+        "$ref": "#/$defs/overrideDays"
+      }
+    },
+    "calendarSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "weekend": {
+          "type": "array",
+          "uniqueItems": true,
+          "maxItems": 6,
+          "items": {
+            "$ref": "#/$defs/weekday"
+          }
+        },
+        "holidays": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/holidayCalendar"
+          }
+        },
+        "overrides": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/override"
+          }
+        },
+        "valid_until": {
+          "$ref": "#/$defs/isoDate"
+        }
+      }
+    },
+    "calendarRef": {
+      "if": {
+        "type": "string"
+      },
+      "then": {
+        "$ref": "#/$defs/identifier"
+      },
+      "else": {
+        "$ref": "#/$defs/calendarSpec"
+      }
+    },
+    "schedule": {
+      "type": "object",
+      "required": [
+        "kind"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "cron",
+            "business_days",
+            "monthly_business_day"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "const": "cron"
+              }
+            }
+          },
+          "then": {
+            "additionalProperties": false,
+            "required": [
+              "cron"
+            ],
+            "properties": {
+              "kind": true,
+              "cron": {
+                "type": "string",
+                "minLength": 9
+              },
+              "timezone": {
+                "$ref": "#/$defs/timezone"
+              },
+              "on_non_business_day": {
+                "enum": [
+                  "none",
+                  "skip",
+                  "following",
+                  "preceding"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "const": "business_days"
+              }
+            }
+          },
+          "then": {
+            "additionalProperties": false,
+            "required": [
+              "time"
+            ],
+            "properties": {
+              "kind": true,
+              "time": {
+                "$ref": "#/$defs/timeOfDay"
+              },
+              "timezone": {
+                "$ref": "#/$defs/timezone"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "const": "monthly_business_day"
+              }
+            }
+          },
+          "then": {
+            "additionalProperties": false,
+            "required": [
+              "business_day",
+              "time"
+            ],
+            "properties": {
+              "kind": true,
+              "business_day": {
+                "type": "integer",
+                "minimum": -23,
+                "maximum": 23,
+                "not": {
+                  "const": 0
+                }
+              },
+              "time": {
+                "$ref": "#/$defs/timeOfDay"
+              },
+              "timezone": {
+                "$ref": "#/$defs/timezone"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "relation",
+        "loaded_at_field",
+        "schedule"
+      ],
+      "properties": {
+        "name": {
+          "$ref": "#/$defs/sourceId"
+        },
+        "relation": {
+          "type": "string",
+          "minLength": 1
+        },
+        "loaded_at_field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "filter": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schedule": {
+          "$ref": "#/$defs/schedule"
+        },
+        "calendar": {
+          "$ref": "#/$defs/calendarRef"
+        },
+        "grace": {
+          "$ref": "#/$defs/duration"
+        },
+        "observed_timezone": {
+          "$ref": "#/$defs/timezone"
+        },
+        "active_from": {
+          "$ref": "#/$defs/isoDate"
+        }
+      }
+    },
+    "dbtRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schedule"
+      ],
+      "properties": {
+        "loaded_at_field": {
+          "type": "string",
+          "minLength": 1
+        },
+        "filter": {
+          "type": "string",
+          "minLength": 1
+        },
+        "schedule": {
+          "$ref": "#/$defs/schedule"
+        },
+        "calendar": {
+          "$ref": "#/$defs/calendarRef"
+        },
+        "grace": {
+          "$ref": "#/$defs/duration"
+        },
+        "observed_timezone": {
+          "$ref": "#/$defs/timezone"
+        },
+        "active_from": {
+          "$ref": "#/$defs/isoDate"
+        }
+      }
+    },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "timezone": {
+          "$ref": "#/$defs/timezone"
+        },
+        "grace": {
+          "$ref": "#/$defs/duration"
+        },
+        "calendar": {
+          "$ref": "#/$defs/calendarRef"
+        },
+        "observed_timezone": {
+          "$ref": "#/$defs/timezone"
+        }
+      }
+    }
+  }
+}

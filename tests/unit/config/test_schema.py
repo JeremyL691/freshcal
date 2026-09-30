@@ -1,4 +1,4 @@
-"""Tests for the configuration JSON Schema and its error mapping (BLUEPRINT.md §4.4)."""
+"""Tests for the configuration JSON Schema and its error mapping."""
 
 from __future__ import annotations
 
@@ -19,7 +19,8 @@ from freshcal.config.yaml_loader import load_yaml_file
 from freshcal.core.errors import Issue
 
 EXAMPLES_DIR = Path("tests/fixtures/configs/examples")
-BLUEPRINT = Path("BLUEPRINT.md")
+#: Frozen copies of the specification's normative blocks (tests/fixtures/spec/README.md).
+SPEC_SCHEMA = Path("tests/fixtures/spec/config.v1.schema.json")
 
 VALID_SOURCE: dict[str, Any] = {
     "name": "ecb.fx_rates",
@@ -343,17 +344,13 @@ def test_u_schema_04_source_errors_are_not_reported_by_validate_document() -> No
     ]
 
 
-def test_schema_03_test_schema_matches_blueprint() -> None:
-    text = BLUEPRINT.read_text(encoding="utf-8")
-    start = text.index("### 4.4 JSON Schema")
-    block = text.index("```json", start)
-    end = text.index("```", block + len("```json"))
-    blueprint_schema = json.loads(text[block + len("```json") : end])
+def test_schema_03_test_schema_matches_the_specification() -> None:
+    spec_schema = json.loads(SPEC_SCHEMA.read_text(encoding="utf-8"))
 
     committed = json.loads(
         Path("src/freshcal/schemas/config.v1.schema.json").read_text(encoding="utf-8")
     )
-    assert committed == blueprint_schema
+    assert committed == spec_schema
 
 
 def test_cfg_11_seven_distinct_weekend_days_is_e406() -> None:
@@ -412,7 +409,7 @@ def test_cfg_12_min_length_hint_names_the_minimum() -> None:
 def test_cfg_13_alias_bomb_messages_are_bounded() -> None:
     """CFG-13: a 380-byte alias bomb must not render expanded values.
 
-    The same structure as ``review/v0.1.0/B-config-adapters/alias_bomb_d8.yml``: eight
+    The same structure as the audit's depth-8 alias-bomb reproducer: eight
     nested lists expanding to 9**8 leaves. Every message must stay small and validation
     must finish well inside the gate's 3 s budget.
     """

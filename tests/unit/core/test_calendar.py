@@ -1,4 +1,4 @@
-"""Tests for the business calendar (BLUEPRINT.md §3.3, §3.4.3)."""
+"""Tests for the business calendar."""
 
 from __future__ import annotations
 
@@ -188,7 +188,7 @@ def test_u_cal_10_valid_until_and_w005_tracking() -> None:
 def test_u_cal_11_w005_notice_window_starts_34_days_before_valid_until() -> None:
     """SEM-04: the notice window is explicit; the first W005 is 2026-11-28.
 
-    ``review/v0.1.0/A-semantics/w005_timing.py`` evaluates this rule daily at 08:00
+    The audit's W005 timing probe evaluates this rule daily at 08:00
     Asia/Shanghai: with ``valid_until: 2026-12-31`` and a 34-day notice window
     (``CHUNK + DATE_PADDING_DAYS``) the window first reaches past the valid date on
     2026-11-28, and W005 stays on every day through 2026-12-31 — 34 of the 42 days

@@ -24,7 +24,7 @@ changes (per-period existence or `max(period_column)`).
 ## Decision
 
 v0.1 uses load-time semantics: release *R* has arrived iff the observed timestamp *O*
-is present and `O >= R.instant` (BLUEPRINT.md §3.6). The product promise is narrowed
+is present and `O >= R.instant`. The product promise is narrowed
 to the current-state question — "right now, is any release whose deadline has passed
 still missing?" — and stated identically in §1.1, §3.7.3, the README, and
 `docs/semantics.md`. ON_TIME is explicitly **not** a punctuality record. The

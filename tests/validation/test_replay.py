@@ -1,4 +1,4 @@
-"""Replay-logic tests on a small hand-written publication file (BLUEPRINT.md §9.10 B).
+"""Replay-logic tests on a small hand-written publication file.
 
 The committed ``validation/ecb/publications.csv`` has too few rows to exercise the logic,
 so these tests build a file with exactly the four shapes that matter: a publication on
@@ -110,7 +110,7 @@ def test_r_03_exact_agreement_counts_for_the_immediate_loader(tmp_path: Path) ->
     116 false alarms, in two groups:
     - 93 from 2026-09-24 18:15 CEST: the 24th's file was observably available at 15:50
       CEST, *before* the configured 16:00 release, so the immediate loader's timestamp
-      predates the release and the day looks missing (BLUEPRINT.md §3.6);
+      predates the release and the day looks missing;
     - 23 from 2026-09-28 18:15 CEST: the 28th has no collected row at all, so the proxy
       reference cannot speak about it and scores the alarm as a disagreement (the replay
       is restricted to days with collected data).

@@ -1,4 +1,4 @@
-"""Terminal table reporter (BLUEPRINT.md §8.3, §6.2).
+"""Terminal table reporter.
 
 Plain text on purpose: CI logs and pipes are the primary consumers, so there is no
 colour and no Unicode box drawing. Times are rendered in each source's *schedule* time

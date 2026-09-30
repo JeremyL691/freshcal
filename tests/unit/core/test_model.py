@@ -1,4 +1,4 @@
-"""Tests for the core domain model and the issue catalog (BLUEPRINT.md §5.3, §4.6)."""
+"""Tests for the core domain model and the issue catalog."""
 
 from __future__ import annotations
 

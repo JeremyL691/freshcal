@@ -15,12 +15,12 @@ frozen data structures; most of the bugs such a tool can have are type-level (na
 versus aware datetimes, `None` where a value is required, a `date` where an instant is
 expected). The runtime features we need — `zoneinfo`, `enum.StrEnum`,
 `dataclass(slots=True)`, `X | Y` annotations — are available from Python 3.11.
-Supported interpreters in 2026: 3.11 to 3.14 (BLUEPRINT.md §10.5, Appendix A).
+Supported interpreters in 2026: 3.11 to 3.14.
 
 ## Decision
 
 The package requires Python ≥ 3.11 and is fully annotated; `mypy --strict` runs on
-`src/` on every check, with `warn_unreachable` enabled (BLUEPRINT.md §1.5 F3, §10.2,
+`src/` on every check, with `warn_unreachable` enabled (§10.2,
 §10.3). Tests are not type-checked in v0.1. CI runs the test suite on 3.11, 3.12,
 3.13, and 3.14, and the lint/type job runs once on the newest interpreter.
 

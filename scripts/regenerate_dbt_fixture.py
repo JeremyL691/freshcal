@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Rebuild the committed dbt manifest fixture (BLUEPRINT.md §9.7).
+"""Rebuild the committed dbt manifest fixture.
 
 Runs a real ``dbt parse`` with pinned versions through ``uvx`` and writes a trimmed
 manifest next to the other fixtures. The trimming keeps only what FreshCal reads, so the

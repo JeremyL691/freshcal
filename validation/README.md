@@ -1,7 +1,7 @@
 # Validation inputs
 
-Golden tests prove that the code matches `BLUEPRINT.md`; the data here lets the tests
-prove that the *calendar model* matches the world (BLUEPRINT.md §9.10 A). Only dates are
+Golden tests prove that the code matches the specified semantics; the data here lets the tests
+prove that the *calendar model* matches the world. Only dates are
 stored — never rates, prices, or any other published value.
 
 ## `ecb/publication_dates.csv`
@@ -47,7 +47,7 @@ checked.
 
 Publication-*time* proxies (the daily file's `Last-Modified` and the first response's
 `Date`), collected by `ecb/collect.py`; see `ecb/README.md`. They feed the arrival-time
-replay (T-6.7, §9.10 B) and are deliberately separate from the date history above,
+replay (`docs/validation.md` section B) and are deliberately separate from the date history above,
 which is a definitive publication record.
 
 ## What these files do not prove

@@ -21,8 +21,8 @@ false green: a mis-configuration that produces exit 0 forever.
 
 Every evaluation produces exactly one status: a verdict (`ON_TIME`, `NOT_DUE`,
 `OVERDUE`) or a non-verdict outcome (`NO_DATA`, `CONFIG_ERROR`, `QUERY_ERROR`), chosen
-by the decision table of BLUEPRINT.md §3.7.3, whose rows are mutually exclusive and
-exhaustive by construction (BLUEPRINT.md §3.7.2). Only rows 4–6 are verdicts
+by the decision table of whose rows are mutually exclusive and
+exhaustive by construction. Only rows 4–6 are verdicts
 (`is_verdict`). Errors that can be attributed to one source leave that source in
 CONFIG_ERROR and the rest of the run proceeds. Exit codes are derived by one function:
 0 when every evaluated source is ON_TIME or NOT_DUE, 1 for OVERDUE or NO_DATA, 2 for

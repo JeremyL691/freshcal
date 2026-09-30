@@ -23,7 +23,7 @@ fetch `TIMESTAMPTZ` and defaults its session zone to the machine's; psycopg need
 
 v0.1 ships two adapters, DuckDB and PostgreSQL, both read-only, both implementing one
 `FreshnessReader` contract and passing one shared contract test suite
-(BLUEPRINT.md §1.5 F7, §7.1–§7.3). DuckDB opens the database `read_only=True`
+(§7.1–§7.3). DuckDB opens the database `read_only=True`
 (`:memory:` excepted, since DuckDB refuses read-only in-memory databases) and sets
 `TimeZone='UTC'` and `file_search_path`; PostgreSQL opens a transaction per read,
 sets `LOCAL TIME ZONE 'UTC'` and `statement_timeout`, and sets `read_only=True`.
@@ -40,8 +40,7 @@ which is what makes the golden tests meaningful. Every adapter behavior is pinne
 integration tests against real engines (DuckDB always; PostgreSQL under
 `FRESHCAL_TEST_PG_DSN`) including the read-only guarantee, the session-zone
 independence, and the statement timeout. The cost is two code paths with different
-error taxonomies mapped onto one (`E501`–`E505`), and users of other warehouses wait
-(BLUEPRINT.md §15 item 5). SQL fragments from the config are trusted input, documented
+error taxonomies mapped onto one (`E501`–`E505`), and users of other warehouses wait. SQL fragments from the config are trusted input, documented
 in `SECURITY.md` and §7.4.
 
 ## Alternatives considered

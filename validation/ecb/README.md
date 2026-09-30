@@ -33,7 +33,7 @@ gets a new value (which is why a revision is stored as a second row for the same
 how often this script runs, and the site's `cache-control: max-age=300` can delay an
 observation by up to five minutes.
 
-Consequently the replay in `validation/replay_ecb.py` (T-6.7) reports **agreement with
+Consequently the replay in `validation/replay_ecb.py` reports **agreement with
 the `Last-Modified` publication proxy**, never arrival accuracy, and it explains every
 disagreement it finds. Days on which nothing ran are missing, not guessed.
 
@@ -44,8 +44,8 @@ uv run python validation/ecb/collect.py
 ```
 
 One HTTP request; exit code 0 on success or when nothing is new, 1 on a network or
-parse failure (in which case the file is left untouched). The agent runs it at the
-start of every session and before each task; it needs no arguments and reads no local
+parse failure (in which case the file is left untouched). The maintainers run it
+regularly by hand; it needs no arguments and reads no local
 clock — the recorded times come only from the server's headers.
 
 ### If TLS verification fails
@@ -64,9 +64,8 @@ its own bundle) worked throughout.
 
 ## Scheduling it
 
-Continuous collection increases the data available to T-6.7, so a schedule is useful
-but optional; nothing in the project requires it. Any of these work, and the agent does
-not install any of them:
+Continuous collection increases the data available to the arrival-time replay, so a
+schedule is useful but optional; nothing in the project requires it. Any of these work:
 
 - **cron** (twice a day, at 16:30 and 18:30 UTC, weekdays):
 

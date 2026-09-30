@@ -1,7 +1,7 @@
 """Seeded case generation and comparison helpers for the differential oracle tests (T-7.1).
 
-Reconstructed from the reviewer's `fuzz.py` (which imported a `fuzz_space.py` that is not part
-of `review/v0.1.0/`): the zone list is the union of the zones the recorded findings use and the
+Reconstructed from an external reviewer's fuzzer (whose input space was not published with it):
+the zone list is the union of the zones the recorded findings use and the
 zones the plan names, and the cron list is the union of the expressions the findings use and the
 reviewer's documented never-firing set. Everything here is *input generation*: it must never
 encode the expected answer, only draw a case the oracle and the implementation both answer.

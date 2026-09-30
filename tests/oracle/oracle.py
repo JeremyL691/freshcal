@@ -1,7 +1,6 @@
-"""Independent brute-force reference for BLUEPRINT §3.3-§3.7 (review A, ported by T-7.1).
+"""Independent brute-force reference for release generation and verdicts (ported by T-7.1).
 
-Ported from `review/v0.1.0/A-semantics/oracle.py` (the reviewer's independent implementation)
-with its semantics unchanged; this file is the reference, so nothing in
+Ported from an external reviewer's independent implementation with its semantics unchanged; this file is the reference, so nothing in
 `freshcal.core.schedule` / `freshcal.core.verdict` may be used to justify its results.
 
 Deliberately naive and independent of freshcal.core.schedule/verdict and of croniter:
@@ -14,9 +13,8 @@ Deliberately naive and independent of freshcal.core.schedule/verdict and of cron
   resolve, floor, dedup "first nominal wins", filter, sort;
 - verdict: literal §3.7.2 with complete enumeration (no chunking, no streaming, no fast path).
 
-Rule P1 makes this suite the proof obligation for every change to `src/freshcal/core/`: such a
-change is "no semantic change" only together with an oracle run that shows 0 disagreements
-(seed and case count quoted in PROGRESS.md). The only FreshCal imports allowed here are
+This suite is the proof obligation for every change to `src/freshcal/core/`: such a change is
+"no semantic change" only together with an oracle run that shows 0 disagreements. The only FreshCal imports allowed here are
 `freshcal.core.model`, `freshcal.core.errors` and a calendar provider passed in as an argument.
 """
 

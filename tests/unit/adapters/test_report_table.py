@@ -1,4 +1,4 @@
-"""Tests for the terminal table reporter (BLUEPRINT.md §8.3, §6.2)."""
+"""Tests for the terminal table reporter."""
 
 from __future__ import annotations
 
@@ -24,22 +24,17 @@ from freshcal.core.model import (
     Status,
 )
 
-BLUEPRINT = Path("BLUEPRINT.md")
+#: Frozen copies of the specification's example output (tests/fixtures/spec/README.md).
+SPEC = Path("tests/fixtures/spec")
 
 
-def blueprint_block(heading: str) -> str:
-    """The first ```-fenced block after a heading, without its fences."""
-    text = BLUEPRINT.read_text(encoding="utf-8")
-    start = text.index(heading)
-    block = text.index("```", start)
-    end = text.index("```", block + 3)
-    body = text[block + 3 : end]
-    return body[body.index("\n") + 1 :]
+def spec_block(name: str) -> str:
+    return (SPEC / name).read_text(encoding="utf-8")
 
 
-def test_u_table_01_check_report_matches_the_blueprint_example() -> None:
+def test_u_table_01_check_report_matches_the_specification_example() -> None:
     rendered = TableReporter().render(example_check_report())
-    expected = blueprint_block("### 8.3 Terminal table").replace(
+    expected = spec_block("example_check_table.txt").replace(
         "FreshCal 0.1.0", f"FreshCal {__version__}"
     )
     assert rendered == expected
@@ -82,9 +77,9 @@ def test_u_table_02_no_color_and_no_box_drawing() -> None:
     assert all(character not in rendered for character in "│─┌┐└┘├┤┬┴┼")
 
 
-def test_u_table_03_next_table_matches_the_blueprint_example() -> None:
+def test_u_table_03_next_table_matches_the_specification_example() -> None:
     rendered = TableReporter().render_next(example_next_report())
-    expected = blueprint_block("**`freshcal next` example:**").replace("$ ", "").split("\n", 1)[1]
+    expected = spec_block("example_next_table.txt").replace("$ ", "").split("\n", 1)[1]
     assert rendered == expected
 
 

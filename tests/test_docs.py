@@ -1,11 +1,11 @@
 """Documentation guards: links resolve, and no unbacked marketing claims appear.
 
-Four checks, all from BLUEPRINT.md §11.1 and its rules P6/P7: every relative Markdown link
-in the README and in ``docs/*.md`` points to a file that exists; the README avoids the
-phrases that imply claims this project cannot back with tests or produced validation
-results; the README's platform sentence is exactly the one PROGRESS.md "Environment"
-records as what ran (rule P6, finding CLI-02); and "Tested on Linux" stays banned while
-the CI workflow has not run remotely.
+Four checks: every relative Markdown link in the README and in ``docs/*.md`` points to a
+file that exists; the README avoids the phrases that imply claims this project cannot back
+with tests or produced validation results; the README's platform sentence is exactly the
+``PLATFORM_SENTENCE`` constant below, which records what actually ran (finding CLI-02);
+and a platform claim is made only through that sentence, never as a loose "Tested on
+Linux".
 """
 
 from __future__ import annotations
@@ -17,16 +17,15 @@ import pytest
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 README = REPOSITORY_ROOT / "README.md"
-PROGRESS = REPOSITORY_ROOT / "PROGRESS.md"
 DOCS = sorted((REPOSITORY_ROOT / "docs").glob("*.md"))
 
-#: The platform sentence (README Limitations, PROGRESS "Environment"): what actually ran.
-#: Kept as one constant so README, PROGRESS and this guard cannot drift apart; widening it
-#: (for example after running the suite on another Python) means updating all three
-#: together (rule P6).
+#: The platform sentence (README Limitations): what actually ran. Widening it (for example
+#: after a CI run on another OS or Python) means updating this constant and the README
+#: together, quoting the run that backs it.
 PLATFORM_SENTENCE = (
-    "Tested on macOS with Python 3.11 (full suite); the CI workflow targets Linux "
-    "and Python 3.11-3.14 but has not run yet."
+    "Tested on macOS with Python 3.11 and in GitHub Actions on Ubuntu 24.04 with Python "
+    "3.11-3.14 (full suite, including the PostgreSQL tests and the 10 000-case oracle "
+    "campaign)."
 )
 
 BANNED_PHRASES = (
@@ -83,28 +82,15 @@ def test_d_02_docs_have_no_banned_phrases() -> None:
             assert phrase not in lowered, (document.name, phrase)
 
 
-def test_d_03_readme_platform_sentence_matches_the_progress_environment_row() -> None:
-    """D-03 (CLI-02): README states exactly the platform combination that ran.
-
-    The sentence is the ``PLATFORM_SENTENCE`` constant PROGRESS.md's Environment table
-    names; all three must agree, so a widening after a real run is a deliberate edit.
-    """
-    progress = normalised_text(PROGRESS)
-    assert "PLATFORM_SENTENCE" in progress
-    assert PLATFORM_SENTENCE in progress
+def test_d_03_readme_platform_sentence_is_the_recorded_one() -> None:
+    """D-03 (CLI-02): README states exactly the platform combination that ran."""
     assert PLATFORM_SENTENCE in normalised_text(README)
 
 
-def test_d_04_linux_stays_banned_while_ci_has_not_run() -> None:
-    """D-04 (CLI-02): without a CI run, no "Tested on Linux" claim may appear.
-
-    Pairs the banned phrase with PROGRESS.md's own CI status: once a remote exists and CI
-    has run, both this guard and the PROGRESS row are updated together (rule P6).
-    """
-    progress = normalised_text(PROGRESS)
-    if "CI not yet run remotely" in progress:
-        assert "tested on linux" in BANNED_PHRASES
-        assert "tested on linux" not in normalised_text(README).lower()
+def test_d_04_no_loose_linux_claim() -> None:
+    """D-04 (CLI-02): a Linux claim is made only through ``PLATFORM_SENTENCE``."""
+    assert "tested on linux" in BANNED_PHRASES
+    assert "tested on linux" not in normalised_text(README).lower()
 
 
 def test_readme_documents_every_cli_command_and_exit_code() -> None:
@@ -116,7 +102,7 @@ def test_readme_documents_every_cli_command_and_exit_code() -> None:
 
 
 def test_readme_states_the_current_state_promise() -> None:
-    """The promise from BLUEPRINT §3.7.3 must appear verbatim in spirit."""
+    """The current-state promise of the status definitions must appear in the README."""
     text = normalised_text(README)
     assert "current-state verdict, not a punctuality record" in text
     assert "reload of old rows can hide a missing release" in text

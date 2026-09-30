@@ -1,4 +1,4 @@
-"""The contract every ``FreshnessReader`` must satisfy (BLUEPRINT.md §7.3).
+"""The contract every ``FreshnessReader`` must satisfy.
 
 One suite, run against every adapter: NULL handling, naive values, aware values, filter
 application, unsupported value types, and missing relations. Each adapter's test module

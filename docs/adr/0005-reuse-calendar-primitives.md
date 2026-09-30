@@ -21,7 +21,7 @@ arithmetic is a known source of silent bugs.
 ## Decision
 
 Use `holidays` for holiday dates, `croniter` for cron matching, and `zoneinfo` for
-time zones (BLUEPRINT.md §1.5 F4, §5.2, Appendix A). FreshCal owns only what
+time zones. FreshCal owns only what
 composes them: the release-generation algorithm, the business-day predicate, the
 DST resolution policy (ADR 0012), and the verdict. `croniter` is called in exactly one
 place, always with naive datetimes, so it does pure wall-clock field matching; a

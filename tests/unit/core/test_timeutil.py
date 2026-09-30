@@ -1,4 +1,4 @@
-"""Tests for the time utilities (BLUEPRINT.md §3.2)."""
+"""Tests for the time utilities."""
 
 from __future__ import annotations
 

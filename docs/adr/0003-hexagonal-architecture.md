@@ -11,7 +11,7 @@ Accepted.
 ## Context
 
 FreshCal's value is a rule engine: given a schedule, a calendar, a grace window, and
-one observed timestamp, decide ON_TIME, NOT_DUE, or OVERDUE (BLUEPRINT.md §3.7). That
+one observed timestamp, decide ON_TIME, NOT_DUE, or OVERDUE. That
 computation must be testable exhaustively and reproducibly — golden scenarios,
 property tests, and real-publication-history checks all depend on it. Everything
 around it (YAML parsing, the `holidays` library, DuckDB/PostgreSQL, JSON output) is a
@@ -19,7 +19,7 @@ replaceable detail with its own failure modes and its own clock.
 
 ## Decision
 
-The package is layered around a pure core (BLUEPRINT.md §1.5 F2, §5.1, §5.2):
+The package is layered around a pure core:
 `freshcal.core` computes verdicts and imports only the standard library and
 `croniter`; `freshcal.app` orchestrates use cases and imports only the core;
 `freshcal.config` and `freshcal.adapters` translate outside formats and services;
@@ -32,8 +32,7 @@ ban.
 
 The core is testable without a database, a network, or a real clock; golden tests run
 in three process time zones and must give identical results (§3.8.14). Adapter
-failures cannot corrupt semantics, and a new warehouse is an additive adapter
-(BLUEPRINT.md §15 item 5). The cost is a port per outside interaction (§5.4), some
+failures cannot corrupt semantics, and a new warehouse is an additive adapter. The cost is a port per outside interaction (§5.4), some
 boilerplate in `cli.py`, and a test suite that must keep the contracts honest
 (the T-0.2 probes prove both guards actually fire).
 

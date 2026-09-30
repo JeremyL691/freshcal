@@ -23,7 +23,9 @@ jobs:
       - run: uv run lint-imports
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # The ci Hypothesis profile under coverage took 10-20+ min per interpreter on the
+    # hosted runners (3.11/3.12 hit a 20 min limit on 2026-09-30).
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -36,9 +38,12 @@ jobs:
       - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
         with: { python-version: "${{ matrix.python }}", enable-cache: true }
       - run: uv sync --locked --all-extras
-      - run: uv run pytest --cov --cov-report=term-missing
+      # Performance budgets are wall-clock limits for uninstrumented runs, so they run in
+      # their own step without coverage tracing.
+      - run: uv run pytest --cov --cov-report=term-missing --ignore=tests/perf
       - run: uv run coverage report --include="*/freshcal/core/*" --fail-under=95
       - run: uv run coverage report --omit="*/adapters/postgres_reader.py" --fail-under=85
+      - run: uv run pytest tests/perf
   postgres:
     runs-on: ubuntu-latest
     services:

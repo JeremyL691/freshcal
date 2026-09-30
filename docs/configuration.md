@@ -1,8 +1,7 @@
 # Configuration reference
 
 FreshCal reads one YAML file (default `./freshcal.yml`, override with `-c/--config`) and,
-optionally, rules from a dbt `manifest.json`. This document is the user-facing companion
-to BLUEPRINT.md §4.
+optionally, rules from a dbt `manifest.json`. This document is the configuration reference.
 
 ## Loading rules
 
@@ -150,8 +149,8 @@ not "the same local time tomorrow".
 
 Every message has a code and a location, and the CLI prints `CODE location: message`
 (per-source issues appear inside the report; `validate` prints one issue per line with
-its location, and `--output` is opened before any query runs). The catalog is in
-BLUEPRINT.md §4.6; the most common ones:
+its location, and `--output` is opened before any query runs). The full catalog is `ISSUE_CODES` in `src/freshcal/core/errors.py`;
+the most common ones:
 
 | Code | Meaning |
 |---|---|

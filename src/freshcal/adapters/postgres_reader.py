@@ -1,4 +1,4 @@
-"""PostgreSQL freshness reader (BLUEPRINT.md §7.2, amended by A-12).
+"""PostgreSQL freshness reader.
 
 The adapter's job is to make one warehouse fact boring: whatever the server's default
 time zone, whatever the column type, the core receives either a naive timestamp, an
@@ -153,7 +153,7 @@ class PostgresReader:
         if self._broken:
             raise QueryError(Issue("E502", f"query failed: {_BROKEN_DETAIL}"))
         sql = self._psycopg.sql
-        # The fragments below are trusted config input (BLUEPRINT.md §7.4): they come from
+        # The fragments below are trusted config input: they come from
         # files controlled by the people who control the warehouse credentials.
         field = sql.SQL(target.loaded_at_field)
         relation = sql.SQL(target.relation)

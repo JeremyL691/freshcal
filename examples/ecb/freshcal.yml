@@ -10,7 +10,7 @@ sources:
   - name: ecb.fx_rates
     relation: "read_csv('fx_rates.csv')"
     loaded_at_field: _loaded_at
-    # BLUEPRINT.md §4.7: set `time` to the earliest time your loader can see the data.
+    # Set `time` to the earliest time your loader can see the data.
     # The one collected ECB publication proxy (2026-09-28 15:56:44 CEST, the file's
     # Last-Modified header; docs/validation.md section B) is before 16:00, so 15:45
     # leaves margin and 2h15m keeps the illustrative 18:00 deadline.

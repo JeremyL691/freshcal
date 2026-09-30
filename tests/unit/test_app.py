@@ -1,4 +1,4 @@
-"""Tests for source merging and selection (BLUEPRINT.md §4.8, §6.2)."""
+"""Tests for source merging and selection."""
 
 from __future__ import annotations
 

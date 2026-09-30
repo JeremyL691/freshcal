@@ -1,4 +1,4 @@
-"""YAML loading without the two YAML 1.1 traps (BLUEPRINT.md §4.1).
+"""YAML loading without the two YAML 1.1 traps.
 
 ``yaml.SafeLoader`` already refuses arbitrary Python objects, but it still applies
 two implicit resolvers that surprise FreshCal users:

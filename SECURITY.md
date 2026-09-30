@@ -2,14 +2,14 @@
 
 ## Supported versions
 
-Only the latest release is supported. FreshCal v0.1 is not published to PyPI;
-the supported way to run it is from a clone of this repository.
+Only the latest release is supported. FreshCal is not published to PyPI; install
+it from this repository (a release tag or a release asset).
 
 ## Reporting a vulnerability
 
 Report suspected vulnerabilities through **GitHub private vulnerability
-reporting** (the "Report a vulnerability" button on the repository's Security
-tab). Please do not open a public issue, and do not include working exploits in
+reporting**: the "Report a vulnerability" button on the
+[Security tab](https://github.com/JeremyL691/freshcal/security) of this repository. Please do not open a public issue, and do not include working exploits in
 public discussion until a fix is available.
 
 Include the FreshCal version (or commit), the platform, the configuration, and
