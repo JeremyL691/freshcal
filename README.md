@@ -1,6 +1,6 @@
 # FreshCal
 
-Development status (2026-09-29): the local v0.1.1 release is complete; the second audit identified additional defects, including a false ON_TIME for restricted day-of-month plus nth-weekday cron. Remediation is planned in [M8_REMEDIATION_PLAN.md](M8_REMEDIATION_PLAN.md); these fixes have not been implemented yet.
+Development status (2026-09-29): the local v0.1.1 release is complete and the M8 second-audit remediation is finished — all nine confirmed findings are fixed and both acceptance gates report 0 FAIL / 0 SKIP. The remediation plan and its report (`M8_REMEDIATION_PLAN.md` and `docs/milestones/M8-report.md`) live in the repository checkout and are not part of the released package; the package version remains 0.1.1 and no new tag was created.
 
 Business-calendar-aware data freshness checks: declare *when* data should arrive (cron,
 business days, Nth or last business day of the month, holiday calendars, overrides, time

@@ -7,10 +7,49 @@ While the version is `0.y.z`, breaking changes bump `y`.
 
 ## [Unreleased]
 
+Second-audit remediation (M8): the nine findings of the second audit are fixed. The package
+version stays 0.1.1; `review/v0.1.1/check_fixes.py` reports 13 PASS, 0 FAIL, 0 SKIP and the
+original `review/v0.1.0/check_fixes.py` still reports 34 PASS, 0 FAIL, 0 SKIP.
+
+### Fixed
+
+- A cron expression with a restricted day-of-month **and** an nth-weekday day-of-week
+  (`0 9 1 * 1#1`) dropped the day-of-month branch and could report a missed release as
+  `ON_TIME`. Both fields are now the standard OR alternatives: the two branches are merged,
+  an occurrence both name is emitted once, and a branch that can never fire no longer fails
+  the schedule (AUD-01, A-19).
+- An invalid structured `name` (a list or mapping, including a YAML alias graph) was
+  stringified into the source ID and produced a multi-megabyte report; such an entry is now
+  named `sources[index]` and valid identifiers are untouched (AUD-02).
+- A DSN pasted into `dsn_env` was echoed by the `E106` diagnostic, userinfo and password
+  included. The message now carries the field location and the environment-variable-name
+  hint only — never the value (AUD-03).
+- A closed stdout pipe (`freshcal … | head`) raised `BrokenPipeError` during interpreter
+  shutdown, replacing the report's exit code with 120; the report's own code now survives
+  (AUD-04).
+- A malformed explicit YAML tag (`version: !!int nope`) escaped as `E599`/exit 3; it is now
+  `E100` naming the tag, a bounded value and the line and column (AUD-07).
+- A duration with a 5000-digit component hit CPython's digit limit and aborted the run;
+  it is now a per-source `E203` and the other sources are still evaluated (AUD-08).
+- An embedded NUL in `connection.path`, `dbt.manifest`, the config path or an override path
+  escaped as `E599`; each boundary now reports `E106`, `E302`, `E110` or `E404` with the
+  reason and a control-character-safe rendering (AUD-09).
+
+### Changed
+
+- The full 10 000-case differential campaign runs in a dedicated CI job instead of being
+  excluded by the default marker selection, and a guard test proves the workflow's own
+  command selects it (AUD-05).
+- The differential comparator evaluates the implementation and the independent oracle
+  separately for every operation, so a one-sided failure is reported instead of being read
+  as agreement, and the oracle matches the nth-weekday grammar with its own field matching
+  (AUD-06).
+
 ### Documentation
 
-- Prepared the owner-requested M8 execution plan for nine second-audit findings and updated
-  active project instructions and progress. Bug fixes remain pending; M0-M7 completion is historical.
+- Adopted the owner-requested M8 execution plan for the nine second-audit findings (A-18),
+  recorded Amendments A-19 and A-20, added `docs/milestones/M8-report.md`, and annotated the
+  M7 report's inconsistent historical counts.
 
 ## [0.1.1] - 2026-09-29
 
