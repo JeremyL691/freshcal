@@ -45,17 +45,24 @@ def test_orc_05_a_matching_case_reports_nothing() -> None:
 
 
 def test_orc_06_a_product_only_refusal_is_a_difference() -> None:
-    """The audit's blind spot: E209 raised by the implementation alone must be reported."""
+    """The audit's blind spot: E209 raised by the implementation alone must be reported.
+
+    The oracle finds a release, so its answer contradicts the injected "no release within
+    1830 days". The bounded comparison may agree instead: when the oracle's smaller window
+    holds no release either, an E209 cannot be contradicted (``_empty_answer``).
+    """
     rule, provider, instant = _case()
     with patch(
         "freshcal.core.schedule.next_release_after",
         side_effect=ConfigError(Issue("E209", "injected product-only failure")),
     ):
         differences = _run(rule, provider, instant)
-    assert {name for name, _, _, _ in differences} == NEXT_CHECKS, differences
+    names = {name for name, _, _, _ in differences}
+    assert "next_release_after" in names, differences
+    assert names <= NEXT_CHECKS | {"evaluate"}, differences
     for name, _, got, want in differences:
         assert got == "E209", (name, got)
-        assert want is None or isinstance(want, list), (name, want)  # the oracle still answered
+        assert want not in (None, []), (name, want)  # the oracle answered with a release
 
 
 def test_orc_07_an_oracle_only_refusal_is_a_difference() -> None:
@@ -64,11 +71,11 @@ def test_orc_07_an_oracle_only_refusal_is_a_difference() -> None:
     with patch.object(oracle, "o_first_after", side_effect=oracle.OracleError("E209")):
         differences = _run(rule, provider, instant)
     names = {name for name, _, _, _ in differences}
-    assert names >= NEXT_CHECKS, differences
+    assert "next_release_after" in names, differences
     assert names <= NEXT_CHECKS | {"evaluate"}, differences
     for name, _, got, want in differences:
         if name in NEXT_CHECKS:
-            assert got is None or isinstance(got, list), (name, got)  # the product answered
+            assert got not in (None, []), (name, got)  # the product found a release
             assert want == "E209", (name, want)
 
 
@@ -106,16 +113,40 @@ def test_orc_09_differing_refusal_codes_are_a_difference() -> None:
 
 
 def test_orc_10_a_one_sided_failure_after_matching_operations_is_still_reported() -> None:
-    """The failure is reported even though every earlier operation compared equal."""
+    """The failure is reported even though every earlier operation compared equal.
+
+    ``releases_between`` is the first comparison the comparator makes, so this pins that a
+    one-sided failure is reported before (and independently of) any later difference.
+    """
+    rule, provider, instant = build(random.Random(12), "bd")
+    with patch(
+        "freshcal.core.schedule.releases_between",
+        side_effect=ConfigError(Issue("E209", "injected first failure")),
+    ):
+        differences = _run(rule, provider, instant)
+    assert [name for name, _, _, _ in differences] == ["releases_between"], differences
+    assert differences[0][2] == "E209"
+    assert isinstance(differences[0][3], list)
+    assert differences[0][3], "the oracle found releases in the window"
+
+
+def test_orc_14_an_e209_against_a_bounded_empty_answer_is_compatible() -> None:
+    """Pin the documented exception: E209 cannot be contradicted by an empty smaller window.
+
+    This case's rule starts at ``active_from`` after the reference instant, so the oracle's
+    400-day look-back is empty; an implementation E209 ("no release within 1830 days") is
+    the stronger statement and the two cannot disagree. The *next* comparisons still differ
+    because the oracle finds a later release there.
+    """
     rule, provider, instant = _case()
     with patch(
         "freshcal.core.schedule.previous_release_at_or_before",
-        side_effect=ConfigError(Issue("E209", "injected later failure")),
+        side_effect=ConfigError(Issue("E209", "injected")),
     ):
         differences = _run(rule, provider, instant)
-    assert [name for name, _, _, _ in differences] == ["previous_release_at_or_before"], differences
-    assert differences[0][2] == "E209"
-    assert differences[0][3] is None or isinstance(differences[0][3], (list, str))
+    assert "previous_release_at_or_before" not in {name for name, _, _, _ in differences}, (
+        differences
+    )
 
 
 def test_orc_11_a_real_refusal_shared_by_both_sides_is_not_a_difference() -> None:

@@ -459,20 +459,14 @@ def validate_cron(expression: object, location: str) -> str:
         # A fixed start keeps the check deterministic; `croniter(expression)` alone would
         # use the wall clock and would never notice an expression that cannot fire.
         croniter(expression, _CRON_VALIDATION_START).get_next(datetime)
-    except CroniterBadDateError as error:
-        # SEM-08: croniter refuses some *valid* schedules. When both the day-of-month and
-        # the day-of-week fields are restricted, standard cron (and §3.4.1) reads them as
-        # OR alternatives — `15 0 30 2 0,6` fires every weekend in February — but croniter
-        # cannot compute that and would report "no release" for a schedule that fires.
-        # FreshCal refuses the expression at load time instead. With the day-of-week field
-        # at `*` there is no alternative to an impossible day: that expression never fires
-        # under any reading, stays loadable, and evaluation reports E209 for it (CLI-03).
-        if fields[2] != "*" and fields[4] != "*":
-            raise invalid(
-                "croniter cannot compute a next date for this day-of-month/day-of-week "
-                "combination; standard OR semantics still fire, so the schedule is refused "
-                "rather than reported as having no release"
-            ) from error
+    except CroniterBadDateError:
+        # croniter refuses an expression it can find no next date for. Both cases stay
+        # loadable: a never-firing expression such as `0 0 30 2 *` has no alternative
+        # reading and evaluation reports E209 for it (CLI-03/CFG-12), and an expression
+        # whose day-of-month *and* day-of-week fields are both restricted is the standard
+        # OR case, which FreshCal computes itself from the two single-branch streams
+        # (AUD-01, A-19) instead of refusing a schedule that really fires.
+        pass
     except (CroniterBadCronError, ValueError) as error:
         raise invalid(str(error)) from error
     return expression

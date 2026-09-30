@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-from datetime import date, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pytest
-from tests.oracle.cases import CRONITER_DAY_OR_REFUSALS
+from tests.conftest import FakeCalendarProvider
 
 from freshcal.config.loader import (
     AppConfig,
+    Defaults,
     DuckDBConnection,
     PostgresConnection,
     build_rule,
@@ -20,6 +21,7 @@ from freshcal.config.loader import (
     validate_cron,
 )
 from freshcal.config.yaml_loader import load_yaml, load_yaml_file
+from freshcal.core.calendar import BusinessCalendar
 from freshcal.core.errors import ConfigError
 from freshcal.core.model import (
     BusinessDaysSchedule,
@@ -33,6 +35,7 @@ from freshcal.core.model import (
     SourceRule,
     Weekday,
 )
+from freshcal.core.schedule import releases_between
 
 EXAMPLES = Path("tests/fixtures/configs/examples")
 CLI_CONFIGS = Path("tests/fixtures/configs/cli")
@@ -228,19 +231,63 @@ def test_u_load_05_weekday_names_are_accepted() -> None:
     assert validate_cron("0 6 1,15 * 1-5", "cron") == "0 6 1,15 * 1-5"
 
 
-@pytest.mark.parametrize("expression", CRONITER_DAY_OR_REFUSALS)
-def test_sem_08_croniter_day_or_refusals_are_rejected_at_load_time(expression: str) -> None:
-    """SEM-08: a valid OR schedule croniter cannot express is E202, never a false verdict.
+WEEKDAYS_FEB_2026 = {2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 16, 17, 18, 19, 20, 23, 24, 25, 26, 27}
+SATURDAYS_FEB_2026 = {7, 14, 21, 28}
+WEEKEND_FEB_2026 = {1, 7, 8, 14, 15, 21, 22, 28}
 
-    Standard cron OR semantics (`day_or`) make `15 0 30 2 0,6` fire every weekend in
-    February even though 30 February never exists; croniter cannot compute that, so
-    FreshCal refuses the expression instead of reporting "no release" for a schedule
-    that does fire (conservative: a configuration error, exit 2).
+
+@pytest.mark.parametrize(
+    ("expression", "days", "per_day"),
+    [
+        # 30 February never exists, so the day-of-week branch decides.
+        ("15 0 30 2 0,6", WEEKEND_FEB_2026, 1),  # weekends at 00:15
+        ("59 16 31 2 6", SATURDAYS_FEB_2026, 1),  # Saturdays at 16:59
+        ("0,30 0,12 30 2 1-5", WEEKDAYS_FEB_2026, 4),  # weekdays at 00:00/30 and 12:00/30
+        ("10-20/5 0 31 2 1-5", WEEKDAYS_FEB_2026, 3),  # weekdays at 00:10/15/20
+        ("10-20/5 0,12 30 2 1-5", WEEKDAYS_FEB_2026, 6),  # the same six times a day
+    ],
+    ids=lambda value: str(value),
+)
+def test_a_19_croniter_day_or_refusals_load_and_fire(
+    expression: str, days: set[int], per_day: int
+) -> None:
+    """A-19: a valid OR schedule croniter cannot express is supported, not refused (was E202).
+
+    Standard cron OR semantics make `15 0 30 2 0,6` fire every weekend in February even
+    though 30 February never exists. T-8.3 computes the union of the two single-branch
+    streams, so the expression loads and the weekday branch decides; the M7 refusal (A-16)
+    is superseded. February 2026 has 20 weekdays, four Saturdays (7, 14, 21, 28) and four
+    Sundays (1, 8, 15, 22), so every expectation below is read off a calendar.
     """
-    error = error_of(lambda: validate_cron(expression, "sources[0].schedule.cron"))
-    assert error.issue.code == "E202"
-    assert "day-of-month" in error.issue.message
-    assert "OR" in error.issue.message
+    assert validate_cron(expression, "sources[0].schedule.cron") == expression
+    rule = build_rule(
+        {
+            "name": "or.schedule",
+            "relation": "raw.t",
+            "loaded_at_field": "loaded_at",
+            "grace": "1h",
+            "schedule": {"kind": "cron", "cron": expression, "timezone": "UTC"},
+        },
+        source_id="or.schedule",
+        origin=Origin.CONFIG,
+        relation="raw.t",
+        loaded_at_field="loaded_at",
+        filter=None,
+        defaults=Defaults(timezone=ZoneInfo("UTC")),
+        named_calendars={},
+        location="sources[0]",
+        config_dir=Path("."),
+    )
+    calendar = BusinessCalendar(rule.calendar, FakeCalendarProvider())
+    releases = releases_between(
+        rule,
+        datetime(2026, 2, 1, tzinfo=UTC),
+        datetime(2026, 2, 28, 23, 59, 59, tzinfo=UTC),
+        calendar,
+    )
+    assert {release.local.day for release in releases} == days
+    assert len(releases) == len(days) * per_day
+    assert all(release.local.month == 2 for release in releases)
 
 
 def test_sem_08_a_never_firing_cron_stays_loadable_for_e209() -> None:

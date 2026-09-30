@@ -510,6 +510,18 @@ def _refusals_agree(got: str | None, want: str | None) -> bool:
     return {got, want} <= {None, "E209"}
 
 
+def _empty_answer(value: object) -> bool:
+    """True for the oracle's *bounded* "nothing there" answers: ``None`` and ``[]``.
+
+    ``o_first_after``/``o_last_before`` return ``None`` and ``o_releases`` returns ``[]``
+    when their window holds no release. The window is always smaller than the
+    implementation's 1830-day horizon, so such an answer cannot contradict an
+    implementation ``E209``; it also cannot confirm it, which is why the relation is
+    recorded here rather than treated as agreement between two refusals.
+    """
+    return value is None or value == []
+
+
 def _agree(
     got: Outcome,
     want: Outcome,
@@ -519,14 +531,17 @@ def _agree(
 ) -> bool:
     """Whether the two outcomes are compatible.
 
-    A refusal on exactly one side is always a disagreement: the oracle and the
-    implementation must agree on *whether* there is an answer before they can agree on
-    what it is. ``tolerate`` is the explicit escape for the oracle's bounded look-around:
-    it receives the two raw values and returns True only when the comparison is genuinely
-    not comparable (a value the oracle's smaller window could not see).
+    A refusal on exactly one side is a disagreement, with one documented exception: the
+    implementation's ``E209`` ("no release within 1830 days") against the oracle's bounded
+    "nothing in my smaller window". ``tolerate`` is the second explicit escape, for the
+    oracle's bounded look-around: it receives the two raw values and returns True only when
+    the comparison is genuinely not comparable (a value the oracle's window could not see).
     """
     if got.refused or want.refused:
-        return got.refused and want.refused and _refusals_agree(got.code, want.code)
+        if got.refused and want.refused:
+            return _refusals_agree(got.code, want.code)
+        refusal, answer = (got, want) if got.refused else (want, got)
+        return refusal.code == "E209" and _empty_answer(answer.value)
     if tolerate is not None and tolerate(got.value, want.value):
         return True
     return bool(to_product(got.value) == to_oracle(want.value))
