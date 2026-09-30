@@ -23,7 +23,7 @@ import json
 import re
 from collections.abc import Iterator, Mapping, Sequence
 from importlib.resources import files
-from typing import Any, Final
+from typing import Any, Final, Protocol
 
 from jsonschema import Draft202012Validator, ValidationError
 from jsonschema._utils import equal, uniq
@@ -210,141 +210,134 @@ def _value_text(value: object) -> str:
     return render_value(value)
 
 
-def _map_error(error: ValidationError, prefix: str, *, dbt_rule: bool) -> list[Issue]:
-    """Map one schema error to one issue (or one issue per unexpected key)."""
-    path = list(error.absolute_path)
-    location = _render_location(prefix, path)
-    field = _last_field(path)
-    validator = error.validator
+def _unexpected_key_issue(key: object, location: str, field: str, *, dbt_rule: bool) -> Issue:
+    """The issue for one key the schema rejected: E105, E205, E304, or E101."""
+    if field == "connection" and key in _SECRET_FIELDS:
+        return _issue(
+            "E105",
+            location,
+            f"'{key}' is not allowed; secrets must not be stored in config files. "
+            "Put the DSN in an environment variable and set dsn_env to its name",
+        )
+    if key == "on_non_business_day" and field == "schedule":
+        return _issue("E205", location, "on_non_business_day is only valid for kind: cron")
+    if dbt_rule and key in {"name", "relation"}:
+        return _issue(
+            "E304", location, f"'{key}' cannot be set in meta.freshcal because dbt provides it"
+        )
+    return _issue("E101", location, f"unknown field {_key_text(key)}")
 
-    if validator == "additionalProperties":
-        keys = _unexpected_keys(error) or [field]
-        issues: list[Issue] = []
-        for key in keys:
-            if field == "connection" and key in _SECRET_FIELDS:
-                issues.append(
-                    _issue(
-                        "E105",
-                        location,
-                        f"'{key}' is not allowed; secrets must not be stored in config files. "
-                        "Put the DSN in an environment variable and set dsn_env to its name",
-                    )
-                )
-            elif key == "on_non_business_day" and field == "schedule":
-                issues.append(
-                    _issue("E205", location, "on_non_business_day is only valid for kind: cron")
-                )
-            elif dbt_rule and key in {"name", "relation"}:
-                issues.append(
-                    _issue(
-                        "E304",
-                        location,
-                        f"'{key}' cannot be set in meta.freshcal because dbt provides it",
-                    )
-                )
-            else:
-                issues.append(_issue("E101", location, f"unknown field {_key_text(key)}"))
-        return issues
 
-    if validator == "required":
-        match = _REQUIRED_RE.match(error.message)
-        missing = match.group(1) if match else str(error.validator_value)
-        return [_issue("E102", location, f"missing required field '{missing}'")]
+def _map_additional_properties(
+    error: ValidationError, location: str, field: str, *, dbt_rule: bool
+) -> list[Issue]:
+    keys = _unexpected_keys(error) or [field]
+    return [_unexpected_key_issue(key, location, field, dbt_rule=dbt_rule) for key in keys]
 
-    if validator == "type":
-        if (
-            field == "time"
-            and isinstance(error.instance, int)
-            and not isinstance(error.instance, bool)
-        ):
-            return [
-                _issue(
-                    "E103",
-                    location,
-                    'expected a quoted time such as "16:00", got the integer '
-                    f"{error.instance}; YAML 1.1 reads unquoted 16:00 as the base-60 number "
-                    '960, so write time: "16:00"',
-                )
-            ]
+
+def _map_required(
+    error: ValidationError, location: str, field: str, *, dbt_rule: bool
+) -> list[Issue]:
+    match = _REQUIRED_RE.match(error.message)
+    missing = match.group(1) if match else str(error.validator_value)
+    return [_issue("E102", location, f"missing required field '{missing}'")]
+
+
+def _map_type(error: ValidationError, location: str, field: str, *, dbt_rule: bool) -> list[Issue]:
+    if field == "time" and isinstance(error.instance, int) and not isinstance(error.instance, bool):
         return [
             _issue(
                 "E103",
                 location,
-                f"expected {error.validator_value}, got {_describe_value(error.instance)}",
+                'expected a quoted time such as "16:00", got the integer '
+                f"{error.instance}; YAML 1.1 reads unquoted 16:00 as the base-60 number "
+                '960, so write time: "16:00"',
             )
         ]
-
-    if validator in {"enum", "const"}:
-        if field == "version":
-            return [_issue("E104", location, "unsupported config version; expected 1")]
-        allowed = error.validator_value
-        if not isinstance(allowed, list | tuple):
-            allowed = [allowed]
-        rendered = ", ".join(str(value) for value in allowed)
-        return [
-            _issue("E104", location, f"{_value_text(error.instance)} is not one of: {rendered}")
-        ]
-
-    if validator in _RANGE_VALIDATORS:
-        if field == "business_day":
-            return [
-                _issue(
-                    "E204",
-                    location,
-                    "business_day must be an integer between -23 and 23, excluding 0; "
-                    f"got {error.instance}",
-                )
-            ]
-        if field == "dsn_env":
-            # AUD-03: a wrong dsn_env value *is* a connection string, so rendering it would
-            # print the DSN, its URI userinfo and any password to the terminal. The location
-            # and the shape hint are everything the operator needs, and they must never be
-            # replaced by a truncated value — truncation is not redaction.
-            return [
-                _issue(
-                    "E106",
-                    location,
-                    "invalid value: expected an environment variable name such as "
-                    "FRESHCAL_PG_DSN, not the connection string itself",
-                )
-            ]
-        # A weekend list with more than six entries is E406 however the schema reports
-        # it: with only seven weekday names, seven entries always repeat one, so
-        # ``uniqueItems`` can fire before ``maxItems`` (found on 2026-09-29). CFG-11:
-        # ``maxItems`` is mapped too, so seven *distinct* days reach E406 as well.
-        weekend_too_long = field == "weekend" and (
-            validator == "maxItems"
-            or (
-                validator == "uniqueItems"
-                and isinstance(error.instance, list)
-                and len(error.instance) > 6
-            )
+    return [
+        _issue(
+            "E103",
+            location,
+            f"expected {error.validator_value}, got {_describe_value(error.instance)}",
         )
-        if weekend_too_long:
-            return [_issue("E406", location, "weekend may contain at most 6 days")]
-        # CFG-12: the schema's only ``minLength`` guard on ``cron`` is a rough proxy for
-        # "at least five fields"; count the fields so the message matches E202's
-        # ``expected 5 fields, got N`` reason (a cron with five 1-character fields is
-        # nine characters, so a shorter expression always has too few fields).
-        if validator == "minLength" and field == "cron":
-            expression = error.instance if isinstance(error.instance, str) else ""
-            return [
-                _issue(
-                    "E202",
-                    location,
-                    f"invalid cron expression {render_value(expression)}: "
-                    f"expected 5 fields, got {len(expression.split())}",
-                )
-            ]
+    ]
+
+
+def _map_enum(error: ValidationError, location: str, field: str, *, dbt_rule: bool) -> list[Issue]:
+    if field == "version":
+        return [_issue("E104", location, "unsupported config version; expected 1")]
+    allowed = error.validator_value
+    if not isinstance(allowed, list | tuple):
+        allowed = [allowed]
+    rendered = ", ".join(str(value) for value in allowed)
+    return [_issue("E104", location, f"{_value_text(error.instance)} is not one of: {rendered}")]
+
+
+def _weekend_too_long(error: ValidationError, field: str) -> bool:
+    """A weekend list with more than six entries, however the schema reports it.
+
+    With only seven weekday names, seven entries always repeat one, so ``uniqueItems``
+    can fire before ``maxItems``; ``maxItems`` covers seven *distinct* days.
+    """
+    if field != "weekend":
+        return False
+    if error.validator == "maxItems":
+        return True
+    return (
+        error.validator == "uniqueItems"
+        and isinstance(error.instance, list)
+        and len(error.instance) > 6
+    )
+
+
+def _map_range(error: ValidationError, location: str, field: str, *, dbt_rule: bool) -> list[Issue]:
+    if field == "business_day":
+        return [
+            _issue(
+                "E204",
+                location,
+                "business_day must be an integer between -23 and 23, excluding 0; "
+                f"got {error.instance}",
+            )
+        ]
+    if field == "dsn_env":
+        # A wrong dsn_env value *is* a connection string, so rendering it would print the
+        # DSN, its URI userinfo and any password. The location and the shape hint are
+        # everything the operator needs; truncation is not redaction.
         return [
             _issue(
                 "E106",
                 location,
-                f"invalid value {render_value(error.instance)}: {_hint(field, error)}",
+                "invalid value: expected an environment variable name such as "
+                "FRESHCAL_PG_DSN, not the connection string itself",
             )
         ]
+    if _weekend_too_long(error, field):
+        return [_issue("E406", location, "weekend may contain at most 6 days")]
+    if error.validator == "minLength" and field == "cron":
+        # The schema's only ``minLength`` guard on ``cron`` is a rough proxy for "at least
+        # five fields"; count the fields so the message matches E202's reason (five
+        # 1-character fields are nine characters, so a shorter expression has too few).
+        expression = error.instance if isinstance(error.instance, str) else ""
+        return [
+            _issue(
+                "E202",
+                location,
+                f"invalid cron expression {render_value(expression)}: "
+                f"expected 5 fields, got {len(expression.split())}",
+            )
+        ]
+    return [
+        _issue(
+            "E106",
+            location,
+            f"invalid value {render_value(error.instance)}: {_hint(field, error)}",
+        )
+    ]
 
-    # Fallback: keep the schema's own wording rather than dropping the error.
+
+def _map_other(error: ValidationError, location: str, field: str, *, dbt_rule: bool) -> list[Issue]:
+    """Fallback: keep the schema's own wording rather than dropping the error."""
     return [
         _issue(
             "E106",
@@ -352,6 +345,30 @@ def _map_error(error: ValidationError, prefix: str, *, dbt_rule: bool) -> list[I
             f"invalid value {render_value(error.instance)}: {truncate(error.message)}",
         )
     ]
+
+
+class _ErrorMapper(Protocol):
+    def __call__(
+        self, error: ValidationError, location: str, field: str, *, dbt_rule: bool
+    ) -> list[Issue]: ...
+
+
+#: Schema keyword -> the function that turns one error of that keyword into issues.
+_MAPPERS: Final[dict[str, _ErrorMapper]] = {
+    "additionalProperties": _map_additional_properties,
+    "required": _map_required,
+    "type": _map_type,
+    "enum": _map_enum,
+    "const": _map_enum,
+    **dict.fromkeys(_RANGE_VALIDATORS, _map_range),
+}
+
+
+def _map_error(error: ValidationError, prefix: str, *, dbt_rule: bool) -> list[Issue]:
+    """Map one schema error to one issue (or one issue per unexpected key)."""
+    path = list(error.absolute_path)
+    mapper = _MAPPERS.get(str(error.validator), _map_other)
+    return mapper(error, _render_location(prefix, path), _last_field(path), dbt_rule=dbt_rule)
 
 
 def _issues(
