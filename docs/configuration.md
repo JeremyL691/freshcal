@@ -9,7 +9,13 @@ to BLUEPRINT.md §4.
 - Relative paths inside a config file (`connection.path`, `dbt.manifest`, an override
   `file`) resolve against the **directory containing the config file**, not the working
   directory. The DuckDB adapter also sets DuckDB's `file_search_path` to that directory,
-  so `read_csv('fx_rates.csv')` in a `relation` resolves the same way.
+  so `read_csv('fx_rates.csv')` in a `relation` resolves the same way. The adapter then
+  locks the session down: DuckDB's `allowed_directories` becomes the config directory and
+  the process working directory, `enable_external_access = false` refuses every other
+  file, extension and `ATTACH`, and `lock_configuration = true` stops a query fragment
+  from changing any of it (including `SET TimeZone`). A config directory whose path
+  contains a comma cannot be expressed in DuckDB's comma-separated `file_search_path`
+  and is refused with `E501`.
 - YAML is read with a safe loader that keeps `2026-01-04` a string (no implicit
   timestamps) and `16:00` a string (no base-60 numbers). Quote times explicitly:
   `time: "16:00"`.
@@ -58,6 +64,15 @@ a per-source `E502` for that and every later read, never a crash. Both adapters 
 session time zone to UTC. `relation`, `loaded_at_field`, and `filter` are SQL fragments
 inserted verbatim — treat config files as code and give the FreshCal connection a
 `SELECT`-only PostgreSQL role (see [../SECURITY.md](../SECURITY.md) and the README).
+
+DuckDB has no statement splitter, so a fragment can contain several statements; the
+lock-down described under "Loading rules" bounds what they can reach (the config
+directory and the working directory) and a fragment cannot lift it. A value that cannot
+be a load time is that source's `E502`: DuckDB's `±infinity` (`datetime.max` /
+`datetime.min`, for `TIMESTAMP` and `TIMESTAMPTZ`) is refused as an infinite timestamp,
+and an overflow while interpreting a value in its configured zone (for example
+`timestamp '9999-12-31 22:00'` with `observed_timezone: America/New_York`) is refused
+naming the value. The other sources of the run are still evaluated.
 
 ## Source
 

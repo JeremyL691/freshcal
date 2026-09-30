@@ -2,7 +2,7 @@ version: 1
 connection: {type: duckdb, path: ":memory:"}
 sources:
   - name: vendor.daily
-    relation: "read_csv('../integration/fx_rates.csv')"
+    relation: "read_csv('fx_rates.csv')"
     loaded_at_field: _loaded_at
     schedule: {kind: business_days, time: "16:00", timezone: UTC}
     grace: 2h

@@ -29,6 +29,7 @@ from freshcal.core.explain import explain_lines, explanation
 from freshcal.core.model import (
     CheckReport,
     EvaluationResult,
+    FreshnessTarget,
     NextEntry,
     NextRelease,
     NextReport,
@@ -224,6 +225,27 @@ def _with_warnings(result: EvaluationResult, warnings: Sequence[Issue]) -> Evalu
     return replace(result, warnings=result.warnings + matching)
 
 
+def _unusable_observation(
+    target: FreshnessTarget, raw: RawObservation | None, error: BaseException
+) -> Issue:
+    """``E502`` for a value that cannot be turned into an instant, naming the value.
+
+    Either the read itself failed while converting the value (``raw`` is then unknown) or
+    the failure happened later, while formatting the result; both are that one source's
+    data problem, never a reason to abort the run (audit E2E-02).
+    """
+    if raw is None or raw.value is None:
+        detail = (
+            f"max({target.loaded_at_field}) returned a value that cannot be used as a timestamp"
+        )
+    else:
+        detail = (
+            f"max({target.loaded_at_field}) returned {raw.value.isoformat(sep=' ')}, which "
+            "cannot be used as a timestamp"
+        )
+    return Issue("E502", f"query failed: {detail} ({type(error).__name__}: {error})")
+
+
 def run_check(
     entries: Sequence[SourceEntry],
     reader: FreshnessReader | None,
@@ -238,6 +260,10 @@ def run_check(
     ``reader=None`` means the reader could not be created: every valid source then gets a
     ``QUERY_ERROR`` carrying ``reader_error``, while sources whose rule did not load keep
     their ``CONFIG_ERROR``.
+
+    A failure while handling one source's value — a query error, or an overflow while
+    normalizing or formatting an extreme timestamp — becomes that source's ``QUERY_ERROR``
+    (``E502``); the remaining sources are still evaluated.
     """
     now = to_utc(now)
     results: list[EvaluationResult] = []
@@ -252,12 +278,16 @@ def run_check(
                 reader_error or Issue("E501", "cannot connect to the warehouse"),
             )
         else:
+            raw: RawObservation | None = None
             try:
                 raw = reader.read_latest(entry.rule.target)
+                result = evaluate(entry.rule, raw, now, provider)
             except QueryError as error:
                 result = query_error_result(entry, now, provider, error.issue)
-            else:
-                result = evaluate(entry.rule, raw, now, provider)
+            except (OverflowError, ValueError) as error:
+                result = query_error_result(
+                    entry, now, provider, _unusable_observation(entry.rule.target, raw, error)
+                )
         result = _with_warnings(result, entry.warnings)
         results.append(_with_warnings(result, extra_warnings))
 

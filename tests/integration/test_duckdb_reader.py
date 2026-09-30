@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from collections.abc import Iterator, Sequence
 from datetime import UTC, datetime
@@ -11,6 +12,7 @@ import duckdb
 import pytest
 from tests.integration.reader_contract import CONTRACT_CHECKS
 
+from freshcal import cli
 from freshcal.adapters.duckdb_reader import DuckDBReader
 from freshcal.adapters.holidays_provider import HolidaysCalendarProvider
 from freshcal.config.loader import DuckDBConnection, load_config
@@ -193,3 +195,154 @@ def test_filter_is_inserted_verbatim(tmp_path: Path) -> None:
         assert observation.value == datetime(2026, 9, 20, 6, 0)
     finally:
         reader.close()
+
+
+# ----------------------------------------------------------------- infinite sentinels (E2E-02/03)
+
+INFINITE_SENTINELS = (
+    ("TIMESTAMP", "+infinity", "'infinity'"),
+    ("TIMESTAMP", "-infinity", "'-infinity'"),
+    ("TIMESTAMPTZ", "+infinity", "'infinity'"),
+    ("TIMESTAMPTZ", "-infinity", "'-infinity'"),
+)
+
+
+@pytest.mark.parametrize(
+    ("column_type", "sentinel", "literal"),
+    INFINITE_SENTINELS,
+    ids=[f"{column_type}-{sentinel}" for column_type, sentinel, _ in INFINITE_SENTINELS],
+)
+def test_i_duck_10_an_infinite_sentinel_is_e502(
+    column_type: str, sentinel: str, literal: str, harness: DuckDBHarness
+) -> None:
+    """CFG-15/E2E-03: the driver's ``±infinity`` sentinel is not a load time."""
+    target = harness.make_target(column_type, [literal])
+    with pytest.raises(QueryError) as excinfo:
+        harness.reader().read_latest(target)
+    issue = excinfo.value.issue
+    assert issue.code == "E502"
+    assert issue.message == "query failed: max(loaded_at) returned an infinite timestamp"
+
+
+def test_i_duck_11_one_infinite_source_does_not_abort_the_run(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """E2E-02: a healthy and an infinite source in one run give a report and exit 3."""
+    config = tmp_path / "run.yml"
+    config.write_text(
+        "version: 1\n"
+        "connection: {type: duckdb, path: ':memory:'}\n"
+        "defaults: {grace: 2h, timezone: Europe/Berlin}\n"
+        "sources:\n"
+        "  - {name: a.ok, relation: \"(SELECT TIMESTAMP '2026-09-25 14:05:00' AS x) q\", "
+        "loaded_at_field: x, observed_timezone: UTC, "
+        "schedule: {kind: business_days, time: '16:00'}}\n"
+        "  - {name: b.inf, relation: \"(SELECT 'infinity'::TIMESTAMP AS x) q\", "
+        "loaded_at_field: x, observed_timezone: UTC, "
+        "schedule: {kind: business_days, time: '16:00'}}\n",
+        encoding="utf-8",
+    )
+
+    code = cli.main(
+        ["check", "--format", "json", "-c", str(config), "--now", "2026-09-28T16:30:00Z"]
+    )
+    captured = capsys.readouterr()
+
+    assert code == 3
+    assert "E599" not in captured.err
+    assert captured.err == ""
+    report = json.loads(captured.out)
+    assert report["exit_code"] == 3
+    by_id = {result["source_id"]: result["status"] for result in report["results"]}
+    assert by_id == {"a.ok": "OVERDUE", "b.inf": "QUERY_ERROR"}
+    infinite = next(r for r in report["results"] if r["source_id"] == "b.inf")
+    assert infinite["error"]["code"] == "E502"
+    assert "infinite timestamp" in infinite["error"]["message"]
+
+
+# ----------------------------------------------------------------- lock-down (CFG-17)
+
+LOCK_DOWN_REFUSALS = (
+    ("read_csv outside the config directory", "read_csv('/etc/hosts')", "Permission Error"),
+    (
+        "COPY TO outside the config directory",
+        "(SELECT 1 AS x) q; COPY (SELECT 1) TO '{outside}'",
+        "Permission Error",
+    ),
+    (
+        "ATTACH outside the config directory",
+        "(SELECT 1 AS x) q; ATTACH '{outside}' AS pwn",
+        "Permission Error",
+    ),
+    ("INSTALL an extension", "(SELECT 1 AS x) q; INSTALL httpfs", "Permission Error"),
+    (
+        "SET TimeZone",
+        "(SELECT 1 AS x) q; SET TimeZone = 'Asia/Tokyo'",
+        "configuration has been locked",
+    ),
+)
+
+
+@pytest.mark.parametrize(
+    ("name", "template", "refusal"),
+    LOCK_DOWN_REFUSALS,
+    ids=[name for name, _, _ in LOCK_DOWN_REFUSALS],
+)
+def test_i_duck_12_lock_down_refuses_external_access(
+    name: str,
+    template: str,
+    refusal: str,
+    tmp_path: Path,
+    tmp_path_factory: pytest.TempPathFactory,
+) -> None:
+    """CFG-17: a config fragment cannot escape the config directory or lift settings."""
+    outside = tmp_path_factory.mktemp("outside")
+    relation = template.format(outside=outside / "pwn")
+    (tmp_path / "rates.csv").write_text(
+        "rate_date,_loaded_at\n2026-09-25,2026-09-25 14:07:00\n", encoding="utf-8"
+    )
+    reader = DuckDBReader(":memory:", config_dir=tmp_path)
+    try:
+        with pytest.raises(QueryError) as excinfo:
+            reader.read_latest(FreshnessTarget(relation=relation, loaded_at_field="x"))
+    finally:
+        reader.close()
+    issue = excinfo.value.issue
+    assert issue.code == "E502", name
+    assert issue.message.startswith("query failed: ")
+    assert refusal in issue.message, name
+    assert list(outside.iterdir()) == [], name  # nothing was written or attached
+
+
+def test_i_duck_12_lock_down_keeps_the_config_directory_readable(tmp_path: Path) -> None:
+    """The lock-down admits the config directory: ``read_csv('x.csv')`` still works."""
+    (tmp_path / "rates.csv").write_text(
+        "rate_date,_loaded_at\n2026-09-25,2026-09-25 14:07:00\n", encoding="utf-8"
+    )
+    reader = DuckDBReader(":memory:", config_dir=tmp_path)
+    try:
+        observation = reader.read_latest(
+            FreshnessTarget(relation="read_csv('rates.csv')", loaded_at_field="_loaded_at")
+        )
+        assert observation.value == datetime(2026, 9, 25, 14, 7)
+        locked = reader._conn.execute("SELECT current_setting('lock_configuration')").fetchone()
+        assert locked == (True,)
+        external = reader._conn.execute(
+            "SELECT current_setting('enable_external_access')"
+        ).fetchone()
+        assert external == (False,)
+    finally:
+        reader.close()
+
+
+def test_a_config_directory_with_a_comma_is_e501(tmp_path: Path) -> None:
+    """CFG-22: ``file_search_path`` is comma-separated, so a comma must fail loudly."""
+    directory = tmp_path / "with,comma"
+    directory.mkdir()
+    with pytest.raises(QueryError) as excinfo:
+        DuckDBReader(":memory:", config_dir=directory)
+    issue = excinfo.value.issue
+    assert issue.code == "E501"
+    assert issue.message.startswith("cannot connect to duckdb: ")
+    assert "," in issue.message
+    assert "file_search_path" in issue.message

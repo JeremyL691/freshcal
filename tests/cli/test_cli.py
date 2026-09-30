@@ -9,6 +9,7 @@ import pytest
 from jsonschema import Draft202012Validator
 
 from freshcal import cli
+from freshcal.adapters.duckdb_reader import DuckDBReader
 from freshcal.core.errors import Issue
 from freshcal.core.model import CheckReport
 
@@ -381,3 +382,30 @@ def test_fatal_issue_is_reported_once_on_stderr(capsys: pytest.CaptureFixture[st
     assert err.count("\n") == 1
     assert err.startswith("E110 ")
     assert Issue("E110", "config file not found: does-not-exist.yml").code in err
+
+
+@pytest.mark.parametrize(
+    ("argv", "expected_code"),
+    [
+        (["check", "-c", str(ON_TIME), "--now", "2026-09-28T07:30:00+02:00"], 0),
+        (["explain", "ecb.fx_rates", "-c", str(ON_TIME), "--now", "2026-09-28T07:30:00+02:00"], 0),
+    ],
+)
+def test_the_reader_is_closed_after_the_command(
+    argv: list[str],
+    expected_code: int,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """CFG-22: the CLI owns the reader, so it must close it (context manager)."""
+    closed: list[bool] = []
+    original = DuckDBReader.close
+
+    def spy(self: DuckDBReader) -> None:
+        closed.append(True)
+        original(self)
+
+    monkeypatch.setattr(DuckDBReader, "close", spy)
+    code, _, _ = run(argv, capsys)
+    assert code == expected_code
+    assert closed == [True]

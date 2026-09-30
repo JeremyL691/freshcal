@@ -290,3 +290,34 @@ def test_i_pg_11_a_lost_connection_is_e502_not_e599(
     report = json.loads(captured.out)
     statuses = {result["source_id"]: result["status"] for result in report["results"]}
     assert statuses == {"a.kill": "QUERY_ERROR", "b.ok": "QUERY_ERROR"}
+
+
+def test_i_pg_12_an_overflowing_timestamp_is_a_query_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """E2E-02: ``9999-12-31 22:00`` in New York overflows; it is an E502, not an E599."""
+    config = tmp_path / "sentinel.yml"
+    config.write_text(
+        "version: 1\n"
+        "connection: {type: postgres, dsn_env: FRESHCAL_TEST_PG_DSN}\n"
+        "defaults: {grace: 1h, timezone: UTC}\n"
+        "sources:\n"
+        "  - {name: b.sentinel, relation: \"(SELECT timestamp '9999-12-31 22:00:00' AS x) q\", "
+        "loaded_at_field: x, observed_timezone: America/New_York, "
+        "schedule: {kind: business_days, time: '16:00'}}\n"
+    )
+    code = cli.main(
+        ["check", "--format", "json", "-c", str(config), "--now", "2026-09-28T00:00:00Z"]
+    )
+    captured = capsys.readouterr()
+
+    assert code == 3
+    assert "E599" not in captured.err
+    assert captured.err == ""
+    report = json.loads(captured.out)
+    assert report["exit_code"] == 3
+    result = report["results"][0]
+    assert result["status"] == "QUERY_ERROR"
+    assert result["error"]["code"] == "E502"
+    assert result["error"]["message"].startswith("query failed: ")
+    assert "9999-12-31 22:00:00" in result["error"]["message"]

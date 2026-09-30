@@ -368,6 +368,48 @@ def test_u_app_07_query_error_with_a_rule_that_has_no_releases() -> None:
     assert report.results[0].error.code == "E209"
 
 
+def test_run_check_contains_a_normalisation_overflow() -> None:
+    """E2E-02/I-PG-12: an unrepresentable value is that source's E502, not an E599."""
+    entry = source_entry("a.b")
+    rule = entry.rule
+    assert rule is not None
+    entry = replace(entry, rule=replace(rule, observed_timezone=ZoneInfo("America/New_York")))
+    reader = FakeReader({"raw.a.b": RawObservation(datetime(9999, 12, 31, 22, 0))})
+
+    report = run_check([entry], reader, FakeCalendarProvider(), ECB_NOW)
+
+    result = report.results[0]
+    assert result.status is Status.QUERY_ERROR
+    assert result.error is not None
+    assert result.error.code == "E502"
+    assert result.error.message.startswith("query failed: ")
+    assert "9999-12-31 22:00:00" in result.error.message
+    assert report.exit_code == 3
+
+
+def test_run_check_one_overflowing_value_does_not_abort_the_other_sources() -> None:
+    """E2E-02: the healthy source is still evaluated when another one overflows."""
+    entries = [source_entry("a.ok", relation="raw.ok"), source_entry("b.huge", relation="raw.huge")]
+    reader = FakeReader(
+        {
+            "raw.ok": FRIDAY_DATA,
+            # 23:30 UTC is a valid ``datetime`` but past Berlin's midnight: formatting the
+            # explanation overflows, and the overflow must stay on this one source.
+            "raw.huge": RawObservation(datetime(9999, 12, 31, 23, 30)),
+        }
+    )
+
+    report = run_check(entries, reader, FakeCalendarProvider(), ECB_NOW)
+
+    by_id = {result.source_id: result for result in report.results}
+    assert by_id["b.huge"].status is Status.QUERY_ERROR
+    assert by_id["b.huge"].error is not None
+    assert by_id["b.huge"].error.code == "E502"
+    assert "9999-12-31 23:30:00" in by_id["b.huge"].error.message
+    assert by_id["a.ok"].status is Status.ON_TIME
+    assert report.exit_code == 3
+
+
 @pytest.mark.parametrize(
     ("statuses", "fatal", "internal", "expected"),
     [

@@ -38,9 +38,19 @@ from a fragment for the same reason: `; SET LOCAL statement_timeout = 0; …` is
 several statements and is rejected before execution.
 
 **DuckDB** has no equivalent statement splitter: `read_only=True` protects the
-database file only, and DuckDB can still read and write local files from any
-connection (for example with `COPY ... TO`), including `:memory:`, which is why
-config files must be trusted.
+database file only, and a fragment can still contain several statements
+(`relation = "t; COPY …"` runs both). The reader therefore locks its session
+down before any query runs, and a fragment cannot lift the lock: every
+connection sets, in this order, `allowed_directories` (the config file's
+directory and the process working directory), `enable_external_access = false`
+and `lock_configuration = true`. After that, `read_csv`/`COPY`/`ATTACH` work
+only inside those two directories, and `read_csv('/etc/hosts')`, a `COPY … TO`
+or `ATTACH` outside them, `INSTALL` and every later `SET` (including
+`SET TimeZone`) fail with a `PermissionException`/`InvalidInputException`,
+which becomes the source's `E502`. A config directory whose path contains a
+comma cannot be expressed in DuckDB's comma-separated `file_search_path` and is
+refused with `E501`. Config files are still trusted code: the lock-down bounds
+what a fragment can reach, it does not make an untrusted fragment safe.
 
 ### What the read-only guarantees cover
 
@@ -49,10 +59,11 @@ config files must be trusted.
   every transaction is read-only and writes fail with `ReadOnlySqlTransaction`.
   Recommended deployment: a role with `SELECT` only — the read-only transaction is
   a second line of defense, not a substitute.
-- **DuckDB:** database files are opened with `read_only=True`, which protects
-  the database file only. DuckDB can still read and write local files from any
-  connection (for example with `COPY ... TO`), including `:memory:`, which is
-  why config files must be trusted.
+- **DuckDB:** database files are opened with `read_only=True`, which protects the
+  database file, and the session lock-down described above restricts file access
+  to the config directory and the working directory. Neither stops a fragment
+  from writing a file inside those two directories, so config files must still be
+  trusted.
 
 ### Timestamps, time zones, and secrets
 
@@ -71,6 +82,13 @@ config files must be trusted.
   broken and the failing read and every later read fail with `E502` instead of
   aborting the run with an internal error (`E599`). DuckDB has no statement
   timeout in v0.1; this is a documented limitation.
+- A warehouse value that cannot be a load time is that source's `E502`, never a
+  crash and never a verdict: DuckDB's `±infinity` sentinel (`datetime.max` /
+  `datetime.min`, for `TIMESTAMP` and `TIMESTAMPTZ` alike) is refused as an
+  infinite timestamp, and an overflow while interpreting a value in its
+  configured zone (for example `9999-12-31 22:00` read as `America/New_York`) is
+  refused naming the value. The remaining sources of the run are still
+  evaluated.
 
 ## Scope
 

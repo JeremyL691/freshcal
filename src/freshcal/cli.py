@@ -15,6 +15,7 @@ from __future__ import annotations
 import argparse
 import sys
 from collections.abc import Sequence
+from contextlib import closing
 from datetime import datetime
 from pathlib import Path
 
@@ -268,14 +269,26 @@ def _run_check(args: argparse.Namespace) -> int:
     config, entries, warnings = _load(args)
     reader, reader_error = _make_reader(config)
     now = _clock(args).now()
-    report = run_check(
-        entries,
-        reader,
-        _provider(),
-        now,
-        reader_error=reader_error,
-        extra_warnings=warnings,
-    )
+    if reader is None:
+        report = run_check(
+            entries,
+            None,
+            _provider(),
+            now,
+            reader_error=reader_error,
+            extra_warnings=warnings,
+        )
+    else:
+        # The CLI owns the reader, so it closes it as soon as the evaluation is done (CFG-22).
+        with closing(reader):
+            report = run_check(
+                entries,
+                reader,
+                _provider(),
+                now,
+                reader_error=reader_error,
+                extra_warnings=warnings,
+            )
     text = (
         JsonReporter().render(report) if args.format == "json" else TableReporter().render(report)
     )
@@ -311,12 +324,15 @@ def _run_explain_command(args: argparse.Namespace) -> int:
     else:
         reader, reader_error = _make_reader(config)
         if reader is None or entry.rule is None:
+            if reader is not None:
+                reader.close()  # the rule is broken, but this reader was opened (CFG-22)
             issue = reader_error or Issue("E213", "'connection' is required for this command")
             sys.stderr.write(f"{issue.code} {issue.message}\n")
             # E213 and per-source errors are configuration problems; anything else is runtime.
             return 2 if issue.code in ("E213",) or entry.rule is None else 3
         try:
-            raw = reader.read_latest(entry.rule.target)
+            with closing(reader):
+                raw = reader.read_latest(entry.rule.target)
         except QueryError as error:
             result = query_error_result(entry, _clock(args).now(), _provider(), error.issue)
             sys.stdout.write(f"Result    {result.status.value}: {result.explanation}\n")
