@@ -31,6 +31,7 @@ from freshcal.core.model import (
     SourceEntry,
     SourceRule,
     Status,
+    mark_duplicate_source_ids,
 )
 
 
@@ -569,6 +570,38 @@ def test_u_app_11_run_next_reports_w005_near_valid_until() -> None:
     assert [issue.code for issue in entry_result.warnings] == ["W005"]
     assert "was consulted for 2027-" in entry_result.warnings[0].message
     assert entry_result.warnings[0].location == "cn.daily_sales"
+
+
+def test_u_app_12_run_validate_reports_e206_once_for_a_duplicate_group() -> None:
+    """CFG-21: every member carries E206, but ``validate`` prints the group once."""
+    first = SourceEntry(
+        source_id="a.b", origin=Origin.CONFIG, rule=rule("a.b"), location="sources[0]"
+    )
+    second = replace(first, location="sources[1]")
+    third = replace(first, location="sources[2]")
+    entries = mark_duplicate_source_ids([first, second, third])
+
+    report = run_validate(entries, FakeCalendarProvider(), ECB_NOW)
+
+    e206 = [issue for issue in report.issues if issue.code == "E206"]
+    assert len(e206) == 1
+    assert e206[0].message == ("duplicate source id 'a.b' at sources[0], sources[1] and sources[2]")
+    assert report.error_count == 3
+    assert report.valid_count == 0
+
+
+def test_u_app_12_run_validate_keeps_two_identical_e209_messages() -> None:
+    """Only E206 is collapsed: two impossible schedules are two separate errors."""
+    broken = replace(rule("a.b"), schedule=CronSchedule("0 0 30 2 *", ZoneInfo("UTC")))
+    entries = [
+        SourceEntry(source_id=source_id, origin=Origin.CONFIG, rule=broken, location="sources[0]")
+        for source_id in ("a.b", "c.d")
+    ]
+
+    report = run_validate(entries, FakeCalendarProvider(), ECB_NOW)
+
+    assert [issue.code for issue in report.issues] == ["E209", "E209"]
+    assert report.error_count == 2
 
 
 def test_run_explain_returns_the_result_and_the_trace() -> None:

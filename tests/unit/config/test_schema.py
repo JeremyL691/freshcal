@@ -253,6 +253,52 @@ def test_u_schema_02_dbt_rule_forbids_name_and_relation() -> None:
     ]
 
 
+def test_u_schema_05_every_error_of_a_source_is_reported() -> None:
+    """CFG-04: a source with three mistakes yields three coded issues, not the best match.
+
+    ``validate`` lists every schema error of a source, while ``check`` may keep showing
+    only the first (the best match) in its ``CONFIG_ERROR`` result.
+    """
+    document = source(
+        typo=1,
+        grace="2x",
+        schedule={"kind": "business_days", "time": "25:00", "timezone": "UTC"},
+    )
+    assert validate_source(document, 0) == [
+        Issue("E101", "sources[0]: unknown field 'typo'", "sources[0]"),
+        Issue(
+            "E106",
+            "sources[0].schedule.time: invalid value '25:00': expected \"HH:MM\" "
+            '(24-hour), e.g. "16:00"',
+            "sources[0].schedule.time",
+        ),
+        Issue(
+            "E106",
+            "sources[0].grace: invalid value '2x': expected a duration such as "
+            '"90m", "2h", "1d6h"',
+            "sources[0].grace",
+        ),
+    ]
+
+
+def test_u_schema_05_every_top_level_and_calendar_error_is_reported() -> None:
+    """CFG-04: the document validator returns every top-level and calendar error.
+
+    A repeated weekend entry makes jsonschema report both ``uniqueItems`` and
+    ``maxItems`` at the same path; both map to the same E406 and are reported once.
+    """
+    document = {
+        "version": 2,
+        "extra": True,
+        "calendars": {"c": {"weekend": ["mon", "tue", "wed", "thu", "fri", "sat", "mon"]}},
+    }
+    issues = validate_document(document)
+    assert [issue.code for issue in issues] == ["E101", "E104", "E406"]
+    assert issues[2] == Issue(
+        "E406", "calendars.c.weekend: weekend may contain at most 6 days", "calendars.c.weekend"
+    )
+
+
 def test_u_schema_04_source_errors_are_not_reported_by_validate_document() -> None:
     document = {
         "version": 1,

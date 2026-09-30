@@ -226,18 +226,29 @@ def _calendar_from_mapping(
 def parse_named_calendars(
     doc: Mapping[str, object], loc: str, config_dir: Path
 ) -> dict[str, CalendarSpec]:
-    """Parse the top-level ``calendars`` section into named :class:`CalendarSpec`."""
+    """Parse the top-level ``calendars`` section into named :class:`CalendarSpec`.
+
+    One calendar's problem does not hide another's: every calendar is attempted and all
+    errors are raised together (CFG-04).
+    """
     entries = doc.get("calendars") or {}
     if not isinstance(entries, Mapping):
         raise ConfigError(
             _issue("E106", f"{loc}.calendars" if loc else "calendars", "expected mapping")
         )
     named: dict[str, CalendarSpec] = {}
+    issues: list[Issue] = []
     for name, value in entries.items():
         location = f"calendars.{name}" if not loc else f"{loc}.calendars.{name}"
         if not isinstance(value, Mapping):
-            raise ConfigError(_issue("E106", location, f"invalid value {value!r}"))
-        named[str(name)] = _calendar_from_mapping(value, location, config_dir, name=str(name))
+            issues.append(_issue("E106", location, f"invalid value {value!r}"))
+            continue
+        try:
+            named[str(name)] = _calendar_from_mapping(value, location, config_dir, name=str(name))
+        except ConfigError as error:
+            issues.extend(error.issues)
+    if issues:
+        raise ConfigError(issues)
     return named
 
 
@@ -579,31 +590,50 @@ def _parse_connection(
 
 
 def _parse_defaults(value: object, named: Mapping[str, CalendarSpec], directory: Path) -> Defaults:
+    """Parse the ``defaults`` section, collecting every field's error (CFG-04)."""
     if value is None:
         return Defaults()
     if not isinstance(value, Mapping):
         raise ConfigError(
             _issue("E103", "defaults", f"expected object, got {type(value).__name__}")
         )
+    issues: list[Issue] = []
     timezone_value = value.get("timezone")
     grace_value = value.get("grace")
     calendar_value = value.get("calendar")
     observed_value = value.get("observed_timezone")
+
+    timezone: ZoneInfo | None = None
+    if timezone_value is not None:
+        try:
+            timezone = parse_timezone(timezone_value, "defaults.timezone")
+        except ConfigError as error:
+            issues.extend(error.issues)
+    grace: timedelta | None = None
+    if grace_value is not None:
+        try:
+            grace = parse_duration(grace_value, "defaults.grace")
+        except ConfigError as error:
+            issues.extend(error.issues)
+    calendar: CalendarSpec | None = None
+    if calendar_value is not None:
+        try:
+            calendar = parse_calendar(calendar_value, named, "defaults.calendar", directory)
+        except ConfigError as error:
+            issues.extend(error.issues)
+    observed_timezone: ZoneInfo | None = None
+    if observed_value is not None:
+        try:
+            observed_timezone = parse_timezone(observed_value, "defaults.observed_timezone")
+        except ConfigError as error:
+            issues.extend(error.issues)
+    if issues:
+        raise ConfigError(issues)
     return Defaults(
-        timezone=parse_timezone(timezone_value, "defaults.timezone")
-        if timezone_value is not None
-        else None,
-        grace=parse_duration(grace_value, "defaults.grace") if grace_value is not None else None,
-        calendar=(
-            parse_calendar(calendar_value, named, "defaults.calendar", directory)
-            if calendar_value is not None
-            else None
-        ),
-        observed_timezone=(
-            parse_timezone(observed_value, "defaults.observed_timezone")
-            if observed_value is not None
-            else None
-        ),
+        timezone=timezone,
+        grace=grace,
+        calendar=calendar,
+        observed_timezone=observed_timezone,
     )
 
 
@@ -674,15 +704,16 @@ def load_config(path: Path) -> AppConfig:
     """Load a FreshCal config file into an :class:`AppConfig`.
 
     Top-level problems (YAML, unknown fields, ``connection``, ``defaults``,
-    ``calendars``, ``dbt``) raise :class:`ConfigError` and abort the command; problems
-    attributable to one source mark that entry and leave the others usable.
+    ``calendars``, ``dbt``) raise :class:`ConfigError` carrying **every** issue the
+    document validator found and abort the command; problems attributable to one source
+    mark that entry and leave the others usable.
     """
     document = load_yaml_file(path)
     if not isinstance(document, Mapping):
         raise ConfigError(_issue("E103", "", f"expected object, got {type(document).__name__}"))
     top_level_issues = validate_document(document)
     if top_level_issues:
-        raise ConfigError(top_level_issues[0])
+        raise ConfigError(top_level_issues)
 
     directory = path.parent
     named = parse_named_calendars(document, "", directory)

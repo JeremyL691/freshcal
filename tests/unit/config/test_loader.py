@@ -280,6 +280,95 @@ sources:
         )
 
 
+def test_u_load_12_e206_names_every_duplicate_and_keeps_other_errors(tmp_path: Path) -> None:
+    """CFG-21: E206 names every member of the group and hides no other error.
+
+    With three definitions of one ID the message lists all three locations; the middle
+    entry also has an unknown time zone, and that error must survive next to E206.
+    """
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+sources:
+  - name: a.b
+    relation: raw.a
+    loaded_at_field: _loaded_at
+    schedule: {kind: business_days, time: "16:00", timezone: UTC}
+    grace: 1h
+  - name: a.b
+    relation: raw.b
+    loaded_at_field: _loaded_at
+    schedule: {kind: business_days, time: "16:00", timezone: Mars/Olympus}
+    grace: 1h
+  - name: a.b
+    relation: raw.c
+    loaded_at_field: _loaded_at
+    schedule: {kind: business_days, time: "16:00", timezone: UTC}
+    grace: 1h
+""",
+    )
+    entries = load_config(config).entries
+    expected = "duplicate source id 'a.b' at sources[0], sources[1] and sources[2]"
+    assert len(entries) == 3
+    for entry in entries:
+        assert entry.rule is None
+        assert entry.errors[0].code == "E206"
+        assert entry.errors[0].message == expected
+    # The entry's own error is not replaced by E206.
+    assert [issue.code for issue in entries[1].errors] == ["E206", "E201"]
+    assert entries[1].errors[1].message == (
+        "sources[1].schedule.timezone: unknown time zone 'Mars/Olympus'"
+    )
+
+
+def test_u_load_12_multiple_top_level_errors_are_all_raised(tmp_path: Path) -> None:
+    """CFG-04: a top-level document error does not hide the other top-level errors."""
+    config = write_config(tmp_path, "version: 2\nunknown_section: {}\n")
+    with pytest.raises(ConfigError) as excinfo:
+        load_config(config)
+    assert [issue.code for issue in excinfo.value.issues] == ["E101", "E104"]
+    assert excinfo.value.issue.code == "E101"  # the best match stays first
+
+
+def test_u_load_12_every_calendar_error_is_collected(tmp_path: Path) -> None:
+    """CFG-04: a bad calendar does not hide the other calendars' errors."""
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+calendars:
+  bad_country: {holidays: [{country: ZZ}]}
+  bad_date: {valid_until: "2026-13-01"}
+""",
+    )
+    error = error_of(lambda: load_config(config))
+    assert [issue.code for issue in error.issues] == ["E401", "E106"]
+    assert error.issues[0].message == ("calendars.bad_country.holidays[0]: unknown country 'ZZ'")
+    assert error.issues[1].message == (
+        "calendars.bad_date.valid_until: invalid value '2026-13-01': not a valid calendar date"
+    )
+
+
+def test_u_load_12_every_defaults_error_is_collected(tmp_path: Path) -> None:
+    """CFG-04: one bad default does not hide the other defaults' errors."""
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+defaults:
+  timezone: Mars/Olympus
+  observed_timezone: Mars/Olympus
+""",
+    )
+    error = error_of(lambda: load_config(config))
+    assert [issue.code for issue in error.issues] == ["E201", "E201"]
+    assert error.issues[0].message == "defaults.timezone: unknown time zone 'Mars/Olympus'"
+    assert error.issues[1].message == (
+        "defaults.observed_timezone: unknown time zone 'Mars/Olympus'"
+    )
+
+
 def test_u_load_09_connection_parsing(tmp_path: Path) -> None:
     relative = write_config(
         tmp_path,

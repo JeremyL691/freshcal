@@ -6,8 +6,9 @@ document has the right shape, and every schema error is mapped to a coded
 
 Two design constraints come from the blueprint: sub-schemas are validated through a
 wrapper ``{"$defs": …, "$ref": "#/$defs/<name>"}`` so that ``$ref``s still resolve,
-and each call reports the single most relevant error (``best_match``) because the
-schema is written so that one mistake yields one error.
+and every error is reported because ``validate`` lists them all; the ``best_match``
+error stays first so a caller that shows only one (the ``check`` path) keeps the most
+relevant message (CFG-04).
 """
 
 from __future__ import annotations
@@ -250,10 +251,26 @@ def _issues(
     *,
     dbt_rule: bool = False,
 ) -> list[Issue]:
-    error = best_match(validator.iter_errors(instance))
-    if error is None:
+    """Every schema error, mapped and de-duplicated by path, with ``best_match`` first.
+
+    Several schema errors can describe one mistake at the same path (a seven-entry
+    ``weekend`` fails both ``uniqueItems`` and ``maxItems``); the path keeps the best
+    match and the others are dropped. One error can still yield several issues (one per
+    unexpected key), and the best match is placed first so a caller that shows a single
+    message keeps the most relevant one.
+    """
+    errors = list(validator.iter_errors(instance))
+    if not errors:
         return []
-    return _map_error(error, prefix, dbt_rule=dbt_rule)
+    best = best_match(errors)
+    by_path: dict[tuple[object, ...], ValidationError] = {}
+    for error in [best, *(error for error in errors if error is not best)]:
+        by_path.setdefault(tuple(error.absolute_path), error)
+    return [
+        issue
+        for error in by_path.values()
+        for issue in _map_error(error, prefix, dbt_rule=dbt_rule)
+    ]
 
 
 def validate_document(doc: object) -> list[Issue]:

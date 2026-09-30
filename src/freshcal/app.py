@@ -393,6 +393,26 @@ def run_explain(
     return result, lines
 
 
+def _deduplicate(issues: Iterable[Issue]) -> list[Issue]:
+    """Drop repeated ``E206`` messages, keeping the first occurrence.
+
+    Every member of a duplicate-ID group carries the same ``E206`` message (CFG-21), so
+    the group is reported once. Only ``E206`` may be identical across entries: other
+    messages either embed their location or genuinely describe different sources (two
+    impossible cron schedules both earn the location-less ``E209``), and those must all
+    be reported.
+    """
+    unique: list[Issue] = []
+    seen_duplicates: set[str] = set()
+    for issue in issues:
+        if issue.code == "E206":
+            if issue.message in seen_duplicates:
+                continue
+            seen_duplicates.add(issue.message)
+        unique.append(issue)
+    return unique
+
+
 def run_validate(
     entries: Sequence[SourceEntry], provider: CalendarProvider, now: datetime
 ) -> ValidateReport:
@@ -432,7 +452,7 @@ def run_validate(
         else:
             valid_count += 1
     return ValidateReport(
-        issues=tuple(errors) + tuple(warnings),
+        issues=tuple(_deduplicate([*errors, *warnings])),
         valid_count=valid_count,
         error_count=entries_with_errors,
         warning_count=len(warnings),

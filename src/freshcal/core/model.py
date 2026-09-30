@@ -287,7 +287,8 @@ def mark_duplicate_source_ids(entries: Sequence[SourceEntry]) -> list[SourceEntr
 
     Both the duplicate and the entry it duplicates are marked: with two definitions of
     the same source, neither can be trusted to be the one the operator meant. The message
-    names the two locations of the conflict and is identical for every member.
+    names **every** location of the conflict and is identical for every member, and the
+    entry's own errors stay in the list next to it (CFG-21).
     """
     locations: dict[str, list[str]] = {}
     for entry in entries:
@@ -299,22 +300,27 @@ def mark_duplicate_source_ids(entries: Sequence[SourceEntry]) -> list[SourceEntr
         if len(group) < 2:
             marked.append(entry)
             continue
-        issue = Issue(
-            "E206",
-            f"duplicate source id '{entry.source_id}' at {group[0]} and {group[1]}",
-            entry.location,
-        )
+        issue = Issue("E206", _duplicate_message(entry.source_id, group), entry.location)
         marked.append(
             SourceEntry(
                 source_id=entry.source_id,
                 origin=entry.origin,
                 rule=None,
-                errors=(issue,),
+                errors=(issue, *entry.errors),
                 warnings=entry.warnings,
                 location=entry.location,
             )
         )
     return marked
+
+
+def _duplicate_message(source_id: str, locations: Sequence[str]) -> str:
+    """``duplicate source id 'id' at a and b`` for two, a comma list for more."""
+    if len(locations) == 2:
+        listed = f"{locations[0]} and {locations[1]}"
+    else:
+        listed = f"{', '.join(locations[:-1])} and {locations[-1]}"
+    return f"duplicate source id '{source_id}' at {listed}"
 
 
 def _require_aware(name: str, value: datetime) -> None:

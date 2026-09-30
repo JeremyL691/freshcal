@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Mapping
-from datetime import time, timedelta
+from datetime import date, time, timedelta
 from pathlib import Path
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -29,7 +29,8 @@ FIXTURE_CONFIG = Path("tests/fixtures/configs/integration/ecb_smoke.yml")
 def catalog_for(path: Path = FIXTURE_MANIFEST, **kwargs: Any) -> DbtManifestCatalog:
     named = kwargs.pop("named_calendars", {})
     defaults = kwargs.pop("defaults", Defaults())
-    return DbtManifestCatalog(path, defaults, named)
+    config_dir = kwargs.pop("config_dir", path.parent)
+    return DbtManifestCatalog(path, defaults, named, config_dir=config_dir)
 
 
 def entries_by_id(path: Path = FIXTURE_MANIFEST, **kwargs: Any) -> dict[str, Any]:
@@ -63,7 +64,11 @@ def node(
     entry: dict[str, Any] = {
         "source_name": source_name,
         "name": name,
-        "relation_name": relation_name or f'"fixture"."raw_{source_name}"."{name}"',
+        "relation_name": (
+            relation_name
+            if relation_name is not None
+            else f'"fixture"."raw_{source_name}"."{name}"'
+        ),
         "loaded_at_field": loaded_at_field,
         "loaded_at_query": loaded_at_query,
         "freshness": {"filter": filter_text},
@@ -300,6 +305,108 @@ def test_unknown_named_calendar_in_a_manifest_rule_is_e207(tmp_path: Path) -> No
     assert entry.errors[0].message == (
         "dbt:source.p.ecb.fx.calendar: unknown calendar 'missing'; defined calendars: none"
     )
+
+
+@pytest.mark.parametrize(
+    ("value", "kind"),
+    [(None, "null"), ("x", "str"), ([1], "list")],
+    ids=["null", "string", "list"],
+)
+def test_u_dbt_11_non_mapping_meta_freshcal_is_e103(
+    tmp_path: Path, value: object, kind: str
+) -> None:
+    """CFG-06: a ``freshcal`` key present but not a mapping is a per-source error.
+
+    Silently skipping the node would leave the source unmonitored and ``validate``
+    exiting 0; the node must appear with ``E103`` instead.
+    """
+    document = manifest_with({"source.p.a.b": node("a", "b", meta={"freshcal": value})})
+    entry = entries_by_id(write_manifest(tmp_path, document))["a.b"]
+    assert entry.rule is None
+    assert [issue.code for issue in entry.errors] == ["E103"]
+    assert entry.errors[0].message == (
+        f"dbt:source.p.a.b:meta.freshcal: expected object, got {kind}"
+    )
+
+
+def test_u_dbt_11_non_mapping_config_meta_freshcal_is_e103(tmp_path: Path) -> None:
+    document = manifest_with({"source.p.a.b": node("a", "b", config_meta={"freshcal": None})})
+    entry = entries_by_id(write_manifest(tmp_path, document))["a.b"]
+    assert entry.rule is None
+    assert [issue.code for issue in entry.errors] == ["E103"]
+    assert entry.errors[0].message == (
+        "dbt:source.p.a.b:config.meta.freshcal: expected object, got null"
+    )
+
+
+def test_u_dbt_12_override_paths_resolve_against_the_config_directory(tmp_path: Path) -> None:
+    """CFG-14: an override file in a manifest rule is relative to the config file.
+
+    The manifest lives in ``<project>/target/``; the override file next to the config
+    file must be found (it is not resolved against the manifest's directory).
+    """
+    config_dir = tmp_path / "project"
+    (config_dir / "target").mkdir(parents=True)
+    (config_dir / "calendars").mkdir()
+    (config_dir / "calendars" / "cn-2026-makeup.yml").write_text(
+        'non_working_days: ["2026-12-24"]\n', encoding="utf-8"
+    )
+    manifest_path = config_dir / "target" / "manifest.json"
+    document = manifest_with(
+        {
+            "source.p.ecb.fx": node(
+                "ecb",
+                "fx",
+                config_meta={
+                    "freshcal": {
+                        **ECB_RULE,
+                        "calendar": {"overrides": [{"file": "calendars/cn-2026-makeup.yml"}]},
+                    }
+                },
+            )
+        }
+    )
+    manifest_path.write_text(json.dumps(document), encoding="utf-8")
+
+    entry = DbtManifestCatalog(manifest_path, Defaults(), {}, config_dir=config_dir).entries()[0]
+    assert entry.errors == ()
+    rule = entry.rule
+    assert rule is not None
+    assert rule.calendar.extra_non_working_days == frozenset({date(2026, 12, 24)})
+
+
+def test_u_dbt_13_empty_relation_is_a_per_source_error(tmp_path: Path) -> None:
+    """CFG-20: an empty or missing relation is a config error, not a usable rule."""
+    document = manifest_with(
+        {
+            "source.p.a.empty": node(
+                "a", "empty", relation_name="", config_meta={"freshcal": ECB_RULE}
+            )
+        }
+    )
+    entry = entries_by_id(write_manifest(tmp_path, document))["a.empty"]
+    assert entry.rule is None
+    assert [issue.code for issue in entry.errors] == ["E102"]
+    assert entry.errors[0].message == (
+        "dbt:source.p.a.empty: missing required field 'relation_name'"
+    )
+
+
+def test_u_dbt_13_missing_source_name_is_a_per_source_error(tmp_path: Path) -> None:
+    document = manifest_with(
+        {
+            "source.p.b": {
+                "name": "b",
+                "relation_name": "raw.b",
+                "loaded_at_field": "_loaded_at",
+                "meta": {"freshcal": ECB_RULE},
+            }
+        }
+    )
+    entry = entries_by_id(write_manifest(tmp_path, document))["source.p.b"]
+    assert entry.rule is None
+    assert [issue.code for issue in entry.errors] == ["E102"]
+    assert entry.errors[0].message == ("dbt:source.p.b: missing required field 'source_name'")
 
 
 def test_w006_is_attached_to_a_manifest_source(tmp_path: Path) -> None:

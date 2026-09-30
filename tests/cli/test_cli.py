@@ -360,6 +360,24 @@ def test_c_17_validate_reports_w005_near_valid_until(capsys: pytest.CaptureFixtu
     assert "  W005 calendar cn_workdays was consulted for 2027-01-04" in out
 
 
+def test_validate_reports_every_top_level_error(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """CFG-04: a fatal config error does not hide the other top-level errors."""
+    config = tmp_path / "multi.yml"
+    config.write_text(
+        "version: 2\n"
+        "unknown_section: {}\n"
+        "calendars: {c: {weekend: [mon, tue, wed, thu, fri, sat, mon]}}\n",
+        encoding="utf-8",
+    )
+    code, out, err = run(["validate", "-c", str(config), "--now", "2026-09-28T07:30:00Z"], capsys)
+    assert code == 2
+    assert out == ""
+    codes = sorted(line.split(maxsplit=1)[0] for line in err.splitlines())
+    assert codes == ["E101", "E104", "E406"]
+
+
 def test_version_and_help(capsys: pytest.CaptureFixture[str]) -> None:
     code, out, _ = run(["--version"], capsys)
     assert code == 0

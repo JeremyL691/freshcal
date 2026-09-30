@@ -7,7 +7,7 @@ application layer turns them into statuses and exit codes.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Final
@@ -32,13 +32,23 @@ class Issue:
 
 
 class FreshCalError(Exception):
-    """Base class for errors that carry an :class:`Issue`."""
+    """Base class for errors that carry one or more :class:`Issue` objects.
+
+    ``issue`` is the first (most relevant) issue and stays the single-issue accessor
+    existing callers use; ``issues`` carries every issue the failure produced, so a
+    command can report all of them instead of only the first (CFG-04).
+    """
 
     issue: Issue
+    issues: tuple[Issue, ...]
 
-    def __init__(self, issue: Issue) -> None:
-        super().__init__(f"{issue.code} {issue.message}")
-        self.issue = issue
+    def __init__(self, issue: Issue | Iterable[Issue]) -> None:
+        issues = (issue,) if isinstance(issue, Issue) else tuple(issue)
+        if not issues:
+            raise ValueError("a FreshCalError needs at least one issue")
+        super().__init__("; ".join(f"{item.code} {item.message}" for item in issues))
+        self.issues = issues
+        self.issue = issues[0]
 
 
 class ConfigError(FreshCalError):

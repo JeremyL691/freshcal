@@ -175,7 +175,12 @@ def _catalogs(config: AppConfig) -> tuple[list[SourceEntry], list[Issue]]:
     """The config file's sources, merged with the dbt manifest's when one is configured."""
     manifest_entries: list[SourceEntry] = []
     if config.dbt_manifest is not None:
-        catalog = DbtManifestCatalog(config.dbt_manifest, config.defaults, config.named_calendars)
+        catalog = DbtManifestCatalog(
+            config.dbt_manifest,
+            config.defaults,
+            config.named_calendars,
+            config_dir=config.directory,
+        )
         manifest_entries = catalog.entries()
     return merge_entries(config.entries, manifest_entries, config_file=str(config.path))
 
@@ -216,8 +221,9 @@ def _write(text: str, output: Path | None) -> None:
 
 
 def _fatal(error: ConfigError) -> int:
-    issue = error.issue
-    sys.stderr.write(f"{issue.code} {issue.message}\n")
+    # Every issue the loader found is reported, one line each (CFG-04).
+    for issue in error.issues:
+        sys.stderr.write(f"{issue.code} {issue.message}\n")
     return 2
 
 
