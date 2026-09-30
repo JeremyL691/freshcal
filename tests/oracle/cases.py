@@ -17,8 +17,9 @@ from __future__ import annotations
 
 import bisect
 import random
+from dataclasses import dataclass
 from datetime import UTC, date, datetime, time, timedelta
-from functools import cache, lru_cache
+from functools import cache, lru_cache, partial
 from zoneinfo import ZoneInfo, _zoneinfo
 
 from freshcal.core.errors import CalendarError, Issue
@@ -430,17 +431,101 @@ def table_classify(wall: datetime, key: str) -> str:
 # ---------------------------------------------------------------- differential comparison
 
 
+@dataclass(frozen=True, slots=True)
+class Outcome:
+    """One side's answer to one compared operation (T-8.1, AUD-06).
+
+    ``value`` is the compared answer when the side answered; ``code`` is the typed failure
+    code when it refused instead. A legitimate "no such release" is a value (``None``), not
+    a refusal; the implementation's ``E209`` ("no release within the 1830-day search
+    horizon") is recorded as a refusal whose code is ``E209`` and compared by
+    :func:`_refusals_agree`.
+    """
+
+    value: object = None
+    refused: bool = False
+    code: str | None = None
+
+
+def _product_outcome(call) -> Outcome:
+    """Run one implementation operation, recording its value or its typed refusal."""
+    from freshcal.core.errors import ConfigError
+
+    try:
+        return Outcome(value=call())
+    except ConfigError as error:  # includes CalendarError
+        return Outcome(refused=True, code=error.issue.code)
+
+
+def _oracle_outcome(call, oracle_module) -> Outcome:
+    """Run one oracle operation the same way; its refusals carry an error code too."""
+    from freshcal.core.errors import ConfigError
+
+    try:
+        return Outcome(value=call())
+    except oracle_module.OracleError as error:
+        return Outcome(refused=True, code=error.code)
+    except ConfigError as error:
+        return Outcome(refused=True, code=error.issue.code)
+
+
+def _refusals_agree(got: str | None, want: str | None) -> bool:
+    """Whether two typed refusals are compatible answers to the same question.
+
+    Identical codes agree. Beyond that, the implementation's ``E209`` states that the
+    schedule has no release anywhere in its 1830-day search, which entails the oracle's
+    bounded "no release in my 400-day window" answer: the stronger statement cannot
+    contradict the weaker one, so ``E209`` and "no refusal" are compatible in either
+    direction. Every other combination — ``E209`` against ``E407``, or a refusal against
+    a value — is a disagreement.
+    """
+    if got == want:
+        return True
+    return {got, want} <= {None, "E209"}
+
+
+def _agree(
+    got: Outcome,
+    want: Outcome,
+    to_product=lambda value: value,
+    to_oracle=lambda value: value,
+    tolerate=None,
+) -> bool:
+    """Whether the two outcomes are compatible.
+
+    A refusal on exactly one side is always a disagreement: the oracle and the
+    implementation must agree on *whether* there is an answer before they can agree on
+    what it is. ``tolerate`` is the explicit escape for the oracle's bounded look-around:
+    it receives the two raw values and returns True only when the comparison is genuinely
+    not comparable (a value the oracle's smaller window could not see).
+    """
+    if got.refused or want.refused:
+        return got.refused and want.refused and _refusals_agree(got.code, want.code)
+    if tolerate is not None and tolerate(got.value, want.value):
+        return True
+    return bool(to_product(got.value) == to_oracle(want.value))
+
+
+def _shown(outcome: Outcome, to_value) -> object:
+    """The recorded form of one outcome for a difference record."""
+    return outcome.code if outcome.refused else to_value(outcome.value)
+
+
 def compare_case(
     rule, provider, instant, rng: random.Random, oracle
 ) -> list[tuple[str, dict, object, object]]:
     """Run one case against the oracle; return a list of `(check, args, got, want)` disagreements.
 
-    The comparison reproduces the reviewer's `fuzz.py` logic: the oracle searches a bounded
-    look-around (400 days) for the verdict context, so a missing value is only compared when the
-    oracle can be sure it looked far enough (`next_known` / `last_known`).
+    Every operation is evaluated on **both sides independently** (T-8.1, AUD-06): each side
+    yields either a value or a typed refusal, and the operation is reported when exactly one
+    side refuses, when both refuse with incompatible codes, or when both values differ. A
+    refusal is never read as "both sides failed", so a one-sided failure can no longer hide
+    behind an operation that happened to match, and the remaining operations are still
+    checked. The value comparison keeps the reviewer's bounded look-around rules: the oracle
+    surveys 400 days for the verdict context, so a value outside that window is explicitly
+    not comparable and an unknown answer is never treated as agreement.
     """
     from freshcal.core.calendar import BusinessCalendar
-    from freshcal.core.errors import CalendarError, ConfigError
     from freshcal.core.model import RawObservation
     from freshcal.core.schedule import (
         next_release_after,
@@ -459,73 +544,97 @@ def compare_case(
         else timedelta(hours=rng.randrange(1, 24 * 40))
     )
     start, end = instant, instant + span
-    try:
-        got = [release_tuple(x) for x in releases_between(rule, start, end, calendar)]
-        want = [
+
+    got = _product_outcome(
+        lambda: [release_tuple(x) for x in releases_between(rule, start, end, calendar)]
+    )
+    want = _oracle_outcome(
+        lambda: [
             oracle_release_tuple(x) for x in oracle.o_releases(rule, oracle_calendar, start, end)
-        ]
-        if got != want:
-            differences.append(
-                (
-                    "releases_between",
-                    {"A": start.isoformat(), "B": end.isoformat()},
-                    got[:6],
-                    want[:6],
-                )
+        ],
+        oracle,
+    )
+    if not _agree(got, want):
+        differences.append(
+            (
+                "releases_between",
+                {"A": start.isoformat(), "B": end.isoformat()},
+                _shown(got, lambda value: value[:6]),
+                _shown(want, lambda value: value[:6]),
             )
+        )
 
-        found = next_release_after(rule, instant, calendar)
-        expected = oracle.o_first_after(
+    found = _product_outcome(lambda: next_release_after(rule, instant, calendar))
+    expected = _oracle_outcome(
+        lambda: oracle.o_first_after(
             rule, oracle_calendar, instant + US, instant + timedelta(days=400)
-        )
-        if (
-            expected is not None
-            or found is None
-            or (found.instant - instant) <= timedelta(days=400)
-        ) and release_tuple(found) != oracle_release_tuple(expected):
-            differences.append(
-                (
-                    "next_release_after",
-                    {"t": instant.isoformat()},
-                    release_tuple(found),
-                    oracle_release_tuple(expected),
-                )
+        ),
+        oracle,
+    )
+    if not _agree(
+        found,
+        expected,
+        release_tuple,
+        oracle_release_tuple,
+        tolerate=lambda product, oracle_value: (
+            oracle_value is None
+            and product is not None
+            and (product.instant - instant) > timedelta(days=400)
+        ),
+    ):
+        differences.append(
+            (
+                "next_release_after",
+                {"t": instant.isoformat()},
+                _shown(found, release_tuple),
+                _shown(expected, oracle_release_tuple),
             )
+        )
 
-        inclusive = rng.random() < 0.5
-        found = next_release_after(rule, instant, calendar, inclusive=inclusive, until=end)
-        expected = oracle.o_first_after(
+    inclusive = rng.random() < 0.5
+    found = _product_outcome(
+        lambda: next_release_after(rule, instant, calendar, inclusive=inclusive, until=end)
+    )
+    expected = _oracle_outcome(
+        lambda: oracle.o_first_after(
             rule, oracle_calendar, instant if inclusive else instant + US, end
-        )
-        if release_tuple(found) != oracle_release_tuple(expected):
-            differences.append(
-                (
-                    "next_release_after_until",
-                    {"t": instant.isoformat(), "until": end.isoformat(), "inclusive": inclusive},
-                    release_tuple(found),
-                    oracle_release_tuple(expected),
-                )
+        ),
+        oracle,
+    )
+    if not _agree(found, expected, release_tuple, oracle_release_tuple):
+        differences.append(
+            (
+                "next_release_after_until",
+                {"t": instant.isoformat(), "until": end.isoformat(), "inclusive": inclusive},
+                _shown(found, release_tuple),
+                _shown(expected, oracle_release_tuple),
             )
+        )
 
-        found = previous_release_at_or_before(rule, instant, calendar)
-        expected = oracle.o_last_before(
-            rule, oracle_calendar, instant - timedelta(days=400), instant
-        )
-        if (
-            expected is not None
-            or found is None
-            or (instant - found.instant) <= timedelta(days=400)
-        ) and release_tuple(found) != oracle_release_tuple(expected):
-            differences.append(
-                (
-                    "previous_release_at_or_before",
-                    {"t": instant.isoformat()},
-                    release_tuple(found),
-                    oracle_release_tuple(expected),
-                )
+    found = _product_outcome(lambda: previous_release_at_or_before(rule, instant, calendar))
+    expected = _oracle_outcome(
+        lambda: oracle.o_last_before(rule, oracle_calendar, instant - timedelta(days=400), instant),
+        oracle,
+    )
+    if not _agree(
+        found,
+        expected,
+        release_tuple,
+        oracle_release_tuple,
+        tolerate=lambda product, oracle_value: (
+            oracle_value is None
+            and product is not None
+            and (instant - product.instant) > timedelta(days=400)
+        ),
+    ):
+        differences.append(
+            (
+                "previous_release_at_or_before",
+                {"t": instant.isoformat()},
+                _shown(found, release_tuple),
+                _shown(expected, oracle_release_tuple),
             )
-    except (ConfigError, CalendarError, oracle.OracleError):
-        return differences  # both sides refuse to answer; nothing to compare
+        )
 
     # The oracle searches a bounded look-around for the verdict context (400 days by
     # default); a dense schedule would enumerate tens of thousands of nominals per case, so
@@ -546,8 +655,26 @@ def compare_case(
                     observed = rng.choice(
                         [release, release - US, release + US, release - timedelta(minutes=1)]
                     )
-        result = evaluate(rule, RawObservation(observed), now, provider)
-        expected_result = oracle.o_evaluate(rule, observed, now, provider, look=look)
+        result_outcome = _product_outcome(
+            partial(evaluate, rule, RawObservation(observed), now, provider)
+        )
+        expected_outcome = _oracle_outcome(
+            partial(oracle.o_evaluate, rule, observed, now, provider, look=look),
+            oracle,
+        )
+        if result_outcome.refused or expected_outcome.refused:
+            if not _agree(result_outcome, expected_outcome):
+                differences.append(
+                    (
+                        "evaluate",
+                        {"now": now.isoformat(), "O": observed and observed.isoformat()},
+                        _shown(result_outcome, lambda value: value),
+                        _shown(expected_outcome, lambda value: value),
+                    )
+                )
+            continue
+        result = result_outcome.value
+        expected_result = expected_outcome.value
         got_value = [
             result.status.value,
             result.release and result.release.instant.isoformat(),
