@@ -9,9 +9,9 @@ While the version is `0.y.z`, breaking changes bump `y`.
 
 ## [0.1.2] - 2026-09-30
 
-First public release on GitHub. Second audit: nine confirmed findings are fixed, each with a regression test, including a
-cron form that could report a missed release as `ON_TIME` and a diagnostic that echoed a
-database password.
+First public release on GitHub. Second audit: nine confirmed findings are fixed, each with
+a regression test, including a cron form that could report a missed release as `ON_TIME`
+and a diagnostic that echoed a database password.
 
 ### Fixed
 
@@ -36,9 +36,18 @@ database password.
 - An embedded NUL in `connection.path`, `dbt.manifest`, the config path or an override path
   escaped as `E599`; each boundary now reports `E106`, `E302`, `E110` or `E404` with the
   reason and a control-character-safe rendering.
+- An embedded NUL in a path is reported as `embedded null byte` on every supported
+  Python; Python 3.13 and later word the underlying error differently, which leaked into
+  the diagnostic.
+- The check that decides whether a DST transition is near a search window now also
+  samples the window's midpoint. Linux tzdata keeps pre-1970 history in which a zone
+  changes its offset twice within four days and returns to the old one (Africa/Freetown,
+  1939); sampling only both ends could miss such a pair.
 
 ### Changed
 
+- CI runs on GitHub Actions (Ubuntu 24.04, Python 3.11-3.14); the performance budgets
+  run in their own step without coverage instrumentation.
 - The full 10 000-case differential campaign runs in a dedicated CI job instead of being
   excluded by the default marker selection, and a guard test proves the workflow's own
   command selects it.
