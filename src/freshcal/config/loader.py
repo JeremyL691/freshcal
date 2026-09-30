@@ -705,8 +705,18 @@ def _parse_defaults(value: object, named: Mapping[str, CalendarSpec], directory:
 
 
 def _source_id_of(entry: Mapping[str, object], index: int) -> str:
+    """The source ID for one entry: its ``name`` when that is a string, else ``sources[index]``.
+
+    The ID is built before the entry is validated, because its diagnostics need it, so the
+    shape must be checked here rather than trusted: a YAML alias can expand a structured
+    ``name`` into a huge object, and ``str()`` on it would build a multi-megabyte identifier
+    and a multi-megabyte report (AUD-02). Only a string is used as an ID — never truncated,
+    so valid identifiers are preserved exactly — and anything else is named by its position.
+    """
     name = entry.get("name")
-    return str(name) if name is not None else f"sources[{index}]"
+    if isinstance(name, str) and name:
+        return name
+    return f"sources[{index}]"
 
 
 def _parse_source_entry(

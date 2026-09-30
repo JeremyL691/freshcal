@@ -784,3 +784,30 @@ def test_c_32_explain_reader_failure_goes_to_the_trace_stream(
     assert code == 3
     assert out.startswith("Result    QUERY_ERROR: Query error: E501 ")
     assert err == ""
+
+
+def test_aud02_alias_expanded_source_names_stay_bounded(capsys: pytest.CaptureFixture[str]) -> None:
+    """AUD-02: an invalid structured `name` never becomes the source ID or the report.
+
+    The fixture is the audit's 399-byte config: five sources whose `name` is a nested YAML
+    alias. Before the fix the identifiers were the stringified alias graph (up to 522 220
+    characters) and `check` printed 3.7 MB. The entries are configuration errors with
+    positional IDs, and the whole report stays small.
+    """
+    fixture = FIXTURES / "alias_name.yml"
+    assert fixture.stat().st_size < 512  # the audit's fixture, not a bigger one
+    for command in ("check", "next", "validate"):
+        code, out, err = run([command, "-c", str(fixture), "--now", "2026-01-01T10:00:00Z"], capsys)
+        assert code == 2, command
+        assert err == "", command
+        assert "E599" not in out, command
+        assert len(out.encode("utf-8")) <= 16 * 1024, (command, len(out.encode("utf-8")))
+        assert "E103" in out, command
+    code, out, _ = run(
+        ["check", "-c", str(fixture), "--now", "2026-01-01T10:00:00Z", "--format", "json"], capsys
+    )
+    report = json.loads(out)
+    assert code == 2
+    assert [row["source_id"] for row in report["results"]] == [
+        f"sources[{index}]" for index in range(5)
+    ]

@@ -705,3 +705,166 @@ def test_load_yaml_helpers_are_used(tmp_path: Path) -> None:
     assert load_yaml("a: 16:00\n", source="t") == {"a": "16:00"}
     path = write_config(tmp_path, "version: 1\nsources: []\n")
     assert load_yaml_file(path) == {"version": 1, "sources": []}
+
+
+# ---------------------------------------------------------------------------
+# AUD-02: an invalid structured `name` never becomes the source ID
+# ---------------------------------------------------------------------------
+
+
+def _entry_ids(config: AppConfig) -> list[str]:
+    return [entry.source_id for entry in config.entries]
+
+
+def test_aud02_a_list_name_is_named_by_its_position(tmp_path: Path) -> None:
+    """AUD-02: a list `name` yields `sources[index]`, not the stringified value."""
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+sources:
+  - name: [a, b]
+    relation: raw.a
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+""",
+    )
+    loaded = load_config(config)
+    assert _entry_ids(loaded) == ["sources[0]"]
+    assert [issue.code for issue in loaded.entries[0].errors] == ["E103"]
+
+
+def test_aud02_a_mapping_name_is_named_by_its_position(tmp_path: Path) -> None:
+    """AUD-02: the same for a mapping, and the diagnostic stays bounded."""
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+sources:
+  - name: {a: 1, b: 2}
+    relation: raw.a
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+""",
+    )
+    loaded = load_config(config)
+    assert _entry_ids(loaded) == ["sources[0]"]
+    message = loaded.entries[0].errors[0].message
+    assert "expected string" in message
+    assert len(message) < 200
+
+
+def test_aud02_nested_and_shared_aliases_stay_bounded(tmp_path: Path) -> None:
+    """AUD-02's fixture: five nested alias levels, five positional IDs, bounded output."""
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+sources:
+  - name: &a [x,x,x,x,x,x,x,x,x,x]
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+  - name: &b [*a,*a,*a,*a,*a,*a,*a,*a,*a,*a]
+  - name: &c [*b,*b,*b,*b,*b,*b,*b,*b,*b,*b]
+  - name: &d [*c,*c,*c,*c,*c,*c,*c,*c,*c,*c]
+  - name: &e [*d,*d,*d,*d,*d,*d,*d,*d,*d,*d]
+""",
+    )
+    loaded = load_config(config)
+    assert _entry_ids(loaded) == [f"sources[{index}]" for index in range(5)]
+    assert all(len(entry.source_id) <= 16 for entry in loaded.entries)
+    assert all(entry.rule is None for entry in loaded.entries)
+    assert all(entry.errors for entry in loaded.entries)
+
+
+def test_aud02_a_recursive_alias_is_rejected_without_recursing(tmp_path: Path) -> None:
+    """AUD-02: a self-referencing alias becomes a positional E103, never a recursive str().
+
+    PyYAML constructs ``[*a]`` as a list that contains itself. The ID must not try to
+    render it, and the diagnostic must stay bounded (``reprlib`` stops at its max level).
+    """
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+sources:
+  - name: &a [*a]
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+""",
+    )
+    loaded = load_config(config)
+    assert _entry_ids(loaded) == ["sources[0]"]
+    assert loaded.entries[0].rule is None
+    assert [issue.code for issue in loaded.entries[0].errors] == ["E103"]
+    assert len(loaded.entries[0].errors[0].message) < 200
+
+
+def test_aud02_an_adjacent_valid_source_keeps_its_id_and_rule(tmp_path: Path) -> None:
+    """AUD-02: only the invalid entry is bounded; the healthy source is untouched."""
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+sources:
+  - name: [a, [a, [a, [a]]]]
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+  - name: good.source
+    relation: raw.good
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+""",
+    )
+    loaded = load_config(config)
+    assert _entry_ids(loaded) == ["sources[0]", "good.source"]
+    assert loaded.entries[0].rule is None
+    assert loaded.entries[1].rule is not None
+    assert loaded.entries[1].rule.source_id == "good.source"
+
+
+def test_aud02_a_valid_long_identifier_is_not_truncated(tmp_path: Path) -> None:
+    """AUD-02: valid identifiers are preserved exactly — the bound applies to invalid ones."""
+    long_name = "a" * 120
+    config = write_config(
+        tmp_path,
+        f"""
+version: 1
+sources:
+  - name: {long_name}
+    relation: t
+    loaded_at_field: x
+    schedule: {{kind: business_days, time: "12:00", timezone: UTC}}
+    grace: 1h
+""",
+    )
+    loaded = load_config(config)
+    assert _entry_ids(loaded) == [long_name]
+    assert loaded.entries[0].rule is not None
+
+
+def test_aud02_an_empty_name_is_named_by_its_position(tmp_path: Path) -> None:
+    """AUD-02: `name: ""` cannot be an ID either, so the entry is named by position."""
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+sources:
+  - name: ""
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+""",
+    )
+    loaded = load_config(config)
+    assert _entry_ids(loaded) == ["sources[0]"]
