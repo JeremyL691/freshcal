@@ -53,6 +53,6 @@ which is a definitive publication record.
 ## What these files do not prove
 
 They cover release *dates* for two public sources, not times of day, and nothing about
-a user's own pipelines. §9.10's results are the only real-world accuracy statements
+a user's own pipelines. The results in `docs/validation.md` are the only real-world accuracy statements
 FreshCal makes, and the README recommends running FreshCal in shadow mode next to
 existing checks before relying on it for a private source.

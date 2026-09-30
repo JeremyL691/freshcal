@@ -48,8 +48,9 @@ The disagreements, all explained:
   market stayed open and published a curve. A federal-calendar rule would never check
   that day, so a missing publication there would go unnoticed.
 - **`financial: XNYS`, expected but not published — 2023-10-09, 2024-10-14, 2024-11-11,
-  2025-10-13, 2025-11-11 (Columbus Day and Veterans Day).** The stock exchange closes on
-  those days, but the bond market trades and the Treasury publishes; five false alarms.
+  2025-10-13, 2025-11-11 (Columbus Day and Veterans Day).** The stock exchange is open
+  on those days, but the bond market closes and the Treasury publishes no curve; five
+  false alarms.
 - **`financial: XNYS`, published but not expected — 2023-04-07 and 2025-01-09.** The
   exchange closed on Good Friday 2023 and on the national day of mourning for Jimmy
   Carter on 2025-01-09, while the Treasury published both days: two days FreshCal would

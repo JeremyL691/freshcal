@@ -1,4 +1,4 @@
-# The Treasury calendar that matches the published dates exactly (§9.10 A).
+# The Treasury calendar that matches the published dates exactly (2023-2025).
 #
 # The US federal holiday list (`country: US`) is the wrong calendar for this source:
 # it expects publications on two days the bond market was closed (Good Friday) and
