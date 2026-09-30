@@ -81,31 +81,39 @@ Produced by `uv run python validation/replay_ecb.py` on 2026-09-29.
 
 These results measure agreement with the Last-Modified publication proxy, not arrival accuracy.
 
-- Collected business days: **1** (rate dates in the file: 1, span 2026-09-28 … 2026-09-28).
+- Collected business days: **2** (rate dates in the file: 2, span 2026-09-28 … 2026-09-29).
 - Same-day revisions: none collected.
-- Publication-proxy local times (Europe/Berlin): 15:56 (x1).
-- `first_seen - last_modified` gap: min 1103 min, max 1103 min (1 observations).
+- Publication-proxy local times (Europe/Berlin): 15:56 (x2).
+- `first_seen - last_modified` gap: min 428 min, max 1103 min (2 observations).
 
-**Insufficient data (1 business days).** Fewer than 20 collected business days cannot support any statement about arrival-time agreement, so the README makes no timing claim. The matrices below are printed for completeness only.
+**Insufficient data (2 business days).** Fewer than 20 collected business days cannot support any statement about arrival-time agreement, so the README makes no timing claim. The matrices below are printed for completeness only.
 
 | Model                                          | Agree: overdue | False alarms | Missed catch-up | Agree: nothing due |
 |------------------------------------------------|----------------|--------------|-----------------|--------------------|
-| FreshCal, immediate loader                     | 0              | 24           | 0               | 9                  |
-| FreshCal, hourly loader (first HH:05)          | 0              | 0            | 0               | 32                 |
-| dbt-style fixed threshold (`error_after: 26h`) | 0              | 0            | 0               | 97                 |
+| FreshCal, immediate loader                     | 0              | 111          | 0               | 18                 |
+| FreshCal, hourly loader (first HH:05)          | 0              | 0            | 0               | 128                |
+| dbt-style fixed threshold (`error_after: 26h`) | 0              | 0            | 0               | 193                |
 
 *Agree: overdue* = both the model and the proxy reference report a missing release; *false alarms* = the model alerts while the proxy says the data was published; *missed catch-up* = the proxy says the data is late while the model stays quiet.
 
 **Every disagreement, with its explanation:**
 
-- FreshCal, immediate loader: 24 false alarm(s) — the file for 2026-09-28 was observably available before the configured release time (proxy 15:56 CEST vs release 16:00 CEST), so an immediate loader's timestamp predates the release and the release looks missing (BLUEPRINT.md §3.6). Sampled instants: 2026-09-28 18:15 CEST, 2026-09-28 18:30 CEST, 2026-09-28 18:45 CEST, 2026-09-28 19:00 CEST, 2026-09-28 19:15 CEST, 2026-09-28 19:30 CEST, 2026-09-28 19:45 CEST, 2026-09-28 20:00 CEST, 2026-09-28 20:15 CEST, 2026-09-28 20:30 CEST, 2026-09-28 20:45 CEST, 2026-09-28 21:00 CEST, 2026-09-28 21:15 CEST, 2026-09-28 21:30 CEST, 2026-09-28 21:45 CEST, 2026-09-28 22:00 CEST, 2026-09-28 22:15 CEST, 2026-09-28 22:30 CEST, 2026-09-28 22:45 CEST, 2026-09-28 23:00 CEST, 2026-09-28 23:15 CEST, 2026-09-28 23:30 CEST, 2026-09-28 23:45 CEST, 2026-09-29 00:00 CEST.
+- FreshCal, immediate loader: 87 false alarm(s) — the file for 2026-09-28 was observably available before the configured release time (proxy 15:56 CEST vs release 16:00 CEST), so an immediate loader's timestamp predates the release and the release looks missing (BLUEPRINT.md §3.6). Sampled instants: 2026-09-28 18:15 CEST, 2026-09-28 18:30 CEST, 2026-09-28 18:45 CEST, 2026-09-28 19:00 CEST, 2026-09-28 19:15 CEST, 2026-09-28 19:30 CEST, 2026-09-28 19:45 CEST, 2026-09-28 20:00 CEST, 2026-09-28 20:15 CEST, 2026-09-28 20:30 CEST, 2026-09-28 20:45 CEST, 2026-09-28 21:00 CEST, 2026-09-28 21:15 CEST, 2026-09-28 21:30 CEST, 2026-09-28 21:45 CEST, 2026-09-28 22:00 CEST, 2026-09-28 22:15 CEST, 2026-09-28 22:30 CEST, 2026-09-28 22:45 CEST, 2026-09-28 23:00 CEST, 2026-09-28 23:15 CEST, 2026-09-28 23:30 CEST, 2026-09-28 23:45 CEST, 2026-09-29 00:00 CEST, 2026-09-29 00:15 CEST, 2026-09-29 00:30 CEST, 2026-09-29 00:45 CEST, 2026-09-29 01:00 CEST, 2026-09-29 01:15 CEST, 2026-09-29 01:30 CEST, 2026-09-29 01:45 CEST, 2026-09-29 02:00 CEST, 2026-09-29 02:15 CEST, 2026-09-29 02:30 CEST, 2026-09-29 02:45 CEST, 2026-09-29 03:00 CEST, 2026-09-29 03:15 CEST, 2026-09-29 03:30 CEST, 2026-09-29 03:45 CEST, 2026-09-29 04:00 CEST, 2026-09-29 04:15 CEST, 2026-09-29 04:30 CEST, 2026-09-29 04:45 CEST, 2026-09-29 05:00 CEST, 2026-09-29 05:15 CEST, 2026-09-29 05:30 CEST, 2026-09-29 05:45 CEST, 2026-09-29 06:00 CEST, 2026-09-29 06:15 CEST, 2026-09-29 06:30 CEST, 2026-09-29 06:45 CEST, 2026-09-29 07:00 CEST, 2026-09-29 07:15 CEST, 2026-09-29 07:30 CEST, 2026-09-29 07:45 CEST, 2026-09-29 08:00 CEST, 2026-09-29 08:15 CEST, 2026-09-29 08:30 CEST, 2026-09-29 08:45 CEST, 2026-09-29 09:00 CEST, 2026-09-29 09:15 CEST, 2026-09-29 09:30 CEST, 2026-09-29 09:45 CEST, 2026-09-29 10:00 CEST, 2026-09-29 10:15 CEST, 2026-09-29 10:30 CEST, 2026-09-29 10:45 CEST, 2026-09-29 11:00 CEST, 2026-09-29 11:15 CEST, 2026-09-29 11:30 CEST, 2026-09-29 11:45 CEST, 2026-09-29 12:00 CEST, 2026-09-29 12:15 CEST, 2026-09-29 12:30 CEST, 2026-09-29 12:45 CEST, 2026-09-29 13:00 CEST, 2026-09-29 13:15 CEST, 2026-09-29 13:30 CEST, 2026-09-29 13:45 CEST, 2026-09-29 14:00 CEST, 2026-09-29 14:15 CEST, 2026-09-29 14:30 CEST, 2026-09-29 14:45 CEST, 2026-09-29 15:00 CEST, 2026-09-29 15:15 CEST, 2026-09-29 15:30 CEST, 2026-09-29 15:45 CEST.
+- FreshCal, immediate loader: 24 false alarm(s) — the file for 2026-09-29 was observably available before the configured release time (proxy 15:56 CEST vs release 16:00 CEST), so an immediate loader's timestamp predates the release and the release looks missing (BLUEPRINT.md §3.6). Sampled instants: 2026-09-29 18:15 CEST, 2026-09-29 18:30 CEST, 2026-09-29 18:45 CEST, 2026-09-29 19:00 CEST, 2026-09-29 19:15 CEST, 2026-09-29 19:30 CEST, 2026-09-29 19:45 CEST, 2026-09-29 20:00 CEST, 2026-09-29 20:15 CEST, 2026-09-29 20:30 CEST, 2026-09-29 20:45 CEST, 2026-09-29 21:00 CEST, 2026-09-29 21:15 CEST, 2026-09-29 21:30 CEST, 2026-09-29 21:45 CEST, 2026-09-29 22:00 CEST, 2026-09-29 22:15 CEST, 2026-09-29 22:30 CEST, 2026-09-29 22:45 CEST, 2026-09-29 23:00 CEST, 2026-09-29 23:15 CEST, 2026-09-29 23:30 CEST, 2026-09-29 23:45 CEST, 2026-09-30 00:00 CEST.
 
-### Why the example config still uses 16:00
+### Why the example config uses 15:45
 
-The one collected proxy time (15:56 CEST) is earlier than the example's configured 16:00
-release time, which is exactly the early-publication effect the replay reports above. With
-a single observation there is no distribution to derive a time from, so
-`examples/ecb/freshcal.yml` keeps the illustrative 16:00 and this document records the
-observation instead. T-6.7's criterion is conditional on the collected data: once at least
-20 business days exist, the example's time is set from the observed proxy distribution and
-the README gains a timing statement.
+Both collected proxy times (15:56:44 CEST on 2026-09-28, 15:56:34 CEST on 2026-09-29) are
+earlier than the example's old 16:00 release time — exactly the early-publication effect
+the replay reports above (finding CLI-07). BLUEPRINT.md §3.6/§4.7 say `time` must be the
+earliest time the loader can see the data, so `examples/ecb/freshcal.yml` now declares
+`time: "15:45"` (before the earliest observed proxy time) and `grace: 2h15m`, which keeps
+the illustrative 18:00 deadline. Data loaded at an observed proxy time therefore counts as
+arrived, and the quickstart still prints ON_TIME / NOT_DUE / OVERDUE with exit codes
+0 / 0 / 1.
+
+This changes no arrival-time claim: with two observations there is still no distribution
+to derive a time from, so 15:45 is a margin, not a measurement, and the README still makes
+no timing statement. T-6.7's criterion stays conditional on the collected data: once at
+least 20 business days exist, the example's time is set from the observed proxy
+distribution and the README gains a timing statement.

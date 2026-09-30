@@ -119,14 +119,16 @@ FreshCal instead guarantees:
   interval *(O, now]* — so "no release" really means "no release";
 - if the observed timestamp is older than the horizon, the search first looks for a missed
   release inside the recent 1830 days, which proves `OVERDUE` without touching ancient
-  calendar data, and then searches forward from the observed timestamp itself to find the
-  exact oldest missed release;
+  calendar data; **only when that finds no missed release** does it search forward from
+  the observed timestamp itself for up to 1830 days, which finds the exact oldest
+  unarrived release;
 - if even that finds nothing — a gap longer than 1830 days after the observed timestamp —
   the result is `CONFIG_ERROR` `E215`, "cannot decide", never `ON_TIME`.
 
-`missed_truncated` is true in the first case and when counting hit the cap: the counts are
-then lower bounds ("at least N releases missed", singular for `N = 1`) and `release` is the
-oldest miss *found*.
+`missed_truncated` is true when the stale shortcut above answered (the count started from
+the recent window rather than at the oldest unarrived release) and when counting hit the
+10 000 cap: the counts are then lower bounds ("at least N releases missed", singular for
+`N = 1`) and `release` is the oldest miss *found*.
 The status never depends on the truncated part.
 
 ## Edge cases, with the ruling and the reason
@@ -171,6 +173,13 @@ comparisons that produced the status.
   check, including a backfill of old rows, and a late arrival that is present now is
   `ON_TIME`. `filter` restricts what counts as a delivery; `freshcal explain` shows exactly
   which comparison was made. Per-period checks are a roadmap item.
+- **An early publication never counts for its release.** Arrival is `O ≥ R`, so data loaded
+  before the release time does not satisfy it: a schedule time later than the real earliest
+  publication reports the release missing — `OVERDUE` after the deadline — until a load at
+  or after `R`. On 2026-09-28 the ECB's daily file was observably available at 15:56:44
+  CEST (the `Last-Modified` proxy, not proof of publication; `docs/validation.md` section
+  B). Declare the earliest time your loader can see the data and widen the grace window if
+  needed (BLUEPRINT.md §3.6).
 - **Wall-clock grace.** A Friday 22:00 release with 6 h grace is due Saturday 04:00.
   Business-time grace is a roadmap item.
 - **One obligation per instant.** Releases that roll onto the same instant count once.

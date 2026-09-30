@@ -10,10 +10,14 @@ sources:
   - name: ecb.fx_rates
     relation: "read_csv('fx_rates.csv')"
     loaded_at_field: _loaded_at
-    schedule: {kind: business_days, time: "16:00", timezone: Europe/Berlin}
+    # BLUEPRINT.md §4.7: set `time` to the earliest time your loader can see the data.
+    # The one collected ECB publication proxy (2026-09-28 15:56:44 CEST, the file's
+    # Last-Modified header; docs/validation.md section B) is before 16:00, so 15:45
+    # leaves margin and 2h15m keeps the illustrative 18:00 deadline.
+    schedule: {kind: business_days, time: "15:45", timezone: Europe/Berlin}
     calendar:
       weekend: [sat, sun]
       holidays:
         - financial: XECB          # TARGET closing days
-    grace: 2h
+    grace: 2h15m
     observed_timezone: UTC         # the sample column stores naive UTC timestamps

@@ -63,7 +63,9 @@ server before anything runs — a fragment cannot lift the `statement_timeout` e
 a per-source `E502` for that and every later read, never a crash. Both adapters set the
 session time zone to UTC. `relation`, `loaded_at_field`, and `filter` are SQL fragments
 inserted verbatim — treat config files as code and give the FreshCal connection a
-`SELECT`-only PostgreSQL role (see [../SECURITY.md](../SECURITY.md) and the README).
+`SELECT`-only PostgreSQL role (see [../SECURITY.md](../SECURITY.md) and the README's
+[PostgreSQL section](../README.md#postgresql-use-a-select-only-role), which also shows the
+composite index that keeps `max(loaded_at_field)` cheap).
 
 DuckDB has no statement splitter, so a fragment can contain several statements; the
 lock-down described under "Loading rules" bounds what they can reach (the config
