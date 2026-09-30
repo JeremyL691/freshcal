@@ -2,15 +2,16 @@
 
 from __future__ import annotations
 
-from datetime import date, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pytest
-from tests.oracle.cases import CRONITER_DAY_OR_REFUSALS
+from tests.conftest import FakeCalendarProvider
 
 from freshcal.config.loader import (
     AppConfig,
+    Defaults,
     DuckDBConnection,
     PostgresConnection,
     build_rule,
@@ -20,6 +21,7 @@ from freshcal.config.loader import (
     validate_cron,
 )
 from freshcal.config.yaml_loader import load_yaml, load_yaml_file
+from freshcal.core.calendar import BusinessCalendar
 from freshcal.core.errors import ConfigError
 from freshcal.core.model import (
     BusinessDaysSchedule,
@@ -33,6 +35,7 @@ from freshcal.core.model import (
     SourceRule,
     Weekday,
 )
+from freshcal.core.schedule import releases_between
 
 EXAMPLES = Path("tests/fixtures/configs/examples")
 CLI_CONFIGS = Path("tests/fixtures/configs/cli")
@@ -228,19 +231,63 @@ def test_u_load_05_weekday_names_are_accepted() -> None:
     assert validate_cron("0 6 1,15 * 1-5", "cron") == "0 6 1,15 * 1-5"
 
 
-@pytest.mark.parametrize("expression", CRONITER_DAY_OR_REFUSALS)
-def test_sem_08_croniter_day_or_refusals_are_rejected_at_load_time(expression: str) -> None:
-    """SEM-08: a valid OR schedule croniter cannot express is E202, never a false verdict.
+WEEKDAYS_FEB_2026 = {2, 3, 4, 5, 6, 9, 10, 11, 12, 13, 16, 17, 18, 19, 20, 23, 24, 25, 26, 27}
+SATURDAYS_FEB_2026 = {7, 14, 21, 28}
+WEEKEND_FEB_2026 = {1, 7, 8, 14, 15, 21, 22, 28}
 
-    Standard cron OR semantics (`day_or`) make `15 0 30 2 0,6` fire every weekend in
-    February even though 30 February never exists; croniter cannot compute that, so
-    FreshCal refuses the expression instead of reporting "no release" for a schedule
-    that does fire (conservative: a configuration error, exit 2).
+
+@pytest.mark.parametrize(
+    ("expression", "days", "per_day"),
+    [
+        # 30 February never exists, so the day-of-week branch decides.
+        ("15 0 30 2 0,6", WEEKEND_FEB_2026, 1),  # weekends at 00:15
+        ("59 16 31 2 6", SATURDAYS_FEB_2026, 1),  # Saturdays at 16:59
+        ("0,30 0,12 30 2 1-5", WEEKDAYS_FEB_2026, 4),  # weekdays at 00:00/30 and 12:00/30
+        ("10-20/5 0 31 2 1-5", WEEKDAYS_FEB_2026, 3),  # weekdays at 00:10/15/20
+        ("10-20/5 0,12 30 2 1-5", WEEKDAYS_FEB_2026, 6),  # the same six times a day
+    ],
+    ids=lambda value: str(value),
+)
+def test_a_19_croniter_day_or_refusals_load_and_fire(
+    expression: str, days: set[int], per_day: int
+) -> None:
+    """A-19: a valid OR schedule croniter cannot express is supported, not refused (was E202).
+
+    Standard cron OR semantics make `15 0 30 2 0,6` fire every weekend in February even
+    though 30 February never exists. T-8.3 computes the union of the two single-branch
+    streams, so the expression loads and the weekday branch decides; the M7 refusal (A-16)
+    is superseded. February 2026 has 20 weekdays, four Saturdays (7, 14, 21, 28) and four
+    Sundays (1, 8, 15, 22), so every expectation below is read off a calendar.
     """
-    error = error_of(lambda: validate_cron(expression, "sources[0].schedule.cron"))
-    assert error.issue.code == "E202"
-    assert "day-of-month" in error.issue.message
-    assert "OR" in error.issue.message
+    assert validate_cron(expression, "sources[0].schedule.cron") == expression
+    rule = build_rule(
+        {
+            "name": "or.schedule",
+            "relation": "raw.t",
+            "loaded_at_field": "loaded_at",
+            "grace": "1h",
+            "schedule": {"kind": "cron", "cron": expression, "timezone": "UTC"},
+        },
+        source_id="or.schedule",
+        origin=Origin.CONFIG,
+        relation="raw.t",
+        loaded_at_field="loaded_at",
+        filter=None,
+        defaults=Defaults(timezone=ZoneInfo("UTC")),
+        named_calendars={},
+        location="sources[0]",
+        config_dir=Path("."),
+    )
+    calendar = BusinessCalendar(rule.calendar, FakeCalendarProvider())
+    releases = releases_between(
+        rule,
+        datetime(2026, 2, 1, tzinfo=UTC),
+        datetime(2026, 2, 28, 23, 59, 59, tzinfo=UTC),
+        calendar,
+    )
+    assert {release.local.day for release in releases} == days
+    assert len(releases) == len(days) * per_day
+    assert all(release.local.month == 2 for release in releases)
 
 
 def test_sem_08_a_never_firing_cron_stays_loadable_for_e209() -> None:
@@ -658,3 +705,364 @@ def test_load_yaml_helpers_are_used(tmp_path: Path) -> None:
     assert load_yaml("a: 16:00\n", source="t") == {"a": "16:00"}
     path = write_config(tmp_path, "version: 1\nsources: []\n")
     assert load_yaml_file(path) == {"version": 1, "sources": []}
+
+
+# ---------------------------------------------------------------------------
+# AUD-02: an invalid structured `name` never becomes the source ID
+# ---------------------------------------------------------------------------
+
+
+def _entry_ids(config: AppConfig) -> list[str]:
+    return [entry.source_id for entry in config.entries]
+
+
+def test_aud02_a_list_name_is_named_by_its_position(tmp_path: Path) -> None:
+    """AUD-02: a list `name` yields `sources[index]`, not the stringified value."""
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+sources:
+  - name: [a, b]
+    relation: raw.a
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+""",
+    )
+    loaded = load_config(config)
+    assert _entry_ids(loaded) == ["sources[0]"]
+    assert [issue.code for issue in loaded.entries[0].errors] == ["E103"]
+
+
+def test_aud02_a_mapping_name_is_named_by_its_position(tmp_path: Path) -> None:
+    """AUD-02: the same for a mapping, and the diagnostic stays bounded."""
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+sources:
+  - name: {a: 1, b: 2}
+    relation: raw.a
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+""",
+    )
+    loaded = load_config(config)
+    assert _entry_ids(loaded) == ["sources[0]"]
+    message = loaded.entries[0].errors[0].message
+    assert "expected string" in message
+    assert len(message) < 200
+
+
+def test_aud02_nested_and_shared_aliases_stay_bounded(tmp_path: Path) -> None:
+    """AUD-02's fixture: five nested alias levels, five positional IDs, bounded output."""
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+sources:
+  - name: &a [x,x,x,x,x,x,x,x,x,x]
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+  - name: &b [*a,*a,*a,*a,*a,*a,*a,*a,*a,*a]
+  - name: &c [*b,*b,*b,*b,*b,*b,*b,*b,*b,*b]
+  - name: &d [*c,*c,*c,*c,*c,*c,*c,*c,*c,*c]
+  - name: &e [*d,*d,*d,*d,*d,*d,*d,*d,*d,*d]
+""",
+    )
+    loaded = load_config(config)
+    assert _entry_ids(loaded) == [f"sources[{index}]" for index in range(5)]
+    assert all(len(entry.source_id) <= 16 for entry in loaded.entries)
+    assert all(entry.rule is None for entry in loaded.entries)
+    assert all(entry.errors for entry in loaded.entries)
+
+
+def test_aud02_a_recursive_alias_is_rejected_without_recursing(tmp_path: Path) -> None:
+    """AUD-02: a self-referencing alias becomes a positional E103, never a recursive str().
+
+    PyYAML constructs ``[*a]`` as a list that contains itself. The ID must not try to
+    render it, and the diagnostic must stay bounded (``reprlib`` stops at its max level).
+    """
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+sources:
+  - name: &a [*a]
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+""",
+    )
+    loaded = load_config(config)
+    assert _entry_ids(loaded) == ["sources[0]"]
+    assert loaded.entries[0].rule is None
+    assert [issue.code for issue in loaded.entries[0].errors] == ["E103"]
+    assert len(loaded.entries[0].errors[0].message) < 200
+
+
+def test_aud02_an_adjacent_valid_source_keeps_its_id_and_rule(tmp_path: Path) -> None:
+    """AUD-02: only the invalid entry is bounded; the healthy source is untouched."""
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+sources:
+  - name: [a, [a, [a, [a]]]]
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+  - name: good.source
+    relation: raw.good
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+""",
+    )
+    loaded = load_config(config)
+    assert _entry_ids(loaded) == ["sources[0]", "good.source"]
+    assert loaded.entries[0].rule is None
+    assert loaded.entries[1].rule is not None
+    assert loaded.entries[1].rule.source_id == "good.source"
+
+
+def test_aud02_a_valid_long_identifier_is_not_truncated(tmp_path: Path) -> None:
+    """AUD-02: valid identifiers are preserved exactly — the bound applies to invalid ones."""
+    long_name = "a" * 120
+    config = write_config(
+        tmp_path,
+        f"""
+version: 1
+sources:
+  - name: {long_name}
+    relation: t
+    loaded_at_field: x
+    schedule: {{kind: business_days, time: "12:00", timezone: UTC}}
+    grace: 1h
+""",
+    )
+    loaded = load_config(config)
+    assert _entry_ids(loaded) == [long_name]
+    assert loaded.entries[0].rule is not None
+
+
+def test_aud02_an_empty_name_is_named_by_its_position(tmp_path: Path) -> None:
+    """AUD-02: `name: ""` cannot be an ID either, so the entry is named by position."""
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+sources:
+  - name: ""
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+""",
+    )
+    loaded = load_config(config)
+    assert _entry_ids(loaded) == ["sources[0]"]
+
+
+# ---------------------------------------------------------------------------
+# AUD-08: an oversized duration component is E203, not an int() failure
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "9" * 5000 + "d",  # the audit's fixture: past CPython's 4300-digit limit
+        "9" * 4300 + "h",
+        "9" * 4300 + "m",
+        "1d" + "9" * 5000 + "h",  # a long component anywhere in the string
+        "0" * 5000 + "9" * 10 + "d",  # leading zeros do not hide the significant digits
+        "9" * 4000 + "d",  # below the digit limit: timedelta's OverflowError path
+        "999999999d",  # nine digits: past 366 days, converted and then rejected
+    ],
+)
+def test_aud08_an_oversized_component_is_e203(value: str) -> None:
+    """AUD-08: `int()`'s digit-limit ValueError never escapes as E599."""
+    error = error_of(lambda: parse_duration(value, "sources[0].grace"))
+    assert error.issue.code == "E203"
+    assert "exceeds the maximum of 366d" in error.issue.message
+    assert len(error.issue.message) < 200  # the value itself is bounded
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("0d0h0m", timedelta(0)),
+        ("0000000001d", timedelta(days=1)),
+        ("0" * 5000 + "1d", timedelta(days=1)),  # leading zeros are not significant digits
+        ("1d" + "0" * 5000 + "h", timedelta(days=1)),
+        ("366d", timedelta(days=366)),  # the exact boundary is allowed
+        ("365d23h59m", timedelta(days=365, hours=23, minutes=59)),
+        ("90m", timedelta(minutes=90)),
+        ("2h", timedelta(hours=2)),
+        ("1d6h", timedelta(days=1, hours=6)),
+    ],
+)
+def test_aud08_valid_durations_are_unchanged(value: str, expected: timedelta) -> None:
+    """AUD-08: normal values, the boundary and leading zeros keep working."""
+    assert parse_duration(value, "sources[0].grace") == expected
+
+
+def test_aud08_a_bad_component_per_source_keeps_the_healthy_source(tmp_path: Path) -> None:
+    """AUD-08: a per-source E203 marks only that source; the others still load."""
+    config = write_config(
+        tmp_path,
+        f"""
+version: 1
+sources:
+  - name: bad.source
+    relation: t
+    loaded_at_field: x
+    schedule: {{kind: business_days, time: "12:00", timezone: UTC}}
+    grace: "{"9" * 5000}d"
+  - name: good.source
+    relation: t
+    loaded_at_field: x
+    schedule: {{kind: business_days, time: "12:00", timezone: UTC}}
+    grace: 1h
+""",
+    )
+    loaded = load_config(config)
+    assert [entry.source_id for entry in loaded.entries] == ["bad.source", "good.source"]
+    assert [issue.code for issue in loaded.entries[0].errors] == ["E203"]
+    assert loaded.entries[1].rule is not None
+    assert loaded.entries[1].rule.grace == timedelta(hours=1)
+
+
+def test_aud08_a_bad_defaults_grace_is_a_fatal_e203(tmp_path: Path) -> None:
+    """AUD-08: under `defaults` the same value is a fatal configuration error (exit 2)."""
+    config = write_config(
+        tmp_path,
+        f"""
+version: 1
+defaults: {{timezone: UTC, grace: "{"9" * 5000}d"}}
+sources:
+  - name: s
+    relation: t
+    loaded_at_field: x
+    schedule: {{kind: business_days, time: "12:00"}}
+""",
+    )
+    error = error_of(lambda: load_config(config))
+    assert error.issue.code == "E203"
+    assert "defaults.grace" in error.issue.message
+
+
+# ---------------------------------------------------------------------------
+# AUD-09: an invalid path is a coded error, never a filesystem exception
+# ---------------------------------------------------------------------------
+
+
+def test_aud09_a_nul_connection_path_is_e106(tmp_path: Path) -> None:
+    """AUD-09: `connection.path` with an embedded NUL is E106 at that field, exit 2."""
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+connection: {type: duckdb, path: "a\\0b"}
+sources:
+  - name: s
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+""",
+    )
+    error = error_of(lambda: load_config(config))
+    assert error.issue.code == "E106"
+    assert error.issue.location == "connection.path"
+    assert "embedded null byte" in error.issue.message
+    assert "a\\x00b" in error.issue.message  # rendered escaped
+    assert "\x00" not in error.issue.message  # never a raw NUL
+
+
+def test_aud09_a_nul_manifest_path_is_e302(tmp_path: Path) -> None:
+    """AUD-09: `dbt.manifest` with an embedded NUL is E302 naming the manifest field."""
+    config = write_config(tmp_path, 'version: 1\ndbt: {manifest: "a\\0b"}\n')
+    error = error_of(lambda: load_config(config))
+    assert error.issue.code == "E302"
+    assert error.issue.location == "dbt.manifest"
+    assert "embedded null byte" in error.issue.message
+    assert "\x00" not in error.issue.message
+
+
+def test_aud09_a_nul_config_path_is_e110() -> None:
+    """AUD-09: the config file itself is E110 when the OS cannot express its name."""
+    error = error_of(lambda: load_config(Path("a\x00b.yml")))
+    assert error.issue.code == "E110"
+    assert "embedded null byte" in error.issue.message
+    assert "\x00" not in error.issue.message
+
+
+def test_aud09_a_nul_override_path_is_e404(tmp_path: Path) -> None:
+    """AUD-09: an override file with an embedded NUL is E404 with the same reason."""
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+calendars:
+  xcal:
+    overrides:
+      - file: "a\\0b.yml"
+sources:
+  - name: s
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    calendar: xcal
+    grace: 1h
+""",
+    )
+    error = error_of(lambda: load_config(config))
+    assert error.issue.code == "E404"
+    assert "embedded null byte" in error.issue.message
+    assert "\x00" not in error.issue.message
+
+
+def test_aud09_valid_relative_paths_still_resolve(tmp_path: Path) -> None:
+    """AUD-09: the guard is narrow — a normal relative path resolves as before."""
+    (tmp_path / "data.duckdb").write_bytes(b"")
+    config = write_config(
+        tmp_path,
+        """
+version: 1
+connection: {type: duckdb, path: "data.duckdb"}
+sources:
+  - name: s
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+""",
+    )
+    loaded = load_config(config)
+    assert loaded.connection is not None
+    assert loaded.connection.path == str(tmp_path / "data.duckdb")
+
+
+def test_aud09_existing_read_diagnostics_are_unchanged(tmp_path: Path) -> None:
+    """AUD-09: missing, directory and non-UTF-8 keep their CFG-09 wording."""
+    error = error_of(lambda: load_config(tmp_path / "missing.yml"))
+    assert error.issue.code == "E110"
+    assert "file not found" in error.issue.message
+
+    error = error_of(lambda: load_config(tmp_path))
+    assert error.issue.code == "E110"
+    assert "is a directory" in error.issue.message
+
+    bad = tmp_path / "bad.yml"
+    bad.write_bytes(b"\xff\xfe\x00\x01")
+    error = error_of(lambda: load_config(bad))
+    assert error.issue.code == "E110"
+    assert "not valid UTF-8" in error.issue.message

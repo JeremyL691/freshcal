@@ -15,6 +15,7 @@ from __future__ import annotations
 import reprlib
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
+from pathlib import Path
 from types import MappingProxyType
 from typing import Final
 
@@ -27,7 +28,9 @@ __all__ = [
     "Issue",
     "QueryError",
     "format_issue",
+    "path_failure_reason",
     "read_failure_reason",
+    "render_path",
     "render_value",
     "truncate",
 ]
@@ -81,6 +84,40 @@ def read_failure_reason(error: BaseException) -> str:
     if isinstance(error, UnicodeDecodeError):
         return "not valid UTF-8"
     return truncate(str(error))
+
+
+def path_failure_reason(path: str) -> str | None:
+    """The reason ``path`` cannot be resolved, or ``None`` when it can (AUD-09).
+
+    ``Path.resolve()`` raises ``ValueError`` for an embedded NUL byte — the operating
+    system cannot express such a name at all — and ``OSError`` for filesystem-level
+    failures such as a symbolic-link loop. Both are configuration mistakes with a coded
+    diagnostic, so the responsible boundary asks this *before* it touches the filesystem
+    and never lets the exception escape as an internal error.
+    """
+    try:
+        Path(path).resolve()
+    except ValueError as error:
+        return truncate(str(error))
+    except OSError as error:
+        return read_failure_reason(error)
+    return None
+
+
+def render_path(path: object) -> str:
+    """Render a path for a message, escaping control characters (AUD-09).
+
+    A path is normally written as it is, so every existing diagnostic keeps its exact
+    wording; one that carries a control character (a NUL from a YAML escape, say) is
+    rendered with ``reprlib`` instead, because writing the character itself to a terminal
+    would corrupt the report.
+    """
+    text = str(path)
+    if not any(ord(character) < 32 for character in text):
+        return text
+    # Escape only when something has to be escaped, so a normal path keeps its exact
+    # wording (callers already quote it) and a control character never reaches the output.
+    return text.encode("unicode_escape").decode("ascii")
 
 
 @dataclass(frozen=True, slots=True)

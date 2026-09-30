@@ -163,6 +163,60 @@ def apply_policy(
         yield Nominal(local=datetime.combine(rolled, nominal.time()), adjusted_from=nominal.date())
 
 
+def day_or_branches(expression: str) -> tuple[str, str] | None:
+    """The two single-branch expressions when standard cron's day-of-month/day-of-week OR applies.
+
+    With *both* fields restricted, standard cron (and §3.4.1) fires when either matches. croniter
+    computes that union only while the day-of-week field has no nth-weekday entry — a `#` entry
+    makes it drop the day-of-month branch — and it refuses several valid expressions outright
+    (`15 0 30 2 0,6`). FreshCal therefore generates each branch on its own and merges the two
+    ascending streams, which is the promised OR behaviour (AUD-01, A-19). With either field at
+    `*` there is no alternative to compute and ``None`` is returned.
+    """
+    fields = expression.split()
+    if len(fields) != 5:
+        return None
+    minute, hour, day_of_month, month, day_of_week = fields
+    if day_of_month == "*" or day_of_week == "*":
+        return None
+    return (
+        f"{minute} {hour} {day_of_month} {month} *",
+        f"{minute} {hour} * {month} {day_of_week}",
+    )
+
+
+class _CronBranch:
+    """One single-branch cron stream: ascending naive wall times, or "this branch never fires".
+
+    ``dead`` is set when croniter refuses to produce any next date, which is how a never-firing
+    expression such as ``0 0 30 2 *`` behaves. That is not an error by itself — the other branch
+    of a day-of-month/day-of-week OR may still fire — so the caller decides, once every branch is
+    exhausted, whether the whole expression has no release at all (E209).
+    """
+
+    __slots__ = ("_done", "_iterator", "_last_date", "dead")
+
+    def __init__(self, expression: str, start: datetime, last_date: date) -> None:
+        self._iterator = croniter(expression, start)
+        self._last_date = last_date
+        self._done = False
+        self.dead = False
+
+    def next(self) -> datetime | None:
+        """The next nominal in the window, or ``None`` when this branch has nothing more."""
+        if self._done or self.dead:
+            return None
+        try:
+            nominal = self._iterator.get_next(datetime)
+        except CroniterBadDateError:
+            self.dead = self._done = True
+            return None
+        if nominal.date() > self._last_date:
+            self._done = True
+            return None
+        return nominal
+
+
 def _cron_nominals(
     schedule: CronSchedule,
     calendar: BusinessCalendar,
@@ -179,22 +233,41 @@ def _cron_nominals(
     thousands of nominals in the padding it would immediately discard. ``reference`` is
     the search instant the E209 message must name (§4.6, SEM-08); only when a caller has
     none at all does it fall back to the window's own first local date.
+
+    A restricted day-of-month **and** day-of-week are OR alternatives (A-19): the two
+    single-branch streams are merged in ascending local order and an occurrence both
+    branches name is emitted once, so ``on_non_business_day`` is applied exactly once per
+    nominal occurrence.
     """
     start = start_local if start_local is not None else datetime.combine(d0, time.min)
     start = start - timedelta(minutes=1)
     if reference is None:
         reference = datetime.combine(d0, time.min, tzinfo=UTC)
-    iterator = croniter(schedule.expression, start)
-    while True:
-        try:
-            nominal = iterator.get_next(datetime)
-        except CroniterBadDateError as error:
-            # A never-firing expression such as "0 0 30 2 *" passes is_valid but has
-            # no next date at all; that is a configuration error, not a verdict, and it
-            # names the instant the search was asked about.
-            raise ConfigError(no_release_issue(reference)) from error
-        if nominal.date() > d1:
-            return
+    expressions = day_or_branches(schedule.expression) or (schedule.expression,)
+    branches = [_CronBranch(expression, start, d1) for expression in expressions]
+    live: list[tuple[datetime, _CronBranch]] = []
+    for branch in branches:
+        nominal = branch.next()
+        if nominal is not None:
+            live.append((nominal, branch))
+    if not live:
+        if all(branch.dead for branch in branches):
+            # No branch can ever fire: the schedule produces no release anywhere near the
+            # search instant, which is a configuration error, not a verdict.
+            raise ConfigError(no_release_issue(reference))
+        return
+    last: datetime | None = None
+    while live:
+        live.sort(key=lambda item: item[0])
+        nominal, branch = live[0]
+        following = branch.next()
+        if following is None:
+            live.pop(0)
+        else:
+            live[0] = (following, branch)
+        if nominal == last:
+            continue
+        last = nominal
         yield from apply_policy(nominal, schedule.on_non_business_day, calendar)
 
 

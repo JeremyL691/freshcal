@@ -27,6 +27,7 @@ from freshcal.core.schedule import (
     HOLD_BACK,
     MAX_OFFSET,
     MAX_ROLL_DAYS,
+    day_or_branches,
     next_release_after,
     previous_release_at_or_before,
     releases_between,
@@ -704,3 +705,123 @@ def test_s6_s7_equal_to_the_business_day_count_is_not_clamped() -> None:
         releases = releases_between(monthly_rule(index), window_start, window_end, calendar)
         assert [release.local.date().isoformat() for release in releases] == [expected]
         assert releases[0].clamped is True, index
+
+
+# ---------------------------------------------------------------------------
+# Day-of-month/day-of-week OR semantics (T-8.3, AUD-01, A-19)
+# ---------------------------------------------------------------------------
+
+
+def test_u_sch_21_day_or_branches_only_when_both_fields_are_restricted() -> None:
+    """`day_or_branches` splits a restricted pair and leaves every other shape alone."""
+    assert day_or_branches("0 9 1 * 1#1") == ("0 9 1 * *", "0 9 * * 1#1")
+    assert day_or_branches("15 0 30 2 0,6") == ("15 0 30 2 *", "15 0 * 2 0,6")
+    assert day_or_branches("0 9 * * 1#1") is None  # day-of-month is `*`
+    assert day_or_branches("0 9 1 * *") is None  # day-of-week is `*`
+    assert day_or_branches("0 9 * * *") is None
+
+
+def test_u_sch_22_the_audit_union_case_has_jan_1_and_jan_5() -> None:
+    """AUD-01: `0 9 1 * 1#1` fires on the 1st *and* on the first Monday.
+
+    January 2026 starts on a Thursday, so its first Monday is Jan 5 and `1#1` names only
+    that one. The day-of-month branch contributes Jan 1; croniter alone drops it.
+    """
+    rule = make_rule(CronSchedule("0 9 1 * 1#1", UTC_ZONE))
+    calendar = make_calendar()
+    january = (
+        datetime(2026, 1, 1, tzinfo=UTC),
+        datetime(2026, 1, 31, 23, 59, 59, tzinfo=UTC),
+    )
+    releases = releases_between(rule, *january, calendar)
+    assert [release.local.day for release in releases] == [1, 5]
+    assert all(release.local.hour == 9 for release in releases)
+
+    # Strict next: from just before the Jan 1 release the answer is Jan 1 itself.
+    found = next_release_after(rule, datetime(2026, 1, 1, 8, 59, tzinfo=UTC), calendar)
+    assert found is not None
+    assert found.instant == datetime(2026, 1, 1, 9, 0, tzinfo=UTC)
+    # Inclusive next at the release instant returns that same release.
+    found = next_release_after(
+        rule, datetime(2026, 1, 1, 9, 0, tzinfo=UTC), calendar, inclusive=True
+    )
+    assert found is not None
+    assert found.instant == datetime(2026, 1, 1, 9, 0, tzinfo=UTC)
+    # Bounded next stops at the window edge: Jan 1 is outside a window ending before it.
+    bounded = next_release_after(
+        rule,
+        datetime(2026, 1, 1, 8, 0, tzinfo=UTC),
+        calendar,
+        until=datetime(2026, 1, 1, 8, 59, 59, tzinfo=UTC),
+    )
+    assert bounded is None
+    # Previous: the release before Jan 1 is December 1 2025, the first Monday *and* the 1st.
+    previous = previous_release_at_or_before(rule, datetime(2026, 1, 1, 8, 0, tzinfo=UTC), calendar)
+    assert previous is not None
+    assert previous.instant == datetime(2025, 12, 1, 9, 0, tzinfo=UTC)
+
+
+def test_u_sch_23_the_policy_is_applied_once_per_nominal_occurrence() -> None:
+    """An overlapping occurrence is rolled once, and its metadata is kept (AUD-01).
+
+    Jan 5 2026 is both the 5th and the first Monday, so both branches name it. The union
+    must emit it once, and ``following`` must move it exactly one business day when the
+    calendar says Jan 5 is not a working day — a second, duplicate nominal would roll a
+    second time and collide with the first.
+    """
+    spec = CalendarSpec(extra_non_working_days=frozenset({date(2026, 1, 5)}))
+    rule = make_rule(
+        CronSchedule("0 9 5 * 1#1", UTC_ZONE, NonBusinessDayPolicy.FOLLOWING), calendar=spec
+    )
+    calendar = make_calendar(spec)
+    releases = releases_between(
+        rule,
+        datetime(2026, 1, 1, tzinfo=UTC),
+        datetime(2026, 1, 31, 23, 59, 59, tzinfo=UTC),
+        calendar,
+    )
+    assert [release.local.day for release in releases] == [6]
+    assert releases[0].adjusted_from == date(2026, 1, 5)
+    assert releases[0].instant == datetime(2026, 1, 6, 9, 0, tzinfo=UTC)
+
+
+def test_u_sch_24_a_dead_day_of_month_branch_still_fires_on_its_weekday() -> None:
+    """`15 0 30 2 0,6` fires on February weekends: the impossible day cannot hide them."""
+    rule = make_rule(CronSchedule("15 0 30 2 0,6", UTC_ZONE))
+    calendar = make_calendar()
+    releases = releases_between(
+        rule,
+        datetime(2026, 2, 1, tzinfo=UTC),
+        datetime(2026, 2, 28, 23, 59, 59, tzinfo=UTC),
+        calendar,
+    )
+    assert [release.local.day for release in releases] == [1, 7, 8, 14, 15, 21, 22, 28]
+    assert all(release.local.time() == time(0, 15) for release in releases)
+
+
+def test_u_sch_25_a_never_firing_expression_still_raises_e209() -> None:
+    """With the day-of-week field at `*` there is no alternative reading (CLI-03)."""
+    rule = make_rule(CronSchedule("0 0 30 2 *", UTC_ZONE))
+    calendar = make_calendar()
+    with pytest.raises(ConfigError) as excinfo:
+        releases_between(
+            rule,
+            datetime(2026, 1, 1, tzinfo=UTC),
+            datetime(2026, 1, 31, tzinfo=UTC),
+            calendar,
+        )
+    assert excinfo.value.issue.code == "E209"
+
+
+def test_u_sch_26_multiple_alternatives_keep_every_matching_date() -> None:
+    """Several day-of-month days and several nth weekdays all survive the union."""
+    rule = make_rule(CronSchedule("0 9 1,15 * 1#1,1#2", UTC_ZONE))
+    calendar = make_calendar()
+    releases = releases_between(
+        rule,
+        datetime(2026, 1, 1, tzinfo=UTC),
+        datetime(2026, 1, 31, 23, 59, 59, tzinfo=UTC),
+        calendar,
+    )
+    assert [release.local.day for release in releases] == [1, 5, 12, 15]
+    assert len({release.instant for release in releases}) == len(releases)

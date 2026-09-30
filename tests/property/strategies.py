@@ -65,7 +65,23 @@ CRON_MINUTES = ("0", "15", "30", "45", "*/30")
 #: the mix. TEST-04 found the old list had neither `0-23` nor the fixed-offset zones.
 CRON_HOURS = ("0-23", "*/6", "0", "6", "12", "18")
 CRON_DAYS_OF_MONTH = ("*", "1", "15", "L", "29", "30", "31")
-CRON_DAYS_OF_WEEK = ("*", "1-5", "0,6")
+#: T-8.2 adds the nth-weekday syntax (`N#O`) the platform promises, including a fifth
+#: occurrence (absent in some months) and a comma alternative. The dense families are listed
+#: twice so the sparser `#` schedules stay a minority: drawn evenly they pushed the
+#: TEST-04 distribution probe just below its 10 % NOT_DUE floor (measured 9.0-13.8 % with
+#: the flat list, 12.3-14.0 % weighted, `#` still ~19 % of drawn rules).
+CRON_DAYS_OF_WEEK = (
+    "*",
+    "1-5",
+    "0,6",
+    "*",
+    "1-5",
+    "0,6",
+    "1#1",
+    "5#5",
+    "1#1,1#2",
+    "0#3",
+)
 SUB_HOURLY_MINUTES = ("*/30",)
 
 

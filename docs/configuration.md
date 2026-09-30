@@ -103,7 +103,7 @@ schedule: {kind: monthly_business_day, business_day: -1, time: "17:00", timezone
 | Field | Kinds | Notes |
 |---|---|---|
 | `timezone` | all | IANA zone (here or in `defaults`). All date arithmetic uses local dates in this zone. |
-| `cron` | `cron` | Exactly five fields. Standard day-of-month/day-of-week OR semantics; `L` and `#` are supported; croniter's `H` and `R` extensions are not (`E202`). |
+| `cron` | `cron` | Exactly five fields. Standard day-of-month/day-of-week OR semantics: when both fields are restricted, a date matches when either matches (FreshCal computes the union itself, so `0 9 1 * 1#1` fires on the 1st and on the first Monday). `L` and `#` (occurrence 1–5) are supported; croniter's `H` and `R` extensions are not (`E202`). |
 | `on_non_business_day` | `cron` | `none` (default), `skip`, `following`, `preceding`. Only valid for `cron` (`E205`). |
 | `time` | `business_days`, `monthly_business_day` | `"HH:MM"` in the schedule zone; quote it. |
 | `business_day` | `monthly_business_day` | `1`–`23` for the Nth business day, `-1`–`-23` counted from the end. `0` and `|N| > 23` are rejected (`E204`). If the month has fewer business days, the release is clamped to the last (or first) one and flagged as `clamped`. |

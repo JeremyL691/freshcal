@@ -22,7 +22,15 @@ from croniter import CroniterBadCronError, CroniterBadDateError, croniter
 from freshcal.adapters.holidays_provider import validate_ref
 from freshcal.config.schema import validate_document, validate_override_file, validate_source
 from freshcal.config.yaml_loader import load_yaml, load_yaml_file
-from freshcal.core.errors import ConfigError, Issue, read_failure_reason, render_value, truncate
+from freshcal.core.errors import (
+    ConfigError,
+    Issue,
+    path_failure_reason,
+    read_failure_reason,
+    render_path,
+    render_value,
+    truncate,
+)
 from freshcal.core.model import (
     BusinessDaysSchedule,
     CalendarSpec,
@@ -150,11 +158,19 @@ def _read_override_file(path: Path, location: str) -> object:
     Every read failure (missing file, directory, permissions, not UTF-8) is E404 with a
     reason; a read error must never escape as E599 (CFG-09).
     """
+    reason = path_failure_reason(str(path))
+    if reason is not None:
+        # AUD-09: an unrepresentable override path is the same E404 as an unreadable one.
+        raise ConfigError(
+            _issue("E404", location, f"override file '{render_path(path)}': {reason}")
+        )
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeDecodeError) as error:
         reason = read_failure_reason(error)
-        raise ConfigError(_issue("E404", location, f"override file '{path}': {reason}")) from error
+        raise ConfigError(
+            _issue("E404", location, f"override file '{render_path(path)}': {reason}")
+        ) from error
     try:
         document = load_yaml(text, source=str(path))
     except ConfigError as error:
@@ -338,6 +354,11 @@ _CRON_EXTENSION_RE = re.compile(r"^[HR](\(.*\))?(/\d+)?$")
 #: release within croniter's 50-year search from here is refused (SEM-08).
 _CRON_VALIDATION_START = datetime(2026, 1, 1)
 MAX_DURATION = timedelta(days=366)
+#: Longest numeric component accepted before ``int()`` runs: nine digits already
+#: exceed 366 days by orders of magnitude, and CPython refuses to convert more than
+#: 4300 digits at all (AUD-08).
+MAX_DURATION_DIGITS = 9
+
 DEFAULT_STATEMENT_TIMEOUT_SECONDS = 30
 DBS = "duckdb", "postgres"
 
@@ -393,19 +414,29 @@ def parse_duration(value: object, location: str) -> timedelta:
         )
     match = _DURATION_RE.match(value)
     assert match is not None  # the pattern was checked above
-    days, hours, minutes = (int(part) if part else 0 for part in match.groups())
+    too_long = ConfigError(
+        _issue("E203", location, f"duration '{truncate(value)}' exceeds the maximum of 366d")
+    )
+    parts: list[int] = []
+    for part in match.groups():
+        # ``int()`` itself refuses a very long digit string (CPython's 4300-digit limit,
+        # leading zeros included), and that ValueError escaped as E599 (AUD-08). Only the
+        # significant digits matter: a component with more than nine of them is already far
+        # beyond 366 days, so it is rejected before the conversion, and the process-wide
+        # digit limit is never touched. ``0000000001d`` is one day, not a long number.
+        digits = (part or "").lstrip("0")
+        if len(digits) > MAX_DURATION_DIGITS:
+            raise too_long
+        parts.append(int(digits) if digits else 0)
+    days, hours, minutes = parts
     try:
         total = timedelta(days=days, hours=hours, minutes=minutes)
     except OverflowError as error:
         # ``timedelta`` cannot even represent the number (CFG-10): the duration is too
         # long, which is E203 — not an internal error.
-        raise ConfigError(
-            _issue("E203", location, f"duration '{truncate(value)}' exceeds the maximum of 366d")
-        ) from error
+        raise too_long from error
     if total > MAX_DURATION:
-        raise ConfigError(
-            _issue("E203", location, f"duration '{truncate(value)}' exceeds the maximum of 366d")
-        )
+        raise too_long
     return total
 
 
@@ -459,20 +490,14 @@ def validate_cron(expression: object, location: str) -> str:
         # A fixed start keeps the check deterministic; `croniter(expression)` alone would
         # use the wall clock and would never notice an expression that cannot fire.
         croniter(expression, _CRON_VALIDATION_START).get_next(datetime)
-    except CroniterBadDateError as error:
-        # SEM-08: croniter refuses some *valid* schedules. When both the day-of-month and
-        # the day-of-week fields are restricted, standard cron (and §3.4.1) reads them as
-        # OR alternatives — `15 0 30 2 0,6` fires every weekend in February — but croniter
-        # cannot compute that and would report "no release" for a schedule that fires.
-        # FreshCal refuses the expression at load time instead. With the day-of-week field
-        # at `*` there is no alternative to an impossible day: that expression never fires
-        # under any reading, stays loadable, and evaluation reports E209 for it (CLI-03).
-        if fields[2] != "*" and fields[4] != "*":
-            raise invalid(
-                "croniter cannot compute a next date for this day-of-month/day-of-week "
-                "combination; standard OR semantics still fire, so the schedule is refused "
-                "rather than reported as having no release"
-            ) from error
+    except CroniterBadDateError:
+        # croniter refuses an expression it can find no next date for. Both cases stay
+        # loadable: a never-firing expression such as `0 0 30 2 *` has no alternative
+        # reading and evaluation reports E209 for it (CLI-03/CFG-12), and an expression
+        # whose day-of-month *and* day-of-week fields are both restricted is the standard
+        # OR case, which FreshCal computes itself from the two single-branch streams
+        # (AUD-01, A-19) instead of refusing a schedule that really fires.
+        pass
     except (CroniterBadCronError, ValueError) as error:
         raise invalid(str(error)) from error
     return expression
@@ -645,6 +670,18 @@ def _parse_connection(
         path = str(_required(value, "path", f"{location}.path"))
         if path == ":memory:":
             return DuckDBConnection(path=path)
+        reason = path_failure_reason(path)
+        if reason is not None:
+            # AUD-09: the OS cannot express this path at all, so there is nothing to open;
+            # the diagnostic names the field and the reason, and renders the value with
+            # control characters escaped.
+            raise ConfigError(
+                _issue(
+                    "E106",
+                    f"{location}.path",
+                    f"invalid path {render_value(path)}: {reason}",
+                )
+            )
         candidate = Path(path)
         resolved = candidate if candidate.is_absolute() else directory / candidate
         return DuckDBConnection(path=str(resolved.resolve()))
@@ -711,8 +748,18 @@ def _parse_defaults(value: object, named: Mapping[str, CalendarSpec], directory:
 
 
 def _source_id_of(entry: Mapping[str, object], index: int) -> str:
+    """The source ID for one entry: its ``name`` when that is a string, else ``sources[index]``.
+
+    The ID is built before the entry is validated, because its diagnostics need it, so the
+    shape must be checked here rather than trusted: a YAML alias can expand a structured
+    ``name`` into a huge object, and ``str()`` on it would build a multi-megabyte identifier
+    and a multi-megabyte report (AUD-02). Only a string is used as an ID — never truncated,
+    so valid identifiers are preserved exactly — and anything else is named by its position.
+    """
     name = entry.get("name")
-    return str(name) if name is not None else f"sources[{index}]"
+    if isinstance(name, str) and name:
+        return name
+    return f"sources[{index}]"
 
 
 def _parse_source_entry(
@@ -811,7 +858,18 @@ def load_config(path: Path) -> AppConfig:
     dbt_section = document.get("dbt")
     dbt_manifest: Path | None = None
     if isinstance(dbt_section, Mapping) and dbt_section.get("manifest") is not None:
-        candidate = Path(str(dbt_section["manifest"]))
+        manifest_text = str(dbt_section["manifest"])
+        reason = path_failure_reason(manifest_text)
+        if reason is not None:
+            # AUD-09: same boundary, the manifest's own code.
+            raise ConfigError(
+                _issue(
+                    "E302",
+                    "dbt.manifest",
+                    f"invalid manifest path {render_value(manifest_text)}: {reason}",
+                )
+            )
+        candidate = Path(manifest_text)
         dbt_manifest = candidate if candidate.is_absolute() else (directory / candidate).resolve()
     defaults = _parse_defaults(document.get("defaults"), named, directory)
 

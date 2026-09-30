@@ -13,6 +13,7 @@ source, because a warehouse that cannot be reached says nothing about the config
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from collections.abc import Sequence
 from contextlib import closing, suppress
@@ -294,7 +295,12 @@ def _prepare_output(output: Path | None) -> None:
 
 def _write(text: str, output: Path | None) -> None:
     if output is None:
+        # Flush inside the guarded call: CPython also flushes buffered stdout at interpreter
+        # shutdown, and that later flush is what turned a caught broken pipe into an ignored
+        # exception and exit code 120 (AUD-04). Flushing here keeps the failure inside the
+        # caller's handler, which then points stdout at the null device.
         sys.stdout.write(text)
+        sys.stdout.flush()
         return
     try:
         output.write_text(text, encoding="utf-8")
@@ -302,17 +308,34 @@ def _write(text: str, output: Path | None) -> None:
         raise ConfigError(_e217(output, error)) from error
 
 
+def _silence_stdout() -> None:
+    """Point stdout at the null device after a broken pipe (CPython's documented recipe).
+
+    The reader is gone, so nothing can be written any more; redirecting the descriptor means
+    the interpreter's shutdown flush has nothing left to fail on. Failures here are ignored
+    on purpose — the report's exit code is already decided — and no unrelated ``OSError`` is
+    swallowed anywhere else.
+    """
+    # A stream without a descriptor (a test double, an embedded caller) has nothing to
+    # redirect, and a closed descriptor cannot be replaced; both are fine.
+    with suppress(AttributeError, OSError, ValueError):
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull, sys.stdout.fileno())
+        os.close(devnull)
+
+
 def _write_report(text: str, output: Path | None, report_code: int) -> int:
     """Write the report and return the exit code it implies (CLI-08).
 
-    A broken pipe on stdout is not an error: the reader went away, so the command
-    exits quietly with the report's own code. A failed file write still reports the
-    report's code when that is higher than the configuration-error code 2, and says
-    with ``E217`` which file could not be written.
+    A broken pipe on stdout is not an error: the reader went away, so the command exits
+    quietly with the report's own code — 0, 1, 2 or 3, never 120 (AUD-04). A failed file
+    write still reports the report's code when that is higher than the configuration-error
+    code 2, and says with ``E217`` which file could not be written.
     """
     try:
         _write(text, output)
     except BrokenPipeError:
+        _silence_stdout()
         return report_code
     except ConfigError as error:
         for issue in error.issues:

@@ -13,12 +13,23 @@ Failure messages carry the case description (zone, kind, expression, calendar, g
 from __future__ import annotations
 
 import json
+import os
 import random
+import subprocess
+import sys
+from collections import Counter
 from pathlib import Path
 
 import pytest
 from tests.oracle import oracle
-from tests.oracle.cases import build, compare_case, describe
+from tests.oracle.cases import (
+    CRONITER_DAY_OR_REFUSALS,
+    build,
+    compare_case,
+    describe,
+)
+
+from freshcal.core.model import CronSchedule
 
 DEFAULT_SEEDS = (11, 12, 13)
 DEFAULT_PER_SEED = 12
@@ -28,13 +39,28 @@ BUSINESS_KINDS = ("bd", "monthly")
 REGRESSIONS = Path(__file__).with_name("regressions.json")
 
 
-def _run_campaign(seeds: tuple[int, ...], per_seed: int, focuses: tuple[str, ...]) -> list[dict]:
+def _run_campaign(
+    seeds: tuple[int, ...], per_seed: int, focuses: tuple[str, ...]
+) -> tuple[list[dict], Counter[str]]:
+    """Run one seeded campaign; return its disagreements and the syntax it actually exercised.
+
+    The coverage counter is what makes the campaign's claim checkable (T-8.3/T-8.10): a run
+    that never drew the nth-weekday or the OR-refusal expressions cannot prove them.
+    """
     disagreements: list[dict] = []
+    coverage: Counter[str] = Counter()
     for seed in seeds:
         rng = random.Random(seed)
         for index in range(per_seed):
             focus = focuses[index % len(focuses)]
             rule, provider, instant = build(rng, focus)
+            expression = rule.schedule.expression if isinstance(rule.schedule, CronSchedule) else ""
+            if "#" in expression:
+                coverage["hash"] += 1
+                if expression.split()[2] != "*":
+                    coverage["hash_with_day_of_month"] += 1
+            if expression in CRONITER_DAY_OR_REFUSALS:
+                coverage["day_or_refusal"] += 1
             for check, args, got, want in compare_case(rule, provider, instant, rng, oracle):
                 disagreements.append(
                     {
@@ -47,7 +73,13 @@ def _run_campaign(seeds: tuple[int, ...], per_seed: int, focuses: tuple[str, ...
                         "want": want,
                     }
                 )
-    return disagreements
+    return disagreements, coverage
+
+
+def _coverage_line(seeds: tuple[int, ...], per_seed: int, coverage: Counter[str]) -> str:
+    families = ", ".join(f"{name}={count}" for name, count in sorted(coverage.items()))
+    cases = len(seeds) * per_seed
+    return f"campaign: {len(seeds)} seeds x {per_seed} cases = {cases} cases; {families}"
 
 
 def _report(disagreements: list[dict]) -> str:
@@ -56,7 +88,7 @@ def _report(disagreements: list[dict]) -> str:
 
 def test_orc_02_business_day_kinds_match_the_oracle() -> None:
     """`business_days` and `monthly_business_day` over seeded random rules and calendars."""
-    disagreements = _run_campaign(DEFAULT_SEEDS, DEFAULT_PER_SEED, BUSINESS_KINDS)
+    disagreements, _coverage = _run_campaign(DEFAULT_SEEDS, DEFAULT_PER_SEED, BUSINESS_KINDS)
     assert disagreements == [], _report(disagreements)
 
 
@@ -67,9 +99,8 @@ def test_orc_full_campaign() -> None:
     One campaign over every schedule kind, so the quoted numbers describe a single run:
     `ORACLE_SEEDS` x `ORACLE_PER_SEED` = 10 000 cases with 0 disagreements.
     """
-    cases = len(ORACLE_SEEDS) * ORACLE_PER_SEED
-    disagreements = _run_campaign(ORACLE_SEEDS, ORACLE_PER_SEED, ALL_FOCUSES)
-    print(f"oracle campaign: {len(ORACLE_SEEDS)} seeds x {ORACLE_PER_SEED} cases = {cases} cases")
+    disagreements, coverage = _run_campaign(ORACLE_SEEDS, ORACLE_PER_SEED, ALL_FOCUSES)
+    print(_coverage_line(ORACLE_SEEDS, ORACLE_PER_SEED, coverage))
     assert disagreements == [], _report(disagreements)
 
 
@@ -198,7 +229,8 @@ def _replay_regression(case: dict) -> list[object] | None:
 
 def test_orc_03_cron_schedules_match_the_oracle() -> None:
     """Cron schedules (every policy, gap and rolling focus) agree with the oracle."""
-    disagreements = _run_campaign(DEFAULT_SEEDS, DEFAULT_PER_SEED, CRON_FOCUSES)
+    disagreements, coverage = _run_campaign(DEFAULT_SEEDS, DEFAULT_PER_SEED, CRON_FOCUSES)
+    print(_coverage_line(DEFAULT_SEEDS, DEFAULT_PER_SEED, coverage))
     assert disagreements == [], _report(disagreements)
 
 
@@ -226,3 +258,57 @@ def test_orc_04_recorded_regressions() -> None:
         f"({sum(1 for case in cases if case['oracle_limit'])} pinned to the v0.1.0 answer)"
     )
     assert failures == [], _report(failures)
+
+
+WORKFLOW = Path(__file__).resolve().parents[2] / ".github/workflows/ci.yml"
+
+
+def _workflow_campaign_command() -> list[str]:
+    """The pytest arguments of the workflow's full-campaign run step (AUD-05)."""
+    lines = [
+        line.strip().replace('"', "").replace("'", "")
+        for line in WORKFLOW.read_text(encoding="utf-8").splitlines()
+    ]
+    matches = [line for line in lines if "pytest" in line and "-m oracle" in line]
+    assert len(matches) == 1, f"expected exactly one campaign step, got {matches}"
+    words = matches[0].split()
+    index = next(i for i, word in enumerate(words) if word.endswith("pytest"))
+    args = [word for word in words[index + 1 :] if word != "-s"]
+    assert "tests/oracle" in args, args
+    return args
+
+
+def _collect(args: list[str]) -> str:
+    completed = subprocess.run(
+        [sys.executable, "-m", "pytest", *args, "--collect-only", "-q", "-p", "no:cacheprovider"],
+        capture_output=True,
+        text=True,
+        cwd=Path(__file__).resolve().parents[2],
+        env={
+            **os.environ,
+            "PYTHONPATH": str(Path(__file__).resolve().parents[2] / "src"),
+        },
+        check=False,
+    )
+    return completed.stdout + completed.stderr
+
+
+def test_orc_15_the_ci_workflow_selects_the_full_campaign() -> None:
+    """AUD-05: CI runs the campaign, and the exact workflow command selects it.
+
+    Text claiming that CI runs the campaign is not evidence. The default `addopts` exclude
+    the `oracle` marker, so the guard proves both halves: the same command without `-m
+    oracle` does *not* collect the campaign, and the workflow's command does. The campaign
+    size is asserted here too, so a smaller campaign cannot pass as the full one.
+    """
+    assert len(ORACLE_SEEDS) >= 20, ORACLE_SEEDS
+    assert len(ORACLE_SEEDS) * ORACLE_PER_SEED >= 10_000, (ORACLE_SEEDS, ORACLE_PER_SEED)
+
+    default = _collect(["tests/oracle"])
+    assert "test_orc_full_campaign" not in default, default[-400:]
+
+    campaign = _collect(_workflow_campaign_command())
+    assert "test_orc_full_campaign" in campaign, campaign[-400:]
+    # The recorded regressions are unmarked, so they run in the ordinary matrix job; the
+    # campaign job selects the marked campaign only.
+    assert "test_orc_04_recorded_regressions" not in campaign, campaign[-400:]

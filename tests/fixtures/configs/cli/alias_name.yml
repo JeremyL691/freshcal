@@ -1,0 +1,12 @@
+version: 1
+connection: {type: duckdb, path: ":memory:"}
+sources:
+  - name: &a [x,x,x,x,x,x,x,x,x,x]
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+  - name: &b [*a,*a,*a,*a,*a,*a,*a,*a,*a,*a]
+  - name: &c [*b,*b,*b,*b,*b,*b,*b,*b,*b,*b]
+  - name: &d [*c,*c,*c,*c,*c,*c,*c,*c,*c,*c]
+  - name: &e [*d,*d,*d,*d,*d,*d,*d,*d,*d,*d]

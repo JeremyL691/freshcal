@@ -784,3 +784,268 @@ def test_c_32_explain_reader_failure_goes_to_the_trace_stream(
     assert code == 3
     assert out.startswith("Result    QUERY_ERROR: Query error: E501 ")
     assert err == ""
+
+
+def test_aud02_alias_expanded_source_names_stay_bounded(capsys: pytest.CaptureFixture[str]) -> None:
+    """AUD-02: an invalid structured `name` never becomes the source ID or the report.
+
+    The fixture is the audit's 399-byte config: five sources whose `name` is a nested YAML
+    alias. Before the fix the identifiers were the stringified alias graph (up to 522 220
+    characters) and `check` printed 3.7 MB. The entries are configuration errors with
+    positional IDs, and the whole report stays small.
+    """
+    fixture = FIXTURES / "alias_name.yml"
+    assert fixture.stat().st_size < 512  # the audit's fixture, not a bigger one
+    for command in ("check", "next", "validate"):
+        code, out, err = run([command, "-c", str(fixture), "--now", "2026-01-01T10:00:00Z"], capsys)
+        assert code == 2, command
+        assert err == "", command
+        assert "E599" not in out, command
+        assert len(out.encode("utf-8")) <= 16 * 1024, (command, len(out.encode("utf-8")))
+        assert "E103" in out, command
+    code, out, _ = run(
+        ["check", "-c", str(fixture), "--now", "2026-01-01T10:00:00Z", "--format", "json"], capsys
+    )
+    report = json.loads(out)
+    assert code == 2
+    assert [row["source_id"] for row in report["results"]] == [
+        f"sources[{index}]" for index in range(5)
+    ]
+
+
+AUD03_URI = """version: 1
+connection:
+  type: postgres
+  dsn_env: postgresql://audit:TEST_ONLY_VALUE@invalid.example/db
+sources:
+  - name: s
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+"""
+
+AUD03_KEYWORD = """version: 1
+connection:
+  type: postgres
+  dsn_env: "host=invalid.example user=audit password=TEST_ONLY_KEYWORD dbname=db"
+sources:
+  - name: s
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+"""
+
+
+@pytest.mark.parametrize(
+    ("name", "text", "marker"),
+    [
+        ("dsn_env_uri.yml", AUD03_URI, "TEST_ONLY_VALUE"),
+        ("dsn_env_keyword.yml", AUD03_KEYWORD, "TEST_ONLY_KEYWORD"),
+    ],
+)
+@pytest.mark.parametrize("command", ["check", "next", "validate", "explain"])
+def test_aud03_no_command_echoes_the_connection_string(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+    name: str,
+    text: str,
+    marker: str,
+    command: str,
+) -> None:
+    """AUD-03: E106/exit 2 for every command, and the synthetic marker never reaches output.
+
+    The value is a synthetic URI and a synthetic keyword string, never a real credential.
+    """
+    config = tmp_path / name
+    config.write_text(text, encoding="utf-8")
+    argv = [command, "-c", str(config), "--now", "2026-01-01T10:00:00Z"]
+    if command == "explain":
+        argv.append("s")
+    code, out, err = run(argv, capsys)
+    blob = out + err
+    assert code == 2, (command, code, blob)
+    assert "E106" in blob
+    assert "dsn_env" in blob
+    assert "environment variable name" in blob
+    for leaked in (marker, "audit", "invalid.example", "password"):
+        assert leaked not in blob, (command, leaked, blob)
+
+
+def _run_with_closed_stdout(argv: list[str], *, timeout: float = 180) -> tuple[int, str]:
+    """Run the CLI as a subprocess whose stdout is a pipe with its read end already closed.
+
+    This is a real OS pipe, not a mock: a small report fits the pipe buffer and only the
+    interpreter's shutdown flush fails, while a large one fails mid-write. Both must keep
+    the report's exit code (AUD-04).
+    """
+    read_fd, write_fd = os.pipe()
+    os.close(read_fd)
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "freshcal", *argv],
+            stdout=write_fd,
+            stderr=subprocess.PIPE,
+            cwd=Path.cwd(),
+            env={**os.environ, "PYTHONPATH": str(Path("src").resolve())},
+            timeout=timeout,
+            check=False,
+        )
+    finally:
+        os.close(write_fd)
+    return proc.returncode, proc.stderr.decode("utf-8", "replace")
+
+
+def _assert_quiet_broken_pipe(code: int, err: str, expected: int, label: str) -> None:
+    assert code == expected, (label, code, err[-400:])
+    for noise in ("BrokenPipeError", "Exception ignored", "Traceback", "E599"):
+        assert noise not in err, (label, noise, err[-400:])
+
+
+def test_aud04_a_closed_pipe_keeps_the_report_exit_code(tmp_path: Path) -> None:
+    """AUD-04: statuses 0, 1, 2 and 3 survive a closed stdout, and never become 120.
+
+    The four report codes come from four real fixtures: `next` on a healthy config (0),
+    an OVERDUE `check` (1), a `check` whose worst source is a configuration error (2), and
+    a `check` whose source cannot be read (3).
+    """
+    overdue = tmp_path / "overdue.yml"
+    overdue.write_text(
+        """version: 1
+connection: {type: duckdb, path: ":memory:"}
+sources:
+  - name: a.overdue
+    relation: "(SELECT TIMESTAMPTZ '2025-12-31 08:00:00+00' AS x) t"
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+""",
+        encoding="utf-8",
+    )
+    cases = [
+        (["next", "-c", str(ON_TIME), "--now", "2026-09-28T07:30:00+02:00", "--count", "3"], 0),
+        (["check", "-c", str(overdue), "--now", "2026-01-01T10:00:00Z"], 1),
+        (["check", "-c", str(MIXED), "--now", "2026-09-28T07:30:00+02:00"], 2),
+        (["check", "-c", str(MISSING_TABLE), "--now", "2026-09-28T07:30:00+02:00"], 3),
+    ]
+    for argv, expected in cases:
+        code, err = _run_with_closed_stdout(argv)
+        _assert_quiet_broken_pipe(code, err, expected, " ".join(argv[:3]))
+
+
+def test_aud04_a_large_report_on_a_closed_pipe_also_keeps_its_code(tmp_path: Path) -> None:
+    """AUD-04: a report larger than the pipe buffer fails mid-write and still exits 0.
+
+    120 sources x `--count 100` is well over the 64 KiB pipe buffer, so the write itself
+    raises inside the guarded call rather than at shutdown.
+    """
+    big = tmp_path / "big.yml"
+    sources = "\n".join(
+        f"  - {{name: s.n{index}, relation: raw.t, loaded_at_field: x, "
+        f'schedule: {{kind: business_days, time: "12:00", timezone: UTC}}, grace: 1h}}'
+        for index in range(120)
+    )
+    big.write_text(
+        f'version: 1\nconnection: {{type: duckdb, path: ":memory:"}}\nsources:\n{sources}\n',
+        encoding="utf-8",
+    )
+    code, err = _run_with_closed_stdout(
+        ["next", "-c", str(big), "--now", "2026-01-01T10:00:00Z", "--count", "100"]
+    )
+    _assert_quiet_broken_pipe(code, err, 0, "large next")
+
+
+def test_aud04_healthy_stdout_is_unchanged(capsys: pytest.CaptureFixture[str]) -> None:
+    """AUD-04: the guard is narrow — a healthy report still prints and exits 0."""
+    code, out, err = run(["next", "-c", str(ON_TIME), "--now", "2026-09-28T07:30:00+02:00"], capsys)
+    assert (code, err) == (0, "")
+    assert "ecb.fx_rates" in out
+
+
+def test_aud04_json_output_and_output_file_precedence_are_unchanged(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """AUD-04: JSON output and the `-o` failure precedence still behave as before."""
+    code, out, err = run(
+        ["check", "-c", str(ON_TIME), "--now", "2026-09-28T07:30:00+02:00", "--format", "json"],
+        capsys,
+    )
+    assert (code, err) == (0, "")
+    assert json.loads(out)["results"][0]["status"] == "ON_TIME"
+
+    unwritable = tmp_path / "missing" / "report.txt"
+    code, _out, err = run(
+        ["check", "-c", str(ON_TIME), "--now", "2026-09-28T07:30:00+02:00", "-o", str(unwritable)],
+        capsys,
+    )
+    assert code == 2
+    assert "E217" in err
+
+
+@pytest.mark.parametrize(
+    ("name", "text"),
+    [
+        ("tag_int.yml", "version: !!int nope\n"),
+        ("tag_float.yml", "version: !!float nope\n"),
+    ],
+)
+def test_aud07_malformed_numeric_tags_exit_two_not_three(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], name: str, text: str
+) -> None:
+    """AUD-07: `version: !!int nope` is E100/exit 2 on every command, never E599/exit 3."""
+    config = tmp_path / name
+    config.write_text(text, encoding="utf-8")
+    for command in ("check", "next", "validate"):
+        code, out, err = run([command, "-c", str(config), "--now", "2026-01-01T10:00:00Z"], capsys)
+        assert code == 2, (command, code)
+        assert "E100" in err
+        assert "E599" not in err
+        assert out == ""
+
+
+AUD09_PATH = """version: 1
+connection: {type: duckdb, path: "a\\0b"}
+sources:
+  - name: s
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+"""
+
+AUD09_MANIFEST = """version: 1
+dbt: {manifest: "a\\0b"}
+sources:
+  - name: s
+    relation: t
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+"""
+
+
+@pytest.mark.parametrize(
+    ("name", "text", "code", "field"),
+    [
+        ("nul_path.yml", AUD09_PATH, "E106", "connection.path"),
+        ("nul_manifest.yml", AUD09_MANIFEST, "E302", "dbt.manifest"),
+    ],
+)
+def test_aud09_nul_paths_exit_two_without_writing_nul(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], name: str, text: str, code: str, field: str
+) -> None:
+    """AUD-09: a NUL path is the coded configuration error, and never a raw NUL byte."""
+    config = tmp_path / name
+    config.write_text(text, encoding="utf-8")
+    for command in ("check", "next", "validate"):
+        exit_code, out, err = run(
+            [command, "-c", str(config), "--now", "2026-01-01T10:00:00Z"], capsys
+        )
+        blob = out + err
+        assert exit_code == 2, (command, exit_code)
+        assert code in blob, (command, blob)
+        assert field in blob, (command, blob)
+        assert "E599" not in blob, (command, blob)
+        assert "\x00" not in blob, (command, blob)
+        assert "\\x00" in blob, (command, blob)  # the value is rendered escaped
