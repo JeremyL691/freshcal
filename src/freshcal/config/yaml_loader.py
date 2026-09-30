@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Hashable
+from datetime import date
 from pathlib import Path
 from typing import Any
 
@@ -57,10 +58,56 @@ _REPLACED_TAGS = frozenset(
     }
 )
 _MERGE_TAG = "tag:yaml.org,2002:merge"
+_MAX_SCALAR_IN_MESSAGE = 60
+
+
+def _scalar_tag_error(tag: str, node: Any) -> yaml.constructor.ConstructorError:
+    """A ``ConstructorError`` naming an explicit tag whose scalar could not be built.
+
+    The scalar is quoted and bounded, and the node's mark gives ``_syntax_issue`` the line
+    and column, so the message stays the same shape as every other ``E100``.
+    """
+    value = node.value if isinstance(node, yaml.ScalarNode) else ""
+    if len(value) > _MAX_SCALAR_IN_MESSAGE:
+        value = value[: _MAX_SCALAR_IN_MESSAGE - 3] + "..."
+    return yaml.constructor.ConstructorError(
+        None, None, f"invalid {tag} value {value!r}", node.start_mark
+    )
 
 
 class FreshCalLoader(yaml.SafeLoader):
-    """``SafeLoader`` with the timestamp and base-60 resolvers replaced."""
+    """``SafeLoader`` with the timestamp and base-60 resolvers replaced.
+
+    It also turns the scalar constructors' own failures into YAML errors (AUD-07): PyYAML
+    lets ``int()``/``float()`` raise ``ValueError`` for an explicit tag with a malformed
+    scalar (``version: !!int nope``), a ``KeyError`` for ``!!bool nope`` and an
+    ``AttributeError`` for ``!!timestamp nope``. Those escaped as ``E599``/exit 3 instead of
+    the ``E100`` this module promises for every constructor error.
+    """
+
+    def construct_yaml_int(self, node: Any) -> int:
+        try:
+            return super().construct_yaml_int(node)
+        except ValueError as error:
+            raise _scalar_tag_error("!!int", node) from error
+
+    def construct_yaml_float(self, node: Any) -> float:
+        try:
+            return super().construct_yaml_float(node)
+        except ValueError as error:
+            raise _scalar_tag_error("!!float", node) from error
+
+    def construct_yaml_bool(self, node: Any) -> bool:
+        try:
+            return super().construct_yaml_bool(node)
+        except KeyError as error:
+            raise _scalar_tag_error("!!bool", node) from error
+
+    def construct_yaml_timestamp(self, node: Any) -> date:
+        try:
+            return super().construct_yaml_timestamp(node)
+        except (AttributeError, ValueError) as error:
+            raise _scalar_tag_error("!!timestamp", node) from error
 
     def construct_mapping(self, node: Any, deep: bool = False) -> dict[object, object]:
         """Build a mapping, rejecting a literal duplicate key (CFG-16).
@@ -106,6 +153,19 @@ def _install_resolvers(cls: type[yaml.SafeLoader]) -> None:
 
 
 _install_resolvers(FreshCalLoader)
+
+# PyYAML dispatches through ``yaml_constructors[node.tag]``, which holds plain functions
+# inherited from ``SafeConstructor``; overriding the methods alone would not be reached.
+# Registering them here also copies the dict onto ``FreshCalLoader``, so ``yaml.SafeLoader``
+# itself keeps its own constructors (AUD-07).
+for _tag, _constructor in (
+    ("tag:yaml.org,2002:int", FreshCalLoader.construct_yaml_int),
+    ("tag:yaml.org,2002:float", FreshCalLoader.construct_yaml_float),
+    ("tag:yaml.org,2002:bool", FreshCalLoader.construct_yaml_bool),
+    ("tag:yaml.org,2002:timestamp", FreshCalLoader.construct_yaml_timestamp),
+):
+    FreshCalLoader.add_constructor(_tag, _constructor)
+del _tag, _constructor
 
 
 def _syntax_issue(error: yaml.YAMLError, source: str) -> Issue:

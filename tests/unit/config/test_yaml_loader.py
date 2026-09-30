@@ -181,3 +181,70 @@ def test_loader_does_not_mutate_safeloader() -> None:
         "SafeLoader keeps the timestamp resolver"
     )
     assert load_yaml("d: 2026-01-04\n", source="t") == {"d": "2026-01-04"}
+
+
+AUD07_BAD_TAGS = (
+    ("version: !!int nope\n", "!!int"),
+    ("version: !!float nope\n", "!!float"),
+    ("version: !!int 0x\n", "!!int"),
+    ("version: !!bool nope\n", "!!bool"),
+    ("version: !!timestamp nope\n", "!!timestamp"),
+)
+
+
+@pytest.mark.parametrize(("text", "tag"), AUD07_BAD_TAGS, ids=[tag for _, tag in AUD07_BAD_TAGS])
+def test_aud07_a_malformed_explicit_tag_is_e100_with_its_position(text: str, tag: str) -> None:
+    """AUD-07: `!!int nope` is a document error, not an internal failure (was E599/exit 3).
+
+    PyYAML lets the constructor's own exception escape — `ValueError` for int/float, a
+    `KeyError` for bool, an `AttributeError` for timestamp — so the loader converts each one
+    into the `E100` its docstring promises, naming the tag, the value and the position.
+    """
+    with pytest.raises(ConfigError) as excinfo:
+        load_yaml(text, source="tag.yml")
+    issue = excinfo.value.issue
+    assert issue.code == "E100"
+    assert f"invalid {tag} value" in issue.message
+    assert "line 1, column 10" in issue.message
+    assert "tag.yml" in issue.message
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "a: !!int 1\n",
+        "a: !!int -7\n",
+        "a: !!int 0x1f\n",
+        "a: !!float 1.5\n",
+        "a: !!float .inf\n",
+        "a: !!bool true\n",
+        "a: !!bool off\n",
+        "a: !!timestamp 2026-01-04T12:00:00Z\n",
+    ],
+)
+def test_aud07_valid_explicit_tags_still_construct(text: str) -> None:
+    """AUD-07: the controls — a well-formed explicit tag keeps working."""
+    loaded = load_yaml(text, source="tag.yml")
+    assert set(loaded) == {"a"}
+    assert loaded["a"] is not None
+
+
+def test_aud07_the_implicit_resolvers_are_unchanged() -> None:
+    """AUD-07: dates and base-60 numbers still stay strings, and ints still resolve."""
+    loaded = load_yaml("date: 2026-01-04\ntime: 16:00\nint: 42\n", source="t")
+    assert loaded == {"date": "2026-01-04", "time": "16:00", "int": 42}
+
+
+def test_aud07_yaml_safeloader_is_isolated() -> None:
+    """AUD-07: registering the constructors copies the dict — `yaml.SafeLoader` is untouched."""
+    with pytest.raises(ValueError, match="invalid literal for int"):
+        yaml.load("a: !!int nope\n", Loader=yaml.SafeLoader)
+    assert yaml.load("a: 2026-01-04\n", Loader=yaml.SafeLoader) == {"a": datetime.date(2026, 1, 4)}
+
+
+def test_aud07_duplicate_keys_are_still_rejected() -> None:
+    """AUD-07: the duplicate-key check still runs (the constructors were only wrapped)."""
+    with pytest.raises(ConfigError) as excinfo:
+        load_yaml("a: 1\na: 2\n", source="dup.yml")
+    assert excinfo.value.issue.code == "E100"
+    assert "duplicate key" in excinfo.value.issue.message

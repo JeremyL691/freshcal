@@ -981,3 +981,24 @@ def test_aud04_json_output_and_output_file_precedence_are_unchanged(
     )
     assert code == 2
     assert "E217" in err
+
+
+@pytest.mark.parametrize(
+    ("name", "text"),
+    [
+        ("tag_int.yml", "version: !!int nope\n"),
+        ("tag_float.yml", "version: !!float nope\n"),
+    ],
+)
+def test_aud07_malformed_numeric_tags_exit_two_not_three(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str], name: str, text: str
+) -> None:
+    """AUD-07: `version: !!int nope` is E100/exit 2 on every command, never E599/exit 3."""
+    config = tmp_path / name
+    config.write_text(text, encoding="utf-8")
+    for command in ("check", "next", "validate"):
+        code, out, err = run([command, "-c", str(config), "--now", "2026-01-01T10:00:00Z"], capsys)
+        assert code == 2, (command, code)
+        assert "E100" in err
+        assert "E599" not in err
+        assert out == ""
