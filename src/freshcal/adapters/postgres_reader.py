@@ -5,7 +5,7 @@ time zone, whatever the column type, the core receives either a naive timestamp,
 aware UTC one, or ``None``. It uses psycopg 3 in a read-only transaction per read, with
 ``SET LOCAL TIME ZONE 'UTC'`` and a statement timeout, and it never commits.
 
-Three guarantees shape the code (T-7.6, findings CFG-01/CFG-02/CFG-03):
+Three guarantees shape the code:
 
 - **Secrets never reach a message.** The DSN is parsed with
   ``psycopg.conninfo.conninfo_to_dict`` before connecting; a parse error raises ``E501``

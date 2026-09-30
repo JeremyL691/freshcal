@@ -149,7 +149,7 @@ def calendar_notice(rule: SourceRule, calendar: BusinessCalendar, now: datetime)
     not depend on how far a particular search happens to look, then reports the latest date
     consulted — the window itself, or a later date a search really looked up — when it lies
     after ``valid_until``. A schedule that never consults its calendar never earns the
-    warning, and callers attach it only to non-error results (§3.7.2, finding SEM-07).
+    warning, and callers attach it only to non-error results.
     """
     if not consults_calendar(rule.schedule):
         return None
@@ -206,7 +206,7 @@ def _result(
 ) -> EvaluationResult:
     """Assemble the result: deadline from the release, W005 from the calendar."""
     deadline = release.instant + rule.grace if release is not None else None
-    if error is None:  # W005 belongs to verdicts only, never to a CONFIG_ERROR (SEM-07)
+    if error is None:  # W005 belongs to verdicts only, never to a CONFIG_ERROR
         notice = calendar_notice(rule, calendar, now)
         if notice is not None:
             warnings = (*warnings, notice)

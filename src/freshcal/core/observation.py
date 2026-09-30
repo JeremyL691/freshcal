@@ -19,7 +19,7 @@ A value the conversion cannot represent — a timestamp so close to ``datetime.m
 applying the configured zone's offset leaves the representable range, for example
 ``timestamp '9999-12-31 22:00'`` read in ``America/New_York`` — raises ``QueryError``
 ``E502`` naming the value. It is one source's data problem, never an ``E599`` that
-destroys the whole run (audit E2E-02).
+destroys the whole run.
 """
 
 from __future__ import annotations
@@ -61,7 +61,7 @@ def normalize_observed(
     ``QueryError`` ``E502`` for a value whose conversion overflows ``datetime``.
 
     ``loaded_at_field`` is only used in the ``E214``/``E502`` messages, which are
-    normative and name the expression that returned the value (§4.6).
+    normative and name the expression that returned the value.
     """
     now = to_utc(now)
     value = raw.value

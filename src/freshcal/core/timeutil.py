@@ -1,4 +1,4 @@
-"""Time utilities: the single implementation of the §3.2 rules.
+"""Time utilities: the single implementation of the time rules.
 
 Three properties are worth stating explicitly because everything else depends on them:
 
@@ -42,7 +42,7 @@ def to_utc(value: datetime) -> datetime:
 
 
 def resolve_local(naive_local: datetime, tz: ZoneInfo) -> datetime:
-    """Resolve a naive local wall time to the aware UTC instant (§3.2).
+    """Resolve a naive local wall time to the aware UTC instant.
 
     ``fold=0``: a non-existent wall time is shifted forward by the length of the DST
     gap; an ambiguous wall time keeps its first occurrence.

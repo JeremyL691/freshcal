@@ -7,7 +7,7 @@ application layer turns them into statuses and exit codes.
 The two rendering helpers keep a message's size independent of its input: a YAML alias
 bomb is 380 bytes and expands to hundreds of megabytes, so a value that reaches a
 message is always rendered through :func:`render_value` (``reprlib``, bounded) and any
-other interpolated text through :func:`truncate` (CFG-13).
+other interpolated text through :func:`truncate`.
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ __all__ = [
     "truncate",
 ]
 
-#: Longest rendering of one value in a message (CFG-13).
+#: Longest rendering of one value in a message.
 MAX_RENDER_LENGTH: Final[int] = 80
 
 _RENDERER: Final[reprlib.Repr] = reprlib.Repr()
@@ -63,7 +63,7 @@ def render_value(value: object, limit: int = MAX_RENDER_LENGTH) -> str:
 
     ``reprlib`` replaces deep or long parts with ``...`` and never expands an alias
     structure, so the result is short even for a YAML alias bomb; the final ``limit``
-    keeps every message small (CFG-13).
+    keeps every message small.
     """
     return truncate(_RENDERER.repr(value), limit)
 
@@ -73,7 +73,7 @@ def read_failure_reason(error: BaseException) -> str:
 
     Callers wrap it in their own code (``E110`` for the config file, ``E404`` for
     override files, ``E302`` for a dbt manifest) so the reason wording is identical
-    everywhere (CFG-09).
+    everywhere.
     """
     if isinstance(error, FileNotFoundError):
         return "file not found"
@@ -87,7 +87,7 @@ def read_failure_reason(error: BaseException) -> str:
 
 
 def path_failure_reason(path: str) -> str | None:
-    """The reason ``path`` cannot be resolved, or ``None`` when it can (AUD-09).
+    """The reason ``path`` cannot be resolved, or ``None`` when it can.
 
     ``Path.resolve()`` raises ``ValueError`` for an embedded NUL byte — the operating
     system cannot express such a name at all — and ``OSError`` for filesystem-level
@@ -109,7 +109,7 @@ def path_failure_reason(path: str) -> str | None:
 
 
 def render_path(path: object) -> str:
-    """Render a path for a message, escaping control characters (AUD-09).
+    """Render a path for a message, escaping control characters.
 
     A path is normally written as it is, so every existing diagnostic keeps its exact
     wording; one that carries a control character (a NUL from a YAML escape, say) is
@@ -134,11 +134,11 @@ class Issue:
 
 
 def format_issue(issue: Issue) -> str:
-    """Render one issue the way the CLI prints it: ``CODE location: message`` (§4.6).
+    """Render one issue the way the CLI prints it: ``CODE location: message``.
 
-    The location is printed exactly once: several §4.6 message templates interpolate
+    The location is printed exactly once: several issue message templates interpolate
     their own ``{loc}`` prefix, so a message that already carries ``location: `` keeps
-    its text and the prefix is not added a second time (the CLI-03 contract for
+    its text and the prefix is not added a second time (the CLI's contract for
     ``validate``; ``docs/configuration.md``).
     """
     location = issue.location
@@ -155,7 +155,7 @@ class FreshCalError(Exception):
 
     ``issue`` is the first (most relevant) issue and stays the single-issue accessor
     existing callers use; ``issues`` carries every issue the failure produced, so a
-    command can report all of them instead of only the first (CFG-04).
+    command can report all of them instead of only the first.
     """
 
     issue: Issue

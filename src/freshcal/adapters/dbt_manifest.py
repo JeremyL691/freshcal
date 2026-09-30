@@ -61,7 +61,7 @@ class DbtManifestCatalog(SourceCatalog):
 
         Nodes without a ``freshcal`` key in either ``meta`` or ``config.meta`` are not
         FreshCal-managed and are skipped. A ``freshcal`` key whose value is not a mapping
-        is a per-source error (``E103``), not a skip (CFG-06). An unreadable file or an
+        is a per-source error (``E103``), not a skip. An unreadable file or an
         unsupported schema version raises ``ConfigError`` (fatal, exit 2); anything
         attributable to one node becomes that entry's error.
         """
@@ -70,7 +70,7 @@ class DbtManifestCatalog(SourceCatalog):
             return self._entries_from(document)
         except (RecursionError, ValueError) as error:
             # A manifest whose *contents* overflow the parser (deep nesting, aliased
-            # structures) is unreadable, not an internal error (CFG-09).
+            # structures) is unreadable, not an internal error.
             raise ConfigError(
                 Issue("E302", f"{self._path}: cannot read dbt manifest: {_decode_reason(error)}")
             ) from error
@@ -139,7 +139,7 @@ class DbtManifestCatalog(SourceCatalog):
         source_id = _source_id(node, unique_id)
         errors: list[Issue] = list(_identity_issues(unique_id, node))
 
-        # CFG-20: an empty or missing relation is a config error, not a usable rule.
+        # an empty or missing relation is a config error, not a usable rule.
         relation = node.get("relation_name")
         if not isinstance(relation, str) or not relation:
             errors.append(
@@ -150,7 +150,7 @@ class DbtManifestCatalog(SourceCatalog):
                 )
             )
 
-        # CFG-06: a `freshcal` key present but not a mapping is a per-source E103
+        # a `freshcal` key present but not a mapping is a per-source E103
         # (routed through the schema so the wording matches every other E103).
         errors.extend(validate_dbt_rule(rule_value, rule_location))
         rule_mapping = rule_value if isinstance(rule_value, Mapping) else None
@@ -213,7 +213,7 @@ class DbtManifestCatalog(SourceCatalog):
 
 
 def _decode_reason(error: BaseException) -> str:
-    """A bounded detail for an ``E302`` decode failure (CFG-09)."""
+    """A bounded detail for an ``E302`` decode failure."""
     if isinstance(error, RecursionError):
         return "document is too deeply nested"
     return truncate(str(error))
@@ -223,7 +223,7 @@ def _rule_value(node: Mapping[str, object]) -> tuple[object, str] | None:
     """The raw ``meta.freshcal`` (else ``config.meta.freshcal``) value and its path.
 
     A key that is present is returned even when its value is not a mapping, so the
-    caller can report it instead of silently skipping the node (CFG-06).
+    caller can report it instead of silently skipping the node.
     """
     for path, candidate in (
         ("meta", node.get("meta")),

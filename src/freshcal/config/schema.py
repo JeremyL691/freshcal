@@ -8,13 +8,13 @@ Two design constraints come from the blueprint: sub-schemas are validated throug
 wrapper ``{"$defs": …, "$ref": "#/$defs/<name>"}`` so that ``$ref``s still resolve,
 and every error is reported because ``validate`` lists them all; the ``best_match``
 error stays first so a caller that shows only one (the ``check`` path) keeps the most
-relevant message (CFG-04).
+relevant message.
 
-Input hardening (T-7.9): the extended validator below builds *bounded* messages for the
+Input hardening: the extended validator below builds *bounded* messages for the
 keywords that render an instance (``enum``, ``maxItems``, ``uniqueItems``) because
 jsonschema's own versions format ``repr(instance)`` eagerly and a YAML alias bomb
 expands to hundreds of megabytes there; every message this module renders goes through
-:func:`~freshcal.core.errors.render_value` (CFG-13).
+:func:`~freshcal.core.errors.render_value`.
 """
 
 from __future__ import annotations
@@ -78,7 +78,7 @@ def _load_schema() -> dict[str, Any]:
 def _bounded_enum(
     validator: Draft202012Validator, enums: Any, instance: Any, schema: Any
 ) -> Iterator[ValidationError]:
-    """jsonschema's ``enum`` with a bounded message (CFG-13)."""
+    """jsonschema's ``enum`` with a bounded message."""
     if all(not equal(each, instance) for each in enums):
         yield ValidationError(f"{render_value(instance)} is not one of {render_value(enums)}")
 
@@ -86,7 +86,7 @@ def _bounded_enum(
 def _bounded_max_items(
     validator: Draft202012Validator, maximum: Any, instance: Any, schema: Any
 ) -> Iterator[ValidationError]:
-    """jsonschema's ``maxItems`` with a bounded message (CFG-13)."""
+    """jsonschema's ``maxItems`` with a bounded message."""
     if validator.is_type(instance, "array") and len(instance) > maximum:
         message = "is expected to be empty" if maximum == 0 else "is too long"
         yield ValidationError(f"{render_value(instance)} {message}")
@@ -95,7 +95,7 @@ def _bounded_max_items(
 def _bounded_unique_items(
     validator: Draft202012Validator, unique: Any, instance: Any, schema: Any
 ) -> Iterator[ValidationError]:
-    """jsonschema's ``uniqueItems`` with a bounded message (CFG-13)."""
+    """jsonschema's ``uniqueItems`` with a bounded message."""
     if unique and validator.is_type(instance, "array") and not uniq(instance):
         yield ValidationError(f"{render_value(instance)} has non-unique elements")
 
@@ -106,7 +106,7 @@ def _bounded_unique_items(
 #: ``validator_value``, ``instance`` and path, so ``_map_error`` maps them exactly as
 #: before. jsonschema's own versions format ``repr(instance)`` eagerly, which turns a
 #: 380-byte YAML alias bomb into gigabytes of strings before this module can truncate
-#: anything (CFG-13). ``extend`` is jsonschema's supported way to replace keywords;
+#: anything. ``extend`` is jsonschema's supported way to replace keywords;
 #: subclassing the validator class directly is deprecated.
 _BoundedValidator = extend(  # type: ignore[no-untyped-call]  # the stubs leave extend untyped
     Draft202012Validator,
@@ -185,7 +185,7 @@ def _unexpected_keys(error: ValidationError) -> list[object]:
     """The keys the schema rejected, read from the instance.
 
     Reading them structurally instead of parsing jsonschema's message names every key,
-    including YAML keys that are not strings (CFG-21). The committed schema has no
+    including YAML keys that are not strings. The committed schema has no
     ``patternProperties``, so "unknown" means "not listed under ``properties``".
     """
     instance = error.instance

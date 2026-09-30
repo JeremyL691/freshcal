@@ -1,4 +1,4 @@
-"""Business calendar: the §3.3 predicate, rolling, reasons, and expiry (E408).
+"""Business calendar: the business-day predicate, rolling, reasons, and expiry (E408).
 
 The predicate is a fixed precedence list, in this order: an explicit working day, an
 explicit non-working day, the weekend set, then the union of the holiday calendars.
@@ -25,7 +25,7 @@ from freshcal.core.ports import CalendarProvider
 
 __all__ = ["MAX_ROLL_DAYS", "BusinessCalendar"]
 
-#: A following/preceding roll gives up after this many days (§3.4.3).
+#: A following/preceding roll gives up after this many days.
 MAX_ROLL_DAYS = 31
 
 
@@ -84,7 +84,7 @@ class BusinessCalendar:
         return self._holidays_for(day.year).get(day)
 
     def is_business_day(self, day: date) -> bool:
-        """The predicate of §3.3, in precedence order.
+        """The business-day predicate, in precedence order.
 
         Every answer is recorded as a lookup: a weekend or override decision never asks
         the provider, but it is a business-day decision all the same, and W005 must see

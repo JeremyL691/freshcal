@@ -9,11 +9,10 @@ two implicit resolvers that surprise FreshCal users:
 Both are removed here (the ``int``/``float`` patterns are PyYAML's own, minus their
 base-60 alternatives), so dates and times stay strings and are validated later with
 our own messages. This affects only FreshCal's own files: dbt has already parsed
-``meta.freshcal`` with standard YAML 1.1 rules before FreshCal sees the manifest
-(§4.1), which is why the manifest adapter reports E103 with a "quote it" hint instead
-of guessing.
+``meta.freshcal`` with standard YAML 1.1 rules before FreshCal sees the manifest, which is
+why the manifest adapter reports E103 with a "quote it" hint instead of guessing.
 
-Two hardenings come from the v0.1.0 audit (CFG-09, CFG-16): a duplicate mapping key is
+Two hardenings come from the v0.1.0 audit: a duplicate mapping key is
 rejected with the second key's line and column instead of silently keeping the last
 value, and every read failure of the config file is an ``E110`` with a reason.
 """
@@ -84,7 +83,7 @@ def _scalar_tag_error(tag: str, node: Any) -> yaml.constructor.ConstructorError:
 class FreshCalLoader(yaml.SafeLoader):
     """``SafeLoader`` with the timestamp and base-60 resolvers replaced.
 
-    It also turns the scalar constructors' own failures into YAML errors (AUD-07): PyYAML
+    It also turns the scalar constructors' own failures into YAML errors: PyYAML
     lets ``int()``/``float()`` raise ``ValueError`` for an explicit tag with a malformed
     scalar (``version: !!int nope``), a ``KeyError`` for ``!!bool nope`` and an
     ``AttributeError`` for ``!!timestamp nope``. Those escaped as ``E599``/exit 3 instead of
@@ -116,7 +115,7 @@ class FreshCalLoader(yaml.SafeLoader):
             raise _scalar_tag_error("!!timestamp", node) from error
 
     def construct_mapping(self, node: Any, deep: bool = False) -> dict[object, object]:
-        """Build a mapping, rejecting a literal duplicate key (CFG-16).
+        """Build a mapping, rejecting a literal duplicate key.
 
         PyYAML's ``SafeConstructor`` keeps the last value silently. The duplicate is a
         configuration mistake (``grace: 1h`` followed by ``grace: 300d``), so it is a
@@ -163,7 +162,7 @@ _install_resolvers(FreshCalLoader)
 # PyYAML dispatches through ``yaml_constructors[node.tag]``, which holds plain functions
 # inherited from ``SafeConstructor``; overriding the methods alone would not be reached.
 # Registering them here also copies the dict onto ``FreshCalLoader``, so ``yaml.SafeLoader``
-# itself keeps its own constructors (AUD-07).
+# itself keeps its own constructors.
 for _tag, _constructor in (
     ("tag:yaml.org,2002:int", FreshCalLoader.construct_yaml_int),
     ("tag:yaml.org,2002:float", FreshCalLoader.construct_yaml_float),
@@ -202,11 +201,11 @@ def load_yaml(text: str, *, source: str) -> object:
 
 
 def load_yaml_file(path: Path) -> object:
-    """Read and parse ``path``; any read failure is an ``E110`` with a reason (CFG-09).
+    """Read and parse ``path``; any read failure is an ``E110`` with a reason.
 
     A path the operating system cannot express at all (an embedded NUL byte) is checked
     before the read, so it becomes the same ``E110`` instead of a ``ValueError`` escaping
-    as an internal error (AUD-09).
+    as an internal error.
     """
     reason = path_failure_reason(str(path))
     if reason is not None:

@@ -263,7 +263,7 @@ class NextRelease:
 class NextEntry:
     """The upcoming releases of one source (``freshcal next``).
 
-    ``warnings`` is required by the JSON report contract (§8.1): a calendar consulted
+    ``warnings`` is required by the JSON report contract: a calendar consulted
     past its ``valid_until`` produces ``W005`` on the entry whose releases depend on it.
     """
 
@@ -288,7 +288,7 @@ def mark_duplicate_source_ids(entries: Sequence[SourceEntry]) -> list[SourceEntr
     Both the duplicate and the entry it duplicates are marked: with two definitions of
     the same source, neither can be trusted to be the one the operator meant. The message
     names **every** location of the conflict and is identical for every member, and the
-    entry's own errors stay in the list next to it (CFG-21).
+    entry's own errors stay in the list next to it.
     """
     locations: dict[str, list[str]] = {}
     for entry in entries:

@@ -1,4 +1,4 @@
-"""Configuration loading: calendars (T-1.4), then sources and rules (T-1.5).
+"""Configuration loading: calendars, then sources and rules.
 
 Everything a rule field can hold is resolved here: named and inline calendars,
 holiday references, override files, and the load-time warnings that belong to a
@@ -93,8 +93,7 @@ def _available_zones() -> frozenset[str]:
 
     ``available_timezones()`` enumerates the zone database once (the result is cached);
     membership is case-sensitive on every platform, unlike ``ZoneInfo``'s file lookup,
-    which on macOS resolves ``europe/berlin`` through the case-insensitive file system
-    (CFG-19).
+    which on macOS resolves ``europe/berlin`` through the case-insensitive file system.
     """
     return frozenset(available_timezones())
 
@@ -156,11 +155,11 @@ def _read_override_file(path: Path, location: str) -> object:
     """Read and validate an override file, mapping every failure to ``E404``.
 
     Every read failure (missing file, directory, permissions, not UTF-8) is E404 with a
-    reason; a read error must never escape as E599 (CFG-09).
+    reason; a read error must never escape as E599.
     """
     reason = path_failure_reason(str(path))
     if reason is not None:
-        # AUD-09: an unrepresentable override path is the same E404 as an unreadable one.
+        # an unrepresentable override path is the same E404 as an unreadable one.
         raise ConfigError(
             _issue("E404", location, f"override file '{render_path(path)}': {reason}")
         )
@@ -272,7 +271,7 @@ def parse_named_calendars(
     """Parse the top-level ``calendars`` section into named :class:`CalendarSpec`.
 
     One calendar's problem does not hide another's: every calendar is attempted and all
-    errors are raised together (CFG-04).
+    errors are raised together.
     """
     entries = doc.get("calendars") or {}
     if not isinstance(entries, Mapping):
@@ -317,7 +316,7 @@ def parse_calendar(
 
 
 def calendar_label(spec: CalendarSpec, source_id: str | None = None) -> str:
-    """The label used in E408 and W006 messages (§4.6)."""
+    """The label used in E408 and W006 messages."""
     if spec.name is not None:
         return spec.name
     if source_id is not None:
@@ -328,9 +327,9 @@ def calendar_label(spec: CalendarSpec, source_id: str | None = None) -> str:
 def calendar_warnings(spec: CalendarSpec, *, source_id: str | None = None) -> tuple[Issue, ...]:
     """Load-time warnings for one calendar: ``W006`` when overrides have no expiry.
 
-    Per §4.6 the ``W006`` template has no ``{loc}``: the calendar label already names the
+    The ``W006`` message template has no ``{loc}``: the calendar label already names the
     calendar (or ``of <source_id>`` for an inline one), so repeating the source id as a
-    location would say it twice (CLI-03/CLI-17).
+    location would say it twice.
     """
     if spec.valid_until is None and (spec.extra_working_days or spec.extra_non_working_days):
         return (
@@ -345,18 +344,18 @@ def calendar_warnings(spec: CalendarSpec, *, source_id: str | None = None) -> tu
 
 
 # --------------------------------------------------------------------------
-# Rules, defaults, connection, and the top-level loader (T-1.5)
+# Rules, defaults, connection, and the top-level loader
 # --------------------------------------------------------------------------
 
 _DURATION_RE = re.compile(r"^(?:([0-9]+)d)?(?:([0-9]+)h)?(?:([0-9]+)m)?$")
 _CRON_EXTENSION_RE = re.compile(r"^[HR](\(.*\))?(/\d+)?$")
 #: Fixed reference for the load-time cron check: an expression that cannot produce a
-#: release within croniter's 50-year search from here is refused (SEM-08).
+#: release within croniter's 50-year search from here is refused.
 _CRON_VALIDATION_START = datetime(2026, 1, 1)
 MAX_DURATION = timedelta(days=366)
 #: Longest numeric component accepted before ``int()`` runs: nine digits already
 #: exceed 366 days by orders of magnitude, and CPython refuses to convert more than
-#: 4300 digits at all (AUD-08).
+#: 4300 digits at all.
 MAX_DURATION_DIGITS = 9
 
 DEFAULT_STATEMENT_TIMEOUT_SECONDS = 30
@@ -420,7 +419,7 @@ def parse_duration(value: object, location: str) -> timedelta:
     parts: list[int] = []
     for part in match.groups():
         # ``int()`` itself refuses a very long digit string (CPython's 4300-digit limit,
-        # leading zeros included), and that ValueError escaped as E599 (AUD-08). Only the
+        # leading zeros included), and that ValueError escaped as E599. Only the
         # significant digits matter: a component with more than nine of them is already far
         # beyond 366 days, so it is rejected before the conversion, and the process-wide
         # digit limit is never touched. ``0000000001d`` is one day, not a long number.
@@ -432,7 +431,7 @@ def parse_duration(value: object, location: str) -> timedelta:
     try:
         total = timedelta(days=days, hours=hours, minutes=minutes)
     except OverflowError as error:
-        # ``timedelta`` cannot even represent the number (CFG-10): the duration is too
+        # ``timedelta`` cannot even represent the number: the duration is too
         # long, which is E203 — not an internal error.
         raise too_long from error
     if total > MAX_DURATION:
@@ -446,7 +445,7 @@ def parse_timezone(value: object, location: str) -> ZoneInfo:
     The name must be a member of ``zoneinfo.available_timezones()``: the membership test
     is case-sensitive everywhere, while ``ZoneInfo`` itself follows the OS (macOS
     resolves ``europe/berlin``; Linux does not), so a config that loads on one platform
-    must load identically on the other (CFG-19).
+    must load identically on the other.
     """
     if not isinstance(value, str) or not value or value not in _available_zones():
         text = f"'{truncate(value)}'" if isinstance(value, str) else f"'{render_value(value)}'"
@@ -493,10 +492,10 @@ def validate_cron(expression: object, location: str) -> str:
     except CroniterBadDateError:
         # croniter refuses an expression it can find no next date for. Both cases stay
         # loadable: a never-firing expression such as `0 0 30 2 *` has no alternative
-        # reading and evaluation reports E209 for it (CLI-03/CFG-12), and an expression
+        # reading and evaluation reports E209 for it, and an expression
         # whose day-of-month *and* day-of-week fields are both restricted is the standard
         # OR case, which FreshCal computes itself from the two single-branch streams
-        # (AUD-01, A-19) instead of refusing a schedule that really fires.
+        # instead of refusing a schedule that really fires.
         pass
     except (CroniterBadCronError, ValueError) as error:
         raise invalid(str(error)) from error
@@ -672,7 +671,7 @@ def _parse_connection(
             return DuckDBConnection(path=path)
         reason = path_failure_reason(path)
         if reason is not None:
-            # AUD-09: the OS cannot express this path at all, so there is nothing to open;
+            # the OS cannot express this path at all, so there is nothing to open;
             # the diagnostic names the field and the reason, and renders the value with
             # control characters escaped.
             raise ConfigError(
@@ -700,7 +699,7 @@ def _parse_connection(
 
 
 def _parse_defaults(value: object, named: Mapping[str, CalendarSpec], directory: Path) -> Defaults:
-    """Parse the ``defaults`` section, collecting every field's error (CFG-04)."""
+    """Parse the ``defaults`` section, collecting every field's error."""
     if value is None:
         return Defaults()
     if not isinstance(value, Mapping):
@@ -753,7 +752,7 @@ def _source_id_of(entry: Mapping[str, object], index: int) -> str:
     The ID is built before the entry is validated, because its diagnostics need it, so the
     shape must be checked here rather than trusted: a YAML alias can expand a structured
     ``name`` into a huge object, and ``str()`` on it would build a multi-megabyte identifier
-    and a multi-megabyte report (AUD-02). Only a string is used as an ID — never truncated,
+    and a multi-megabyte report. Only a string is used as an ID — never truncated,
     so valid identifiers are preserved exactly — and anything else is named by its position.
     """
     name = entry.get("name")
@@ -821,7 +820,7 @@ def _parse_source_entry(
 
 
 def _named_after(issues: Iterable[Issue], path: Path) -> list[Issue]:
-    """Give document-level issues the config path as their location (CLI-19).
+    """Give document-level issues the config path as their location.
 
     An empty config file produced ``E103 expected object, got NoneType`` without naming
     the file; a document-level issue has no in-file location, so the path is the
@@ -861,7 +860,7 @@ def load_config(path: Path) -> AppConfig:
         manifest_text = str(dbt_section["manifest"])
         reason = path_failure_reason(manifest_text)
         if reason is not None:
-            # AUD-09: same boundary, the manifest's own code.
+            # same boundary, the manifest's own code.
             raise ConfigError(
                 _issue(
                     "E302",

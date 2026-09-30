@@ -1,4 +1,4 @@
-"""Command-line interface: argparse parser, composition root, exit codes (§6).
+"""Command-line interface: argparse parser, composition root, exit codes.
 
 ``main`` returns the exit code instead of calling ``sys.exit``, so tests can call it
 directly; the console script and ``python -m freshcal`` both wrap it. argparse usage
@@ -273,12 +273,12 @@ def _provider() -> CalendarProvider:
 
 
 def _e217(path: Path, error: OSError) -> Issue:
-    """``E217`` for an output file that cannot be written (CLI-08)."""
+    """``E217`` for an output file that cannot be written."""
     return Issue("E217", f"cannot write output file {path}: {read_failure_reason(error)}")
 
 
 def _prepare_output(output: Path | None) -> None:
-    """Check the ``--output`` path before any query runs (CLI-08).
+    """Check the ``--output`` path before any query runs.
 
     Opening the file in append mode proves the whole path is writable without
     truncating an existing report, and turns every failure into ``E217`` (exit 2)
@@ -297,7 +297,7 @@ def _write(text: str, output: Path | None) -> None:
     if output is None:
         # Flush inside the guarded call: CPython also flushes buffered stdout at interpreter
         # shutdown, and that later flush is what turned a caught broken pipe into an ignored
-        # exception and exit code 120 (AUD-04). Flushing here keeps the failure inside the
+        # exception and exit code 120. Flushing here keeps the failure inside the
         # caller's handler, which then points stdout at the null device.
         sys.stdout.write(text)
         sys.stdout.flush()
@@ -325,10 +325,10 @@ def _silence_stdout() -> None:
 
 
 def _write_report(text: str, output: Path | None, report_code: int) -> int:
-    """Write the report and return the exit code it implies (CLI-08).
+    """Write the report and return the exit code it implies.
 
     A broken pipe on stdout is not an error: the reader went away, so the command exits
-    quietly with the report's own code — 0, 1, 2 or 3, never 120 (AUD-04). A failed file
+    quietly with the report's own code — 0, 1, 2 or 3, never 120. A failed file
     write still reports the report's code when that is higher than the configuration-error
     code 2, and says with ``E217`` which file could not be written.
     """
@@ -345,7 +345,7 @@ def _write_report(text: str, output: Path | None, report_code: int) -> int:
 
 
 def _fatal(error: ConfigError) -> int:
-    # Every issue the loader found is reported, one line each (CFG-04).
+    # Every issue the loader found is reported, one line each.
     for issue in error.issues:
         sys.stderr.write(f"{issue.code} {issue.message}\n")
     return 2
@@ -358,7 +358,7 @@ def _internal(error: BaseException) -> int:
 
 
 def _reconfigure_stdout() -> None:
-    """Make stdout escape what its encoding cannot represent (CLI-19).
+    """Make stdout escape what its encoding cannot represent.
 
     A terminal whose encoding is not UTF-8 (``PYTHONIOENCODING=ascii``, a legacy
     locale) must not turn a trace with an accented path or a localized holiday name
@@ -382,7 +382,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         return exc.code if isinstance(exc.code, int) else 0
 
     if args.command is None:
-        # A bare invocation is a usage error, exactly like argparse's own (§6.3).
+        # A bare invocation is a usage error, exactly like argparse's own.
         parser.print_usage(sys.stderr)
         return 2
 
@@ -417,7 +417,7 @@ def _load(
 
 
 def _require_connection(config: AppConfig) -> None:
-    """``E213`` (exit 2) for a command that cannot run without a connection (CLI-01)."""
+    """``E213`` (exit 2) for a command that cannot run without a connection."""
     if config.connection is None:
         raise ConfigError(Issue("E213", "'connection' is required for this command"))
 
@@ -438,7 +438,7 @@ def _run_check(args: argparse.Namespace) -> int:
             extra_warnings=warnings,
         )
     else:
-        # The CLI owns the reader, so it closes it as soon as the evaluation is done (CFG-22).
+        # The CLI owns the reader, so it closes it as soon as the evaluation is done.
         with closing(reader):
             report = run_check(
                 entries,
@@ -483,7 +483,7 @@ def _run_explain_command(args: argparse.Namespace) -> int:
         query_text = None
     else:
         if entry.rule is None:
-            # CLI-05: a source whose rule failed shows its own errors, never E213.
+            # a source whose rule failed shows its own errors, never E213.
             issues = entry.errors or (
                 Issue("E209", "schedule produces no release within 1830 days"),
             )
@@ -494,12 +494,12 @@ def _run_explain_command(args: argparse.Namespace) -> int:
         if reader is None:
             assert reader_error is not None
             if reader_error.code == "E213":
-                # A missing connection is a fatal usage error (CLI-01/§6.2): there is no
+                # A missing connection is a fatal usage error: there is no
                 # trace to carry it, so it goes to stderr and exits 2.
                 sys.stderr.write(format_issue(reader_error) + "\n")
                 return 2
-            # CLI-19: every other reader failure is the same QUERY_ERROR as a failed read,
-            # written to the stream the rest of the trace uses (E501/E505, §6.3).
+            # every other reader failure is the same QUERY_ERROR as a failed read,
+            # written to the stream the rest of the trace uses (E501/E505).
             result = query_error_result(entry, _clock(args).now(), _provider(), reader_error)
             lines = [f"Result    {result.status.value}: {result.explanation}"]
             return _write_report("\n".join(lines) + "\n", None, 3)
@@ -529,7 +529,7 @@ def _run_explain_command(args: argparse.Namespace) -> int:
 
 
 def _origin_label(args: argparse.Namespace, config: AppConfig, entry: SourceEntry) -> str:
-    """Where the trace's ``Source`` line says the entry came from (CFG-21).
+    """Where the trace's ``Source`` line says the entry came from.
 
     A dbt-manifest source is labelled with the manifest it was read from, not with the
     config file, which for a manifest-only source would name the wrong document.

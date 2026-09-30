@@ -1,4 +1,4 @@
-"""Explanation sentences (§8.4) and the explain trace (§6.2).
+"""Explanation sentences and the explain trace.
 
 The sentence is normative: it is part of the JSON contract, so a reader of a report and
 a reader of the terminal output must see the same claim about the same status. The
@@ -40,8 +40,8 @@ def _zone(result: EvaluationResult) -> ZoneInfo | None:
 
 
 def _missed_text(missed_count: int, truncated: bool) -> str:
-    # §8.4 as amended (A-16): a truncated count keeps its plural but a single miss is
-    # singular — `at least 1 release missed`, never `at least 1 releases missed` (SEM-10).
+    # A truncated count keeps its plural but a single miss is
+    # singular — `at least 1 release missed`, never `at least 1 releases missed`.
     if truncated:
         noun = "release" if missed_count == 1 else "releases"
         return f"at least {missed_count} {noun} missed"
@@ -51,7 +51,7 @@ def _missed_text(missed_count: int, truncated: bool) -> str:
 
 
 def explanation(result: EvaluationResult, *, loaded_at_field: str = "loaded_at_field") -> str:
-    """The one-sentence explanation of a result, per the §8.4 templates."""
+    """The one-sentence explanation of a result, per the documented templates."""
     timezone = _zone(result)
 
     def fmt(value: datetime) -> str:
@@ -160,7 +160,7 @@ def _release_state(
     timezone: ZoneInfo,
     is_next: bool,
 ) -> str:
-    """One release's row state. Only the next expected arrival carries the tag (CLI-14)."""
+    """One release's row state. Only the next expected arrival carries the tag."""
     if observation_instant is not None and observation_instant >= release.instant:
         return "arrived"
     if release.instant > now:
@@ -177,7 +177,7 @@ def _month_days(year: int, month: int) -> Iterator[date]:
 
 
 def _clamped_text(calendar: BusinessCalendar, local: datetime) -> str:
-    """``clamped: February 2026 has only 20 business days`` (§6.2, CLI-14)."""
+    """``clamped: February 2026 has only 20 business days``."""
     count = sum(1 for day in _month_days(local.year, local.month) if calendar.is_business_day(day))
     return f"clamped: {local.strftime('%B %Y')} has only {count} business days"
 
@@ -191,7 +191,7 @@ def explain_lines(
     origin_label: str = "",
     query_text: str | None = None,
 ) -> list[str]:
-    """The step-by-step trace printed by ``freshcal explain`` (§6.2).
+    """The step-by-step trace printed by ``freshcal explain``.
 
     ``origin_label`` is built by the caller (it names the config file and the entry, for
     example ``config freshcal.yml, sources[0]``) and ``query_text`` is the SQL the
@@ -320,7 +320,7 @@ def _surrounding_releases(
 
 
 def _gap_lines(rule: SourceRule, calendar: BusinessCalendar, start: date, end: date) -> list[str]:
-    """Non-business local dates between two releases, with their reason (§6.2)."""
+    """Non-business local dates between two releases, with their reason."""
     if not isinstance(rule.schedule, BusinessDaysSchedule) and not (
         isinstance(rule.schedule, CronSchedule)
         and rule.schedule.on_non_business_day is not NonBusinessDayPolicy.NONE
@@ -364,7 +364,7 @@ def _reasoning(result: EvaluationResult, now: datetime, timezone: ZoneInfo) -> l
 
     # NOT_DUE and OVERDUE: `result.release` is the first release after the observation
     # (or at/after the `active_from` floor when the observation is NULL), never one
-    # before it — CLI-06's lesson applies to every line this function writes.
+    # before it, and every line this function writes must name that same release.
     where = (
         "the observed timestamp"
         if result.observation is not None
@@ -385,7 +385,7 @@ def _reasoning(result: EvaluationResult, now: datetime, timezone: ZoneInfo) -> l
 
 
 def _on_time_reasoning(result: EvaluationResult, timezone: ZoneInfo) -> list[str]:
-    """ON_TIME's own steps (CLI-06): the arrived release, then why nothing is due.
+    """ON_TIME's own steps: the arrived release, then why nothing is due.
 
     The reported release is the latest release at or before ``now``; on ON_TIME it lies at
     or before the observation (otherwise it would be unarrived) and therefore arrived, and

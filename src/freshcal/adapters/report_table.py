@@ -5,7 +5,7 @@ colour and no Unicode box drawing. Times are rendered in each source's *schedule
 zone — the zone the rule was written in and the one an operator reasons about — except
 for the ``next`` table, which shows the UTC instant in its own column.
 
-Layout, exactly as §8.3 describes: a header line, a blank line, the table, a blank line,
+Layout, as the specified example shows: a header line, a blank line, the table, a blank line,
 one explanation line per source followed by its warnings and error indented by two
 spaces, a blank line, and the summary.
 """
@@ -71,7 +71,7 @@ class TableReporter(Reporter):
     """Renders check and next reports as plain text tables."""
 
     def render(self, report: CheckReport) -> str:
-        """Render a ``check`` report (§8.3)."""
+        """Render a ``check`` report."""
         rows = [self._row(result) for result in report.results]
         lines = [self._header(report), ""]
         lines.extend(_table(_COLUMNS, rows) if rows else ["no sources"])
@@ -86,7 +86,7 @@ class TableReporter(Reporter):
         return "\n".join(lines) + "\n"
 
     def render_next(self, report: NextReport) -> str:
-        """Render a ``next`` report (§6.2): one row per upcoming release."""
+        """Render a ``next`` report: one row per upcoming release."""
         rows: list[tuple[str, ...]] = []
         for entry in report.sources:
             if not entry.releases:

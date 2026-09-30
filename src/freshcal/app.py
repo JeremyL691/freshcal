@@ -132,7 +132,7 @@ class ValidateReport:
 def exit_code_for(
     statuses: Sequence[Status], fatal_config_error: bool = False, internal_error: bool = False
 ) -> int:
-    """Map the statuses of one run onto the exit code of §6.3.
+    """Map the statuses of one run onto the documented exit code.
 
     Precedence ``2 > 3 > 1 > 0``: configuration errors are deterministic and must be
     fixed first; runtime errors mean the verdict set is incomplete, so a "data is late"
@@ -232,7 +232,7 @@ def _unusable_observation(
 
     Either the read itself failed while converting the value (``raw`` is then unknown) or
     the failure happened later, while formatting the result; both are that one source's
-    data problem, never a reason to abort the run (audit E2E-02).
+    data problem, never a reason to abort the run.
     """
     if raw is None or raw.value is None:
         detail = (
@@ -380,7 +380,7 @@ def run_explain(
 ) -> tuple[EvaluationResult, list[str]]:
     """Evaluate one source and produce its trace; returns ``(result, lines)``.
 
-    The exit code comes from the result, exactly as for ``check`` (§6.1).
+    The exit code comes from the result, exactly as for ``check``.
     """
     now = to_utc(now)
     if entry.rule is None:
@@ -396,7 +396,7 @@ def run_explain(
 def _deduplicate(issues: Iterable[Issue]) -> list[Issue]:
     """Drop repeated ``E206`` messages, keeping the first occurrence.
 
-    Every member of a duplicate-ID group carries the same ``E206`` message (CFG-21), so
+    Every member of a duplicate-ID group carries the same ``E206`` message, so
     the group is reported once. Only ``E206`` may be identical across entries: other
     messages either embed their location or genuinely describe different sources (two
     impossible cron schedules both earn the location-less ``E209``), and those must all
@@ -414,7 +414,7 @@ def _deduplicate(issues: Iterable[Issue]) -> list[Issue]:
 
 
 def _located(issue: Issue, source_id: str) -> Issue:
-    """Give an issue that names no location the source it came from (CLI-03).
+    """Give an issue that names no location the source it came from.
 
     ``validate`` prints ``CODE location: message``, so an ``E209``/``E405``/``E407``/
     ``E408`` raised while checking one source must say which source; issues that already
@@ -432,12 +432,12 @@ def run_validate(
     *,
     extra_warnings: Sequence[Issue] = (),
 ) -> ValidateReport:
-    """Check every rule without a warehouse: schedules, calendars, and warnings (§6.2).
+    """Check every rule without a warehouse: schedules, calendars, and warnings.
 
     Catches ``E209`` (no release in the horizon), ``E405``/``E407`` (calendar data or a
     roll failure), ``E408`` (an expired calendar) and the warnings ``W005``/``W006`` —
     plus everything a rule already carried when it was loaded and the run-level warnings
-    the CLI passes in (``W004`` from the merge, CLI-04).
+    the CLI passes in (``W004`` from the merge).
     """
     now = to_utc(now)
     errors: list[Issue] = []

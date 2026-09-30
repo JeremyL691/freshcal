@@ -1,8 +1,8 @@
 """Holiday calendars backed by the ``holidays`` library.
 
-:func:`validate_ref` checks a reference at load time (T-1.4);
+:func:`validate_ref` checks a reference at load time;
 :class:`HolidaysCalendarProvider` answers the ``CalendarProvider`` port at evaluation
-time (T-2.2). The library's supported years are read from the instance, and a year
+time. The library's supported years are read from the instance, and a year
 outside them raises ``E405`` — the library itself silently returns no holidays, which
 would turn every weekday into a business day.
 """

@@ -14,7 +14,7 @@ Two DuckDB behaviours shape this adapter, both verified with duckdb 1.5.6:
 does. Database files are opened read-only; ``:memory:`` is the exception, because DuckDB
 refuses read-only in-memory databases and an in-memory database has nothing to protect.
 
-The session then locks itself down (audit CFG-17): ``allowed_directories`` admits the
+The session then locks itself down: ``allowed_directories`` admits the
 config directory and the process working directory, ``enable_external_access = false``
 refuses every other file, extension and ``ATTACH``, and ``lock_configuration = true``
 stops a query fragment from lifting any of it (``SET TimeZone`` included). The settings
@@ -27,7 +27,7 @@ nothing. A config directory whose path contains a comma cannot be expressed in
 DuckDB's driver represents SQL ``infinity`` (both ``TIMESTAMP`` and ``TIMESTAMPTZ``) as
 ``datetime.max`` and ``-infinity`` as ``datetime.min``. Those are sentinels, not load
 times, and are refused with ``E502`` — the same outcome as PostgreSQL, whose driver
-raises for them (audit CFG-15/E2E-03).
+raises for them.
 """
 
 from __future__ import annotations

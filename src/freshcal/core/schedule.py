@@ -19,9 +19,9 @@ once and the first nominal release supplies the metadata.
 
 **Ordering.** Nominals are generated in ascending *local* order, but local order is not
 always instant order: when a nominal falls inside a DST gap it resolves forward by the
-gap length, so a later nominal just after the gap can resolve to an earlier instant
-(SEM-02). A nominal's instant lies within ``MAX_OFFSET`` of its wall time (no offset
-reaches ``MAX_OFFSET``), so :func:`iter_releases_in_window` holds a release back until a
+gap length, so a later nominal just after the gap can resolve to an earlier instant. A
+nominal's instant lies within ``MAX_OFFSET`` of its wall time (no offset reaches
+``MAX_OFFSET``), so :func:`iter_releases_in_window` holds a release back until a
 further ``MAX_OFFSET`` of nominals has been generated; after that no future nominal can
 resolve earlier.
 
@@ -120,7 +120,7 @@ def no_release_issue(reference: datetime) -> Issue:
     """``E209``: the schedule produced no release anywhere near ``reference``.
 
     ``reference`` is the instant the search was asked about — ``now`` for every
-    user-visible path — never the padded edge of an internal window (§4.6, SEM-08).
+    user-visible path — never the padded edge of an internal window.
     """
     return Issue(
         "E209",
@@ -134,7 +134,7 @@ def is_rolling(schedule: Schedule) -> bool:
 
 
 def consults_calendar(schedule: Schedule) -> bool:
-    """True when a release depends on business days, i.e. when §3.3 will be consulted.
+    """True when a release depends on business days, i.e. consults the calendar.
 
     Plain cron (``on_non_business_day: none``) never asks the calendar anything, so it has
     no ``valid_until`` exposure either; every other kind and policy does.
@@ -147,7 +147,7 @@ def consults_calendar(schedule: Schedule) -> bool:
 def apply_policy(
     nominal: datetime, policy: NonBusinessDayPolicy, calendar: BusinessCalendar
 ) -> Iterator[Nominal]:
-    """Apply ``on_non_business_day`` to one nominal release (§3.4.3).
+    """Apply ``on_non_business_day`` to one nominal release.
 
     With ``policy == NONE`` the calendar is not consulted at all, so a plain cron
     expression keeps plain cron's meaning and no holiday lookups are recorded.
@@ -167,11 +167,11 @@ def apply_policy(
 def day_or_branches(expression: str) -> tuple[str, str] | None:
     """The two single-branch expressions when standard cron's day-of-month/day-of-week OR applies.
 
-    With *both* fields restricted, standard cron (and §3.4.1) fires when either matches. croniter
+    With *both* fields restricted, standard cron (and FreshCal) fires when either matches. croniter
     computes that union only while the day-of-week field has no nth-weekday entry — a `#` entry
     makes it drop the day-of-month branch — and it refuses several valid expressions outright
     (`15 0 30 2 0,6`). FreshCal therefore generates each branch on its own and merges the two
-    ascending streams, which is the promised OR behaviour (AUD-01, A-19). With either field at
+    ascending streams, which is the promised OR behaviour. With either field at
     `*` there is no alternative to compute and ``None`` is returned.
     """
     fields = expression.split()
@@ -232,10 +232,10 @@ def _cron_nominals(
     matching and cannot invent a local time; FreshCal owns DST resolution. ``start_local``
     (naive) overrides where the iteration begins, so a search need not generate the
     thousands of nominals in the padding it would immediately discard. ``reference`` is
-    the search instant the E209 message must name (§4.6, SEM-08); only when a caller has
+    the search instant the E209 message must name; only when a caller has
     none at all does it fall back to the window's own first local date.
 
-    A restricted day-of-month **and** day-of-week are OR alternatives (A-19): the two
+    A restricted day-of-month **and** day-of-week are OR alternatives: the two
     single-branch streams are merged in ascending local order and an occurrence both
     branches name is emitted once, so ``on_non_business_day`` is applied exactly once per
     nominal occurrence.

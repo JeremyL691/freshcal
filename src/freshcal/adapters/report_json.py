@@ -91,7 +91,7 @@ class JsonReporter(Reporter):
     schema_version = SCHEMA_VERSION
 
     def render(self, report: CheckReport) -> str:
-        """Render a ``check`` report (§8.2)."""
+        """Render a ``check`` report."""
         document: dict[str, object] = {
             "schema_version": self.schema_version,
             "kind": "check",
@@ -104,7 +104,7 @@ class JsonReporter(Reporter):
         return json.dumps(document, indent=2, ensure_ascii=False) + "\n"
 
     def render_next(self, report: NextReport) -> str:
-        """Render a ``next`` report (§8.1)."""
+        """Render a ``next`` report."""
         document: dict[str, object] = {
             "schema_version": self.schema_version,
             "kind": "next",
