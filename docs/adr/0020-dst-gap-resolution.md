@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed.
+Deferred (2026-09-30). FreshCal 0.1.2 ships the current behaviour (a local time in a spring-forward gap is shifted forward by the gap length); this alternative can be revisited if users need cron(8)-style resolution.
 
 ## Date
 

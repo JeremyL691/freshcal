@@ -51,6 +51,7 @@ exclude = [
   "/BLUEPRINT.md",
   "/IMPROVEMENT_PLAN.md",
   "/M8_REMEDIATION_PLAN.md",
+  "/M9_RELEASE_PLAN.md",
   "/review",
   "/.import_linter_cache",
   "/dist",
