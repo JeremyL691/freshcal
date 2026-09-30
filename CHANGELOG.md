@@ -7,6 +7,21 @@ While the version is `0.y.z`, breaking changes bump `y`.
 
 ## [Unreleased]
 
+## [0.1.3] - 2026-09-30
+
+First release on PyPI: `pip install "freshcal[duckdb]"`. No change to verdicts, messages or
+exit codes.
+
+### Changed
+
+- Releases are published to PyPI from GitHub Actions with trusted publishing (no stored
+  token); the same workflow creates the GitHub Release.
+- The README installs from PyPI first, and its links are absolute so they also work on the
+  PyPI project page; the documentation test checks those links against the repository.
+- The configuration schema's error mapping is a table of per-keyword handlers instead of
+  one long function; every issue code and message is unchanged.
+- Code comments describe their reasons in plain language instead of internal references.
+
 ## [0.1.2] - 2026-09-30
 
 First public release on GitHub. Second audit: nine confirmed findings are fixed, each with

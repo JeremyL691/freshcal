@@ -39,6 +39,9 @@ BANNED_PHRASES = (
     "tested on linux",
 )
 LINK_PATTERN = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
+#: The README is also the PyPI project description, where relative links do not resolve,
+#: so it links into this repository with absolute URLs; those must resolve here too.
+REPOSITORY_URL = re.compile(r"^https://github\.com/JeremyL691/freshcal/(?:blob|tree)/main/(.+)$")
 
 
 def normalised_text(path: Path) -> str:
@@ -47,9 +50,12 @@ def normalised_text(path: Path) -> str:
 
 
 def relative_links(path: Path) -> list[str]:
-    """Link targets that point inside the repository (not URLs, anchors, or mailto)."""
+    """Link targets inside the repository: relative paths and absolute URLs into this repo."""
     targets: list[str] = []
     for target in LINK_PATTERN.findall(path.read_text(encoding="utf-8")):
+        if match := REPOSITORY_URL.match(target):
+            targets.append(str(REPOSITORY_ROOT / match.group(1).split("#", 1)[0]))
+            continue
         if target.startswith(("http://", "https://", "mailto:", "#")):
             continue
         targets.append(target.split("#", 1)[0])
@@ -59,6 +65,12 @@ def relative_links(path: Path) -> list[str]:
 def test_d_01_every_relative_link_points_to_an_existing_file() -> None:
     documents = [README, *DOCS]
     assert len(DOCS) >= 3, DOCS
+    readme_targets = [
+        target
+        for target in LINK_PATTERN.findall(README.read_text(encoding="utf-8"))
+        if REPOSITORY_URL.match(target)
+    ]
+    assert len(readme_targets) >= 5, readme_targets  # the README's repository links are checked
     missing: list[str] = []
     for document in documents:
         for target in relative_links(document):

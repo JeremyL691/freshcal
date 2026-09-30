@@ -1,7 +1,8 @@
 # FreshCal
 
 [![CI](https://github.com/JeremyL691/freshcal/actions/workflows/ci.yml/badge.svg)](https://github.com/JeremyL691/freshcal/actions/workflows/ci.yml)
-[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/freshcal.svg)](https://pypi.org/project/freshcal/)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](https://github.com/JeremyL691/freshcal/blob/main/LICENSE)
 ![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)
 
 **Data freshness checks that know about business days, holidays, and publication
@@ -32,24 +33,24 @@ Monday morning is *not* an alert, while a missing 16:00 release is.
 
 ## Install
 
-FreshCal is not on PyPI yet; install it straight from GitHub. It needs Python 3.11 or
-newer. As a command-line tool with [uv](https://docs.astral.sh/uv/):
+FreshCal needs Python 3.11 or newer. Install it from PyPI with the DuckDB adapter:
 
 ```bash
-uv tool install "freshcal[duckdb] @ git+https://github.com/JeremyL691/freshcal@v0.1.2"
-freshcal --version  # freshcal 0.1.2
+pip install "freshcal[duckdb]"
+freshcal --version  # freshcal 0.1.3
 ```
 
-or with pip, in the environment of your choice:
+or as a standalone command-line tool with [uv](https://docs.astral.sh/uv/):
 
 ```bash
-pip install "freshcal[duckdb] @ git+https://github.com/JeremyL691/freshcal@v0.1.2"
+uv tool install "freshcal[duckdb]"
 ```
 
 The `duckdb` extra adds DuckDB support and the `postgres` extra adds PostgreSQL
 (`freshcal[duckdb,postgres]` for both). Each
-[release](https://github.com/JeremyL691/freshcal/releases) also carries the wheel and
-the source distribution.
+[GitHub release](https://github.com/JeremyL691/freshcal/releases) also carries the wheel
+and the source distribution, and the development version installs with
+`pip install "freshcal[duckdb] @ git+https://github.com/JeremyL691/freshcal"`.
 
 To run the quickstart below, work from a clone:
 
@@ -75,7 +76,7 @@ uv run freshcal check -c examples/ecb/freshcal.yml --now 2026-09-28T07:30:00+02:
 ```
 <!-- quickstart:output:1 -->
 ```text
-FreshCal 0.1.2 | evaluated at 2026-09-28T05:30:00Z | 1 source
+FreshCal 0.1.3 | evaluated at 2026-09-28T05:30:00Z | 1 source
 
 SOURCE        STATUS   RELEASE                    DEADLINE                   OBSERVED                   NEXT EXPECTED
 ecb.fx_rates  ON_TIME  Fri 2026-09-25 15:45 CEST  Fri 2026-09-25 18:00 CEST  Fri 2026-09-25 16:07 CEST  Mon 2026-09-28 15:45 CEST
@@ -93,7 +94,7 @@ uv run freshcal check -c examples/ecb/freshcal.yml --now 2026-09-28T17:00:00+02:
 ```
 <!-- quickstart:output:2 -->
 ```text
-FreshCal 0.1.2 | evaluated at 2026-09-28T15:00:00Z | 1 source
+FreshCal 0.1.3 | evaluated at 2026-09-28T15:00:00Z | 1 source
 
 SOURCE        STATUS   RELEASE                    DEADLINE                   OBSERVED                   NEXT EXPECTED
 ecb.fx_rates  NOT_DUE  Mon 2026-09-28 15:45 CEST  Mon 2026-09-28 18:00 CEST  Fri 2026-09-25 16:07 CEST  Tue 2026-09-29 15:45 CEST
@@ -111,7 +112,7 @@ uv run freshcal check -c examples/ecb/freshcal.yml --now 2026-09-28T18:30:00+02:
 ```
 <!-- quickstart:output:3 -->
 ```text
-FreshCal 0.1.2 | evaluated at 2026-09-28T16:30:00Z | 1 source
+FreshCal 0.1.3 | evaluated at 2026-09-28T16:30:00Z | 1 source
 
 SOURCE        STATUS   RELEASE                    DEADLINE                   OBSERVED                   NEXT EXPECTED
 ecb.fx_rates  OVERDUE  Mon 2026-09-28 15:45 CEST  Mon 2026-09-28 18:00 CEST  Fri 2026-09-25 16:07 CEST  Tue 2026-09-29 15:45 CEST
@@ -140,7 +141,7 @@ can act on it.
    instead of pretending to be a verdict.
 
 The full algorithm, the decision table, and every edge-case ruling are in
-[docs/semantics.md](docs/semantics.md).
+[docs/semantics.md](https://github.com/JeremyL691/freshcal/blob/main/docs/semantics.md).
 
 ## Configuration
 
@@ -161,7 +162,7 @@ sources:
 ```
 
 Field reference, defaults, the issue catalog, and the secrets policy are in
-[docs/configuration.md](docs/configuration.md).
+[docs/configuration.md](https://github.com/JeremyL691/freshcal/blob/main/docs/configuration.md).
 
 ### PostgreSQL: use a SELECT-only role
 
@@ -179,7 +180,7 @@ composite index whose leading columns are the ones your `filter` tests and whose
 column is the load timestamp (for example `CREATE INDEX ON raw.ecb_fx_rates (feed,
 _loaded_at)` for `filter: "feed = 'ecb'"`) lets PostgreSQL answer it from the index
 instead of scanning the table; without one, each check scans. See
-[docs/configuration.md](docs/configuration.md) for the full field reference.
+[docs/configuration.md](https://github.com/JeremyL691/freshcal/blob/main/docs/configuration.md) for the full field reference.
 
 ## dbt
 
@@ -285,7 +286,7 @@ and Veterans Day 2023-11-10 as a working day. Arrival-time validation has not be
 ECB publication-time proxy has too few collected business days (2 of the 20 needed), so no
 statement about arrival times is made. Details, including the disagreements that library
 calendars produce and the replay's "insufficient data" report, are in
-[docs/validation.md](docs/validation.md).
+[docs/validation.md](https://github.com/JeremyL691/freshcal/blob/main/docs/validation.md).
 
 Public sources say nothing about your own pipelines: run FreshCal in **shadow mode** next
 to your existing checks until you have seen it agree with reality for a few weeks.
@@ -328,14 +329,14 @@ punctuality audits, Slack-formatted output, Elementary integration, more warehou
 (Snowflake, BigQuery, Databricks, Redshift), business-time grace windows, importing
 `holidays` make-up workdays, `loaded_at_query` support, more manifest versions, Python
 3.15, upstream contributions to dbt and Elementary, and PyPI publishing via trusted
-publishing. Each item starts with an ADR ([docs/adr/](docs/adr/README.md)).
+publishing. Each item starts with an ADR ([docs/adr/](https://github.com/JeremyL691/freshcal/blob/main/docs/adr/README.md)).
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for setup, the four check commands, the test
+See [CONTRIBUTING.md](https://github.com/JeremyL691/freshcal/blob/main/CONTRIBUTING.md) for setup, the four check commands, the test
 layout, and how to propose calendar or semantics changes. Security issues:
-[SECURITY.md](SECURITY.md). Changes are listed in [CHANGELOG.md](CHANGELOG.md).
+[SECURITY.md](https://github.com/JeremyL691/freshcal/blob/main/SECURITY.md). Changes are listed in [CHANGELOG.md](https://github.com/JeremyL691/freshcal/blob/main/CHANGELOG.md).
 
 ## License
 
-Apache-2.0; see [LICENSE](LICENSE).
+Apache-2.0; see [LICENSE](https://github.com/JeremyL691/freshcal/blob/main/LICENSE).

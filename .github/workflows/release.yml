@@ -1,0 +1,67 @@
+name: Release
+# A pushed v* tag builds the distributions, publishes them to PyPI through trusted
+# publishing (no stored token), and creates the GitHub Release. Tags are only put on
+# commits whose CI run is green. A manual run builds and checks only.
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+permissions:
+  contents: read # jobs widen this only where they need to
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false # never cut a release upload short
+jobs:
+  build:
+    name: Build and check the distributions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+        with: { python-version: "3.14", enable-cache: false }
+      - name: The tag names the package version
+        if: github.ref_type == 'tag'
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+          test "v$version" = "$TAG" || { echo "tag $TAG does not match version $version"; exit 1; }
+      - run: uv build
+      - run: uvx twine check --strict dist/*
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with: { name: dist, path: dist/, if-no-files-found: error }
+  pypi:
+    name: Publish to PyPI
+    needs: build
+    if: github.ref_type == 'tag'
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/freshcal/
+    permissions:
+      id-token: write # trusted publishing: PyPI verifies this job's OIDC token
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with: { name: dist, path: dist/ }
+      - uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+  github-release:
+    name: Create the GitHub Release
+    needs: pypi
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # gh release create
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: { persist-credentials: false }
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with: { name: dist, path: dist/ }
+      - name: Create the GitHub Release from the changelog entry
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          version="${TAG#v}"
+          awk -v heading="## [$version]" 'index($0, heading) == 1 {found = 1; next} /^## \[/ {found = 0} found' CHANGELOG.md > notes.md
+          test -s notes.md || { echo "CHANGELOG.md has no [$version] section"; exit 1; }
+          gh release create "$TAG" dist/* --verify-tag --title "FreshCal $version" --notes-file notes.md
