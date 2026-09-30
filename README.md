@@ -75,7 +75,7 @@ uv run freshcal check -c examples/ecb/freshcal.yml --now 2026-09-28T07:30:00+02:
 ```
 <!-- quickstart:output:1 -->
 ```text
-FreshCal 0.1.1 | evaluated at 2026-09-28T05:30:00Z | 1 source
+FreshCal 0.1.2 | evaluated at 2026-09-28T05:30:00Z | 1 source
 
 SOURCE        STATUS   RELEASE                    DEADLINE                   OBSERVED                   NEXT EXPECTED
 ecb.fx_rates  ON_TIME  Fri 2026-09-25 15:45 CEST  Fri 2026-09-25 18:00 CEST  Fri 2026-09-25 16:07 CEST  Mon 2026-09-28 15:45 CEST
@@ -93,7 +93,7 @@ uv run freshcal check -c examples/ecb/freshcal.yml --now 2026-09-28T17:00:00+02:
 ```
 <!-- quickstart:output:2 -->
 ```text
-FreshCal 0.1.1 | evaluated at 2026-09-28T15:00:00Z | 1 source
+FreshCal 0.1.2 | evaluated at 2026-09-28T15:00:00Z | 1 source
 
 SOURCE        STATUS   RELEASE                    DEADLINE                   OBSERVED                   NEXT EXPECTED
 ecb.fx_rates  NOT_DUE  Mon 2026-09-28 15:45 CEST  Mon 2026-09-28 18:00 CEST  Fri 2026-09-25 16:07 CEST  Tue 2026-09-29 15:45 CEST
@@ -111,7 +111,7 @@ uv run freshcal check -c examples/ecb/freshcal.yml --now 2026-09-28T18:30:00+02:
 ```
 <!-- quickstart:output:3 -->
 ```text
-FreshCal 0.1.1 | evaluated at 2026-09-28T16:30:00Z | 1 source
+FreshCal 0.1.2 | evaluated at 2026-09-28T16:30:00Z | 1 source
 
 SOURCE        STATUS   RELEASE                    DEADLINE                   OBSERVED                   NEXT EXPECTED
 ecb.fx_rates  OVERDUE  Mon 2026-09-28 15:45 CEST  Mon 2026-09-28 18:00 CEST  Fri 2026-09-25 16:07 CEST  Tue 2026-09-29 15:45 CEST

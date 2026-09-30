@@ -7,7 +7,7 @@ import pytest
 from freshcal import __version__
 from freshcal.cli import main
 
-EXPECTED_VERSION = "0.1.1"
+EXPECTED_VERSION = "0.1.2"
 
 
 def test_version_matches_metadata() -> None:

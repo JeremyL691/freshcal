@@ -7,7 +7,9 @@ While the version is `0.y.z`, breaking changes bump `y`.
 
 ## [Unreleased]
 
-Second audit: nine confirmed findings are fixed, each with a regression test, including a
+## [0.1.2] - 2026-09-30
+
+First public release on GitHub. Second audit: nine confirmed findings are fixed, each with a regression test, including a
 cron form that could report a missed release as `ON_TIME` and a diagnostic that echoed a
 database password.
 
@@ -44,6 +46,19 @@ database password.
   separately for every operation, so a one-sided failure is reported instead of being read
   as agreement, and the oracle matches the nth-weekday grammar with its own field matching
  .
+
+### Documentation
+
+- The README is rewritten for first-time users (install from GitHub, badges, status), the
+  documentation and the architecture decision records no longer refer to internal
+  development files, and `docs/adr/README.md` indexes the decisions.
+- The reporters' drift guards compare against frozen copies of the specified schemas and
+  example reports in `tests/fixtures/spec/`.
+
+### Packaging
+
+- Not published to PyPI: install from the `v0.1.2` tag or the release assets on GitHub.
+  Package metadata gains the project URLs.
 
 ## [0.1.1] - 2026-09-29
 
