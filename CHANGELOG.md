@@ -7,6 +7,11 @@ While the version is `0.y.z`, breaking changes bump `y`.
 
 ## [Unreleased]
 
+### Documentation
+
+- Prepared the owner-requested M8 execution plan for nine second-audit findings and updated
+  active project instructions and progress. Bug fixes remain pending; M0-M7 completion is historical.
+
 ## [0.1.1] - 2026-09-29
 
 Audit remediation: the v0.1.0 release could report a missed release as `ON_TIME`, leaked a
