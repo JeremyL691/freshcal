@@ -125,7 +125,8 @@ FreshCal instead guarantees:
   the result is `CONFIG_ERROR` `E215`, "cannot decide", never `ON_TIME`.
 
 `missed_truncated` is true in the first case and when counting hit the cap: the counts are
-then lower bounds ("at least N releases missed") and `release` is the oldest miss *found*.
+then lower bounds ("at least N releases missed", singular for `N = 1`) and `release` is the
+oldest miss *found*.
 The status never depends on the truncated part.
 
 ## Edge cases, with the ruling and the reason

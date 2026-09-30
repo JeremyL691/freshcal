@@ -7,6 +7,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pytest
+from tests.oracle.cases import CRONITER_DAY_OR_REFUSALS
 
 from freshcal.config.loader import (
     AppConfig,
@@ -225,6 +226,27 @@ def test_u_load_05_out_of_range_field_is_e202() -> None:
 def test_u_load_05_weekday_names_are_accepted() -> None:
     assert validate_cron("0 16 * * THU", "cron") == "0 16 * * THU"
     assert validate_cron("0 6 1,15 * 1-5", "cron") == "0 6 1,15 * 1-5"
+
+
+@pytest.mark.parametrize("expression", CRONITER_DAY_OR_REFUSALS)
+def test_sem_08_croniter_day_or_refusals_are_rejected_at_load_time(expression: str) -> None:
+    """SEM-08: a valid OR schedule croniter cannot express is E202, never a false verdict.
+
+    Standard cron OR semantics (`day_or`) make `15 0 30 2 0,6` fire every weekend in
+    February even though 30 February never exists; croniter cannot compute that, so
+    FreshCal refuses the expression instead of reporting "no release" for a schedule
+    that does fire (conservative: a configuration error, exit 2).
+    """
+    error = error_of(lambda: validate_cron(expression, "sources[0].schedule.cron"))
+    assert error.issue.code == "E202"
+    assert "day-of-month" in error.issue.message
+    assert "OR" in error.issue.message
+
+
+def test_sem_08_a_never_firing_cron_stays_loadable_for_e209() -> None:
+    """Without an OR alternative there is no valid reading, so E209 keeps naming it."""
+    assert validate_cron("0 0 30 2 *", "cron") == "0 0 30 2 *"
+    assert validate_cron("0 0 29 2 *", "cron") == "0 0 29 2 *"  # leap years fire
 
 
 def test_u_load_06_defaults_resolution_order(tmp_path: Path) -> None:

@@ -733,3 +733,54 @@ def test_c_30_validate_says_one_source_valid(capsys: pytest.CaptureFixture[str])
     assert err == ""
     assert out.rstrip().endswith("1 source valid, 0 with errors, 0 warnings")
     assert "1 sources valid" not in out
+
+
+def test_c_31_explain_labels_a_dbt_source_with_the_manifest(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """CFG-21: the trace says `manifest <path>`, not `config <path>`, for a dbt source."""
+    manifest = tmp_path / "target" / "m.json"
+    manifest.parent.mkdir()
+    manifest.write_text(_MANIFEST_HEAD + _MANIFEST_NODE, encoding="utf-8")
+    config = tmp_path / "f.yml"
+    config.write_text("version: 1\ndbt: {manifest: target/m.json}\n", encoding="utf-8")
+    code, out, err = run(
+        [
+            "explain",
+            "a.b",
+            "-c",
+            str(config),
+            "--now",
+            "2026-09-28T05:30:00Z",
+            "--observed",
+            "null",
+        ],
+        capsys,
+    )
+    assert code == 1  # NO_DATA
+    assert err == ""
+    assert f"Source    a.b (manifest {manifest}" in out
+    assert "config " not in out.splitlines()[0]
+
+
+def test_c_32_explain_reader_failure_goes_to_the_trace_stream(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """CLI-19: a reader that cannot be built is the same query error as a failed read.
+
+    `check` reports it inside the report on stdout; `explain` must write its
+    `Result    QUERY_ERROR: …` line to the same stream as the rest of the trace instead
+    of sending the error to stderr and leaving stdout empty.
+    """
+    config = tmp_path / "f.yml"
+    config.write_text(
+        "version: 1\nconnection: {type: duckdb, path: '/nonexistent-dir-freshcal/x.duckdb'}\n"
+        "sources:\n" + _SOURCE_ENTRY,
+        encoding="utf-8",
+    )
+    code, out, err = run(
+        ["explain", "a.b", "-c", str(config), "--now", "2026-09-28T05:30:00Z"], capsys
+    )
+    assert code == 3
+    assert out.startswith("Result    QUERY_ERROR: Query error: E501 ")
+    assert err == ""

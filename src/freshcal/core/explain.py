@@ -9,6 +9,7 @@ produced the status.
 
 from __future__ import annotations
 
+from collections.abc import Iterator
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -39,8 +40,11 @@ def _zone(result: EvaluationResult) -> ZoneInfo | None:
 
 
 def _missed_text(missed_count: int, truncated: bool) -> str:
+    # §8.4 as amended (A-16): a truncated count keeps its plural but a single miss is
+    # singular — `at least 1 release missed`, never `at least 1 releases missed` (SEM-10).
     if truncated:
-        return f"at least {missed_count} releases missed"
+        noun = "release" if missed_count == 1 else "releases"
+        return f"at least {missed_count} {noun} missed"
     if missed_count == 1:
         return "1 release missed"
     return f"{missed_count} releases missed"
@@ -148,15 +152,34 @@ def _calendar_description(rule: SourceRule) -> str:
 
 
 def _release_state(
-    release: Release, now: datetime, deadline: datetime, observation_instant: datetime | None
+    release: Release,
+    now: datetime,
+    deadline: datetime,
+    observation_instant: datetime | None,
+    *,
+    timezone: ZoneInfo,
+    is_next: bool,
 ) -> str:
+    """One release's row state. Only the next expected arrival carries the tag (CLI-14)."""
     if observation_instant is not None and observation_instant >= release.instant:
         return "arrived"
     if release.instant > now:
-        return "future (next expected arrival)"
-    if now <= deadline:
-        return "occurred, not arrived; deadline not passed"
-    return "occurred, not arrived; deadline passed"
+        return "future (next expected arrival)" if is_next else "future"
+    state = "not passed" if now <= deadline else "passed"
+    return f"occurred, not arrived; deadline {format_local(deadline, timezone)} {state}"
+
+
+def _month_days(year: int, month: int) -> Iterator[date]:
+    day = date(year, month, 1)
+    while day.month == month:
+        yield day
+        day += timedelta(days=1)
+
+
+def _clamped_text(calendar: BusinessCalendar, local: datetime) -> str:
+    """``clamped: February 2026 has only 20 business days`` (§6.2, CLI-14)."""
+    count = sum(1 for day in _month_days(local.year, local.month) if calendar.is_business_day(day))
+    return f"clamped: {local.strftime('%B %Y')} has only {count} business days"
 
 
 def explain_lines(
@@ -262,12 +285,20 @@ def _surrounding_releases(
         candidate = next_release_after(rule, candidate.instant, calendar)
 
     ordered = list(reversed(latest)) + following
+    next_expected = following[0].instant if following else None
     previous_date: date | None = None
     for release in ordered:
         if previous_date is not None:
             lines.extend(_gap_lines(rule, calendar, previous_date, release.local.date()))
         deadline = release.instant + rule.grace
-        state = _release_state(release, now, deadline, observation_instant)
+        state = _release_state(
+            release,
+            now,
+            deadline,
+            observation_instant,
+            timezone=rule.schedule.timezone,
+            is_next=release.instant == next_expected,
+        )
         annotations: list[str] = []
         if release.adjusted_from is not None:
             annotations.append(f"adjusted from {release.adjusted_from.isoformat()}")
@@ -276,7 +307,7 @@ def _surrounding_releases(
         elif release.dst == "ambiguous":
             annotations.append("DST overlap: first occurrence")
         if release.clamped:
-            annotations.append("clamped")
+            annotations.append(_clamped_text(calendar, release.local))
         suffix = f" ({'; '.join(annotations)})" if annotations else ""
         lines.append(
             f"  {release.local.strftime('%a %Y-%m-%d %H:%M %Z')}  "
@@ -326,15 +357,20 @@ def _reasoning(result: EvaluationResult, now: datetime, timezone: ZoneInfo) -> l
             "  1. The warehouse returned NULL and no active_from is configured, so no release "
             "can be attributed.",
         ]
+    if result.status is Status.ON_TIME:
+        return _on_time_reasoning(result, timezone)
     if result.release is None:
         return ["  1. No release has occurred yet."]
 
-    lines = [f"  1. First release after the observed timestamp: {fmt(result.release.instant)}."]
-    if result.status is Status.ON_TIME:
-        lines.append(
-            "  2. Nothing due is outstanding: no release in the searched interval is missing."
-        )
-        return lines
+    # NOT_DUE and OVERDUE: `result.release` is the first release after the observation
+    # (or at/after the `active_from` floor when the observation is NULL), never one
+    # before it — CLI-06's lesson applies to every line this function writes.
+    where = (
+        "the observed timestamp"
+        if result.observation is not None
+        else "active_from (the floor is inclusive)"
+    )
+    lines = [f"  1. First release after {where}: {fmt(result.release.instant)}."]
     lines.append(
         "  2. It has occurred (release <= now)."
         if result.release.instant <= now
@@ -345,4 +381,36 @@ def _reasoning(result: EvaluationResult, now: datetime, timezone: ZoneInfo) -> l
         lines.append(f"  3. Its deadline {fmt(deadline)} has not passed (now <= deadline).")
     else:
         lines.append(f"  3. Its deadline {fmt(deadline)} has passed (now > deadline).")
+    return lines
+
+
+def _on_time_reasoning(result: EvaluationResult, timezone: ZoneInfo) -> list[str]:
+    """ON_TIME's own steps (CLI-06): the arrived release, then why nothing is due.
+
+    The reported release is the latest release at or before ``now``; on ON_TIME it lies at
+    or before the observation (otherwise it would be unarrived) and therefore arrived, and
+    the first release after the observation is the next expected arrival, which is later
+    than ``now`` — that is exactly why no release can be missing.
+    """
+
+    def fmt(value: datetime) -> str:
+        return format_local(value, timezone)
+
+    observation = result.observation
+    if result.release is None or observation is None:
+        return ["  1. No release has occurred yet."]
+    lines = [
+        f"  1. The latest release at or before the observed timestamp: "
+        f"{fmt(result.release.instant)} arrived (observed {fmt(observation.instant)})."
+    ]
+    if result.next_expected_arrival is not None:
+        lines.append(
+            f"  2. The first release after the observed timestamp, "
+            f"{fmt(result.next_expected_arrival)}, is later than now (release > now)."
+        )
+    else:
+        lines.append(
+            "  2. No release occurs after the observed timestamp within the search horizon."
+        )
+    lines.append("  3. Nothing due is outstanding: no release in the searched interval is missing.")
     return lines

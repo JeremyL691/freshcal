@@ -12,7 +12,7 @@ from __future__ import annotations
 import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
-from datetime import date, time, timedelta
+from datetime import date, datetime, time, timedelta
 from functools import lru_cache
 from pathlib import Path
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError, available_timezones
@@ -334,6 +334,9 @@ def calendar_warnings(spec: CalendarSpec, *, source_id: str | None = None) -> tu
 
 _DURATION_RE = re.compile(r"^(?:([0-9]+)d)?(?:([0-9]+)h)?(?:([0-9]+)m)?$")
 _CRON_EXTENSION_RE = re.compile(r"^[HR](\(.*\))?(/\d+)?$")
+#: Fixed reference for the load-time cron check: an expression that cannot produce a
+#: release within croniter's 50-year search from here is refused (SEM-08).
+_CRON_VALIDATION_START = datetime(2026, 1, 1)
 MAX_DURATION = timedelta(days=366)
 DEFAULT_STATEMENT_TIMEOUT_SECONDS = 30
 DBS = "duckdb", "postgres"
@@ -453,8 +456,24 @@ def validate_cron(expression: object, location: str) -> str:
             if _CRON_EXTENSION_RE.match(element):
                 raise invalid("hashed (H) and random (R) fields are not supported")
     try:
-        croniter(expression)
-    except (CroniterBadCronError, CroniterBadDateError, ValueError) as error:
+        # A fixed start keeps the check deterministic; `croniter(expression)` alone would
+        # use the wall clock and would never notice an expression that cannot fire.
+        croniter(expression, _CRON_VALIDATION_START).get_next(datetime)
+    except CroniterBadDateError as error:
+        # SEM-08: croniter refuses some *valid* schedules. When both the day-of-month and
+        # the day-of-week fields are restricted, standard cron (and §3.4.1) reads them as
+        # OR alternatives — `15 0 30 2 0,6` fires every weekend in February — but croniter
+        # cannot compute that and would report "no release" for a schedule that fires.
+        # FreshCal refuses the expression at load time instead. With the day-of-week field
+        # at `*` there is no alternative to an impossible day: that expression never fires
+        # under any reading, stays loadable, and evaluation reports E209 for it (CLI-03).
+        if fields[2] != "*" and fields[4] != "*":
+            raise invalid(
+                "croniter cannot compute a next date for this day-of-month/day-of-week "
+                "combination; standard OR semantics still fire, so the schedule is refused "
+                "rather than reported as having no release"
+            ) from error
+    except (CroniterBadCronError, ValueError) as error:
         raise invalid(str(error)) from error
     return expression
 

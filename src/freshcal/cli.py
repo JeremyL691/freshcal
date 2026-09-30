@@ -50,7 +50,7 @@ from freshcal.core.errors import (
     format_issue,
     read_failure_reason,
 )
-from freshcal.core.model import EvaluationResult, RawObservation, SourceEntry
+from freshcal.core.model import EvaluationResult, Origin, RawObservation, SourceEntry
 from freshcal.core.ports import CalendarProvider, FreshnessReader
 from freshcal.core.timeutil import parse_instant
 
@@ -469,11 +469,17 @@ def _run_explain_command(args: argparse.Namespace) -> int:
             return 2
         reader, reader_error = _make_reader(config)
         if reader is None:
-            # E213 only when there really is no connection; a reader that cannot be
-            # built for any other reason is a runtime error (E501/E505, §6.3).
             assert reader_error is not None
-            sys.stderr.write(format_issue(reader_error) + "\n")
-            return 2 if reader_error.code == "E213" else 3
+            if reader_error.code == "E213":
+                # A missing connection is a fatal usage error (CLI-01/§6.2): there is no
+                # trace to carry it, so it goes to stderr and exits 2.
+                sys.stderr.write(format_issue(reader_error) + "\n")
+                return 2
+            # CLI-19: every other reader failure is the same QUERY_ERROR as a failed read,
+            # written to the stream the rest of the trace uses (E501/E505, §6.3).
+            result = query_error_result(entry, _clock(args).now(), _provider(), reader_error)
+            lines = [f"Result    {result.status.value}: {result.explanation}"]
+            return _write_report("\n".join(lines) + "\n", None, 3)
         try:
             with closing(reader):
                 raw = reader.read_latest(entry.rule.target)
@@ -488,7 +494,7 @@ def _run_explain_command(args: argparse.Namespace) -> int:
         raw,
         _clock(args).now(),
         _provider(),
-        origin_label=f"config {args.config}, {entry.location}",
+        origin_label=_origin_label(args, config, entry),
         query_text=query_text,
     )
     text = "\n".join(lines) + "\n"
@@ -497,6 +503,17 @@ def _run_explain_command(args: argparse.Namespace) -> int:
     if result.error is not None:
         text += f"{result.error.code} {result.error.message}\n"
     return _write_report(text.lstrip("\n"), None, _status_exit_code(result))
+
+
+def _origin_label(args: argparse.Namespace, config: AppConfig, entry: SourceEntry) -> str:
+    """Where the trace's ``Source`` line says the entry came from (CFG-21).
+
+    A dbt-manifest source is labelled with the manifest it was read from, not with the
+    config file, which for a manifest-only source would name the wrong document.
+    """
+    if entry.origin is Origin.DBT_MANIFEST:
+        return f"manifest {config.dbt_manifest}, {entry.location}"
+    return f"config {args.config}, {entry.location}"
 
 
 def _query_text(target: object) -> str:

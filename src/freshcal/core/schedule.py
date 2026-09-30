@@ -46,7 +46,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from dataclasses import dataclass
-from datetime import date, datetime, time, timedelta
+from datetime import UTC, date, datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
 from croniter import CroniterBadDateError, croniter
@@ -62,7 +62,7 @@ from freshcal.core.model import (
     Schedule,
     SourceRule,
 )
-from freshcal.core.timeutil import classify_local, resolve_local, to_utc
+from freshcal.core.timeutil import classify_local, format_utc, resolve_local, to_utc
 
 __all__ = [
     "CHUNK",
@@ -115,10 +115,15 @@ class Nominal:
     clamped: bool = False
 
 
-def no_release_issue(reference: str) -> Issue:
-    """``E209``: the schedule produced no release anywhere near ``reference``."""
+def no_release_issue(reference: datetime) -> Issue:
+    """``E209``: the schedule produced no release anywhere near ``reference``.
+
+    ``reference`` is the instant the search was asked about — ``now`` for every
+    user-visible path — never the padded edge of an internal window (§4.6, SEM-08).
+    """
     return Issue(
-        "E209", f"schedule produces no release within 1830 days before or after {reference}"
+        "E209",
+        f"schedule produces no release within 1830 days before or after {format_utc(reference)}",
     )
 
 
@@ -164,24 +169,30 @@ def _cron_nominals(
     d0: date,
     d1: date,
     start_local: datetime | None = None,
+    reference: datetime | None = None,
 ) -> Iterator[Nominal]:
     """Nominal releases of a cron expression for local dates in ``[d0, d1]``.
 
     ``croniter`` only ever sees naive datetimes, so it performs pure wall-clock field
     matching and cannot invent a local time; FreshCal owns DST resolution. ``start_local``
     (naive) overrides where the iteration begins, so a search need not generate the
-    thousands of nominals in the padding it would immediately discard.
+    thousands of nominals in the padding it would immediately discard. ``reference`` is
+    the search instant the E209 message must name (§4.6, SEM-08); only when a caller has
+    none at all does it fall back to the window's own first local date.
     """
     start = start_local if start_local is not None else datetime.combine(d0, time.min)
     start = start - timedelta(minutes=1)
+    if reference is None:
+        reference = datetime.combine(d0, time.min, tzinfo=UTC)
     iterator = croniter(schedule.expression, start)
     while True:
         try:
             nominal = iterator.get_next(datetime)
         except CroniterBadDateError as error:
             # A never-firing expression such as "0 0 30 2 *" passes is_valid but has
-            # no next date at all; that is a configuration error, not a verdict.
-            raise ConfigError(no_release_issue(d0.isoformat())) from error
+            # no next date at all; that is a configuration error, not a verdict, and it
+            # names the instant the search was asked about.
+            raise ConfigError(no_release_issue(reference)) from error
         if nominal.date() > d1:
             return
         yield from apply_policy(nominal, schedule.on_non_business_day, calendar)
@@ -249,10 +260,14 @@ def nominal_releases(
     d1: date,
     *,
     start_local: datetime | None = None,
+    reference: datetime | None = None,
 ) -> Iterator[Nominal]:
-    """Nominal releases for local dates in ``[d0, d1]``, inclusive."""
+    """Nominal releases for local dates in ``[d0, d1]``, inclusive.
+
+    ``reference`` is only used to name the search instant in an ``E209`` message.
+    """
     if isinstance(schedule, CronSchedule):
-        yield from _cron_nominals(schedule, calendar, d0, d1, start_local)
+        yield from _cron_nominals(schedule, calendar, d0, d1, start_local, reference)
     elif isinstance(schedule, BusinessDaysSchedule):
         yield from _business_day_nominals(schedule, calendar, d0, d1)
     else:
@@ -301,7 +316,12 @@ def _floor(rule: SourceRule) -> datetime | None:
 
 
 def iter_releases_in_window(
-    rule: SourceRule, start: datetime, end: datetime, calendar: BusinessCalendar
+    rule: SourceRule,
+    start: datetime,
+    end: datetime,
+    calendar: BusinessCalendar,
+    *,
+    reference: datetime | None = None,
 ) -> Iterator[Release]:
     """Releases in ``[start, end]``, streamed in ascending instant order, no duplicates.
 
@@ -328,7 +348,12 @@ def iter_releases_in_window(
     pending: dict[datetime, Release] = {}
     yielded: set[datetime] = set()
     for nominal in nominal_releases(
-        rule.schedule, calendar, scan_local.date(), end_local.date(), start_local=scan_local
+        rule.schedule,
+        calendar,
+        scan_local.date(),
+        end_local.date(),
+        start_local=scan_local,
+        reference=reference if reference is not None else start,
     ):
         if nominal.local >= end_local:
             break
@@ -379,6 +404,7 @@ def _earliest_release(
     calendar: BusinessCalendar,
     *,
     inclusive: bool,
+    reference: datetime,
 ) -> Release | None:
     """The earliest release in ``[lo, hi]`` that is after ``t`` (or at ``t``).
 
@@ -397,7 +423,12 @@ def _earliest_release(
     best: Release | None = None
     gap_danger_until: datetime | None = None
     for nominal in nominal_releases(
-        rule.schedule, calendar, scan_local.date(), end_local.date(), start_local=scan_local
+        rule.schedule,
+        calendar,
+        scan_local.date(),
+        end_local.date(),
+        start_local=scan_local,
+        reference=reference,
     ):
         if nominal.local >= end_local:
             break
@@ -444,7 +475,7 @@ def next_release_after(
     lo = t
     while lo <= limit:
         hi = min(lo + CHUNK, limit)
-        candidate = _earliest_release(rule, t, lo, hi, calendar, inclusive=inclusive)
+        candidate = _earliest_release(rule, t, lo, hi, calendar, inclusive=inclusive, reference=t)
         if candidate is not None:
             return candidate
         lo = hi + timedelta(microseconds=1)
@@ -462,7 +493,7 @@ def previous_release_at_or_before(
     while hi >= limit:
         lo = max(hi - step, limit)
         found: Release | None = None
-        for release in iter_releases_in_window(rule, lo, hi, calendar):
+        for release in iter_releases_in_window(rule, lo, hi, calendar, reference=t):
             found = release  # ascending, so the last one is the answer
         if found is not None:
             return found

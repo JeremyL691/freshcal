@@ -84,9 +84,12 @@ def test_i_pg_08_dsn_secret_never_leaks(
     assert code == 3
     _assert_clean(out + err, dsn)
 
+    # T-7.11 / CLI-19: `explain` writes a query error on the stream the rest of the trace
+    # uses (stdout) — a reader that cannot be built is the same E501 as a failed read.
     code, out, err = _run(["explain", "a.b", "-c", leak_config, NOW], capsys)
     assert code == 3
-    assert "E501" in err
+    assert out.startswith("Result    QUERY_ERROR: Query error: E501 ")
+    assert err == ""
     _assert_clean(out + err, dsn)
 
 

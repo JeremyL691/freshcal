@@ -210,12 +210,25 @@ def test_u_sch_12_never_firing_cron_is_e209() -> None:
         )
     issue = excinfo.value.issue
     assert issue.code == "E209"
-    # T-7.2: the message names the window start itself (the scan no longer rewrites the
-    # reference with its date padding). T-7.11 replaces the reference with the search
-    # instant/`now` per §4.6 in every path; the code and this assertion change together.
+    # T-7.11 / §4.6: the message names the search instant, not a padded window start
+    # (T-7.2 named the window start here, which was the last date the search rewrote).
     assert issue.message == (
-        "schedule produces no release within 1830 days before or after 2026-01-01"
+        "schedule produces no release within 1830 days before or after 2026-01-01T00:00:00Z"
     )
+
+
+def test_sem_08_e209_names_the_search_instant_in_every_path() -> None:
+    """SEM-08: both searches report the instant they were asked about, never a window edge."""
+    rule = make_rule(CronSchedule("0 0 30 2 *", UTC_ZONE))
+    calendar = make_calendar()
+    now = datetime(2026, 2, 10, 12, 0, tzinfo=UTC)
+    expected = "schedule produces no release within 1830 days before or after 2026-02-10T12:00:00Z"
+    with pytest.raises(ConfigError) as excinfo:
+        previous_release_at_or_before(rule, now, calendar)
+    assert excinfo.value.issue.message == expected
+    with pytest.raises(ConfigError) as excinfo:
+        next_release_after(rule, now, calendar)
+    assert excinfo.value.issue.message == expected
 
 
 def test_u_sch_15_window_edges_are_inclusive() -> None:
