@@ -26,6 +26,7 @@ __all__ = [
     "FreshCalError",
     "Issue",
     "QueryError",
+    "format_issue",
     "read_failure_reason",
     "render_value",
     "truncate",
@@ -91,6 +92,23 @@ class Issue:
     location: str | None = None
 
 
+def format_issue(issue: Issue) -> str:
+    """Render one issue the way the CLI prints it: ``CODE location: message`` (§4.6).
+
+    The location is printed exactly once: several §4.6 message templates interpolate
+    their own ``{loc}`` prefix, so a message that already carries ``location: `` keeps
+    its text and the prefix is not added a second time (the CLI-03 contract for
+    ``validate``; ``docs/configuration.md``).
+    """
+    location = issue.location
+    message = issue.message
+    if location and message.startswith(f"{location}: "):
+        message = message[len(location) + 2 :]
+    if location:
+        return f"{issue.code} {location}: {message}"
+    return f"{issue.code} {message}"
+
+
 class FreshCalError(Exception):
     """Base class for errors that carry one or more :class:`Issue` objects.
 
@@ -151,6 +169,8 @@ ISSUE_CODES: Final[Mapping[str, str]] = MappingProxyType(
         "E213": "Connection missing",
         "E214": "Naive value without zone",
         "E215": "Undecidable (stale beyond horizon)",
+        "E216": "No sources to evaluate",
+        "E217": "Cannot write output file",
         "E301": "Unsupported manifest version",
         "E302": "Manifest unreadable",
         "E303": "No loaded_at_field",

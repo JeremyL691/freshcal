@@ -309,15 +309,17 @@ def calendar_label(spec: CalendarSpec, source_id: str | None = None) -> str:
     return "inline"
 
 
-def calendar_warnings(
-    spec: CalendarSpec, *, source_id: str | None = None, location: str = ""
-) -> tuple[Issue, ...]:
-    """Load-time warnings for one calendar: ``W006`` when overrides have no expiry."""
+def calendar_warnings(spec: CalendarSpec, *, source_id: str | None = None) -> tuple[Issue, ...]:
+    """Load-time warnings for one calendar: ``W006`` when overrides have no expiry.
+
+    Per §4.6 the ``W006`` template has no ``{loc}``: the calendar label already names the
+    calendar (or ``of <source_id>`` for an inline one), so repeating the source id as a
+    location would say it twice (CLI-03/CLI-17).
+    """
     if spec.valid_until is None and (spec.extra_working_days or spec.extra_non_working_days):
         return (
-            _issue(
+            Issue(
                 "W006",
-                location,
                 f"calendar {calendar_label(spec, source_id)} has overrides but no valid_until; "
                 "override dates are usually valid for one year, so set valid_until to the "
                 "last date you checked",
@@ -742,7 +744,7 @@ def _parse_source_entry(
             errors=(error.issue,),
             location=location,
         )
-    warnings = calendar_warnings(rule.calendar, source_id=source_id, location=source_id)
+    warnings = calendar_warnings(rule.calendar, source_id=source_id)
     return SourceEntry(
         source_id=source_id,
         origin=Origin.CONFIG,

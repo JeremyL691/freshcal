@@ -38,7 +38,7 @@ to BLUEPRINT.md §4.
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `version` | `1` | yes | Config format version. |
-| `connection` | mapping | for `check` and `explain` (unless `--observed`) | `duckdb` or `postgres`. Missing → `E213`. |
+| `connection` | mapping | for `check`, `next` and `explain` (unless `--observed`) | `duckdb` or `postgres`. Missing → `E213` (exit 2, no report is produced). |
 | `dbt.manifest` | path | no | A `manifest.json` (schema v12) to read rules from. |
 | `defaults` | mapping | no | `timezone`, `grace`, `calendar`, `observed_timezone` for every source. |
 | `calendars` | mapping name → calendar | no | Named calendars, reused by several sources. |
@@ -147,8 +147,9 @@ not "the same local time tomorrow".
 ## Issues
 
 Every message has a code and a location, and the CLI prints `CODE location: message`
-(per-source issues appear inside the report). The catalog is in BLUEPRINT.md §4.6; the
-most common ones:
+(per-source issues appear inside the report; `validate` prints one issue per line with
+its location, and `--output` is opened before any query runs). The catalog is in
+BLUEPRINT.md §4.6; the most common ones:
 
 | Code | Meaning |
 |---|---|
@@ -157,6 +158,7 @@ most common ones:
 | `E201`, `E202`, `E203` | Unknown time zone; invalid cron; duration too long. |
 | `E204`–`E208` | Bad `business_day`; policy on the wrong kind; duplicate source ID; unknown calendar; required field unresolved. |
 | `E209`, `E214`, `E215` | The schedule has no release in a 1830-day window; a naive timestamp without a zone; an undecidable gap. |
+| `E213`, `E216`, `E217` | Missing `connection`; no sources to evaluate; a report output file cannot be written. |
 | `E301`–`E304` | Manifest version, readability, missing `loaded_at_field`, forbidden `meta.freshcal` field. |
 | `E401`–`E408` | Holiday codes, override files, date conflicts, out-of-range data, roll failures, calendar expiry. |
 | `E501`–`E505` | Connection, query, value type, `dsn_env`, and optional-dependency failures. |

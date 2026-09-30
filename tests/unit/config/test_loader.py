@@ -550,7 +550,9 @@ sources:
     )
     entry = load_config(config).entries[0]
     assert [issue.code for issue in entry.warnings] == ["W006"]
-    assert entry.warnings[0].location == "a.b"
+    # CLI-03/CLI-17: the label names the source; there is no location prefix.
+    assert entry.warnings[0].location is None
+    assert entry.warnings[0].message.startswith("calendar of a.b has overrides")
 
 
 def test_dbt_manifest_path_is_relative_to_the_config_directory(tmp_path: Path) -> None:

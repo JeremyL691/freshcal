@@ -449,4 +449,6 @@ def test_w006_is_attached_to_a_manifest_source(tmp_path: Path) -> None:
     entry = entries_by_id(write_manifest(tmp_path, document))["ecb.fx"]
     assert entry.rule is not None
     assert [issue.code for issue in entry.warnings] == ["W006"]
-    assert entry.warnings[0].location == "ecb.fx"
+    # CLI-03/CLI-17: the label names the source; there is no location prefix.
+    assert entry.warnings[0].location is None
+    assert entry.warnings[0].message.startswith("calendar of ecb.fx has overrides")

@@ -208,7 +208,7 @@ class DbtManifestCatalog(SourceCatalog):
             source_id=source_id,
             origin=Origin.DBT_MANIFEST,
             rule=rule,
-            warnings=calendar_warnings(rule.calendar, source_id=source_id, location=source_id),
+            warnings=calendar_warnings(rule.calendar, source_id=source_id),
             location=node_location,
         )
 

@@ -260,12 +260,13 @@ def test_u_ccal_10_w006_for_overrides_without_valid_until() -> None:
     plain = parse_calendar(
         {"overrides": [{"non_working_days": ["2026-12-24"]}]}, {}, "sources[0].calendar", Path(".")
     )
-    warnings = calendar_warnings(plain, source_id="acme.timesheets", location="acme.timesheets")
+    warnings = calendar_warnings(plain, source_id="acme.timesheets")
     assert len(warnings) == 1
     assert warnings[0].code == "W006"
-    assert warnings[0].location == "acme.timesheets"
+    # CLI-03/CLI-17: the label names the source once; there is no location prefix.
+    assert warnings[0].location is None
     assert warnings[0].message == (
-        "acme.timesheets: calendar of acme.timesheets has overrides but no valid_until; "
+        "calendar of acme.timesheets has overrides but no valid_until; "
         "override dates are usually valid for one year, so set valid_until to the last date "
         "you checked"
     )
@@ -279,7 +280,6 @@ def test_u_ccal_10_w006_for_overrides_without_valid_until() -> None:
                 Path("."),
             ),
             source_id="acme.timesheets",
-            location="acme.timesheets",
         )
         == ()
     )

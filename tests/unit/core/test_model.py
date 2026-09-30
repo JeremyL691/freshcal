@@ -50,6 +50,8 @@ ACTIVE_CODES = {
     "E213",
     "E214",
     "E215",
+    "E216",
+    "E217",
     # E3xx
     "E301",
     "E302",
@@ -157,7 +159,7 @@ def test_u_mod_03_naive_datetimes_are_rejected() -> None:
 
 def test_u_mod_04_issue_catalog_is_exactly_the_active_codes() -> None:
     assert set(ISSUE_CODES) == ACTIVE_CODES
-    assert len(ACTIVE_CODES) == 46
+    assert len(ACTIVE_CODES) == 48  # 46 codes plus E216/E217 (blueprint amendment A-15)
     assert "W001" not in ISSUE_CODES  # retired in blueprint 1.1, never reuse
     assert all(ISSUE_CODES[code] for code in ISSUE_CODES)
 

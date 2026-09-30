@@ -15,7 +15,7 @@ from __future__ import annotations
 import argparse
 import sys
 from collections.abc import Sequence
-from contextlib import closing
+from contextlib import closing, suppress
 from datetime import datetime
 from pathlib import Path
 
@@ -43,7 +43,13 @@ from freshcal.config.loader import (
     PostgresConnection,
     load_config,
 )
-from freshcal.core.errors import ConfigError, Issue, QueryError
+from freshcal.core.errors import (
+    ConfigError,
+    Issue,
+    QueryError,
+    format_issue,
+    read_failure_reason,
+)
 from freshcal.core.model import EvaluationResult, RawObservation, SourceEntry
 from freshcal.core.ports import CalendarProvider, FreshnessReader
 from freshcal.core.timeutil import parse_instant
@@ -53,6 +59,22 @@ __all__ = ["build_parser", "main"]
 DEFAULT_CONFIG = Path("freshcal.yml")
 DEFAULT_NEXT_COUNT = 3
 
+_STATUS_HELP = """\
+Statuses (BLUEPRINT.md §3.7.3):
+  ON_TIME   judged by load timestamps, no release whose deadline has passed is
+            currently missing. It does not mean past releases were punctual, and a
+            reload of old rows can hide a missing release.
+  NOT_DUE   at least one release has occurred and is missing, but all missing
+            releases are still inside their grace windows.
+  OVERDUE   at least one release is missing after its deadline.
+
+Exit codes (precedence 2 > 3 > 1 > 0):
+  0  OK                 every evaluated source is ON_TIME or NOT_DUE; validate found no errors.
+  1  FRESHNESS_FAILURE  at least one OVERDUE or NO_DATA.
+  2  CONFIG_ERROR       invalid config or manifest, CLI usage error, or a CONFIG_ERROR result.
+  3  RUNTIME_ERROR      at least one QUERY_ERROR or an unexpected internal error.
+"""
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -61,15 +83,32 @@ def build_parser() -> argparse.ArgumentParser:
             "Business-calendar-aware data freshness checks: declare when data should "
             "arrive and how late it may be, then ask whether a due release is missing."
         ),
+        epilog=_STATUS_HELP,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--version", action="version", version=f"freshcal {__version__}")
     subparsers = parser.add_subparsers(dest="command", metavar="COMMAND")
 
-    check = subparsers.add_parser("check", help="evaluate sources and print a report")
+    check = subparsers.add_parser(
+        "check",
+        help="evaluate sources and print a report",
+        description=(
+            "Evaluate the selected sources and print a freshness report: the status, the "
+            "release it depends on, its deadline, the observed timestamp and the next "
+            "expected arrival."
+        ),
+    )
     _add_common(check, with_select=True)
     _add_format(check, with_output=True)
 
-    next_parser = subparsers.add_parser("next", help="list upcoming expected releases")
+    next_parser = subparsers.add_parser(
+        "next",
+        help="list upcoming expected releases",
+        description=(
+            "List the upcoming expected releases of each source; no warehouse is touched, "
+            "but the sources and their schedules are still loaded and validated."
+        ),
+    )
     _add_common(next_parser, with_select=True)
     _add_format(next_parser, with_output=True)
     next_parser.add_argument(
@@ -80,8 +119,19 @@ def build_parser() -> argparse.ArgumentParser:
         help=f"upcoming releases per source, 1-100 (default {DEFAULT_NEXT_COUNT})",
     )
 
-    explain = subparsers.add_parser("explain", help="step-by-step reasoning for one source")
-    explain.add_argument("source_id", metavar="SOURCE_ID")
+    explain = subparsers.add_parser(
+        "explain",
+        help="step-by-step reasoning for one source",
+        description=(
+            "Trace how one source's status is decided, step by step: the schedule, the "
+            "calendar, the releases around now, and every rule that led to the result."
+        ),
+    )
+    explain.add_argument(
+        "source_id",
+        metavar="SOURCE_ID",
+        help="the source ID to explain, for example ecb.fx_rates",
+    )
     _add_common(explain, with_select=False)
     explain.add_argument(
         "--observed",
@@ -93,7 +143,15 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
 
-    validate = subparsers.add_parser("validate", help="validate config and schedules")
+    validate = subparsers.add_parser(
+        "validate",
+        help="validate config and schedules",
+        description=(
+            "Validate the config and manifest and check every schedule without a "
+            "warehouse: one line per issue as 'CODE location: message', errors first, "
+            "then warnings."
+        ),
+    )
     _add_common(validate, with_select=True)
     return parser
 
@@ -213,11 +271,54 @@ def _provider() -> CalendarProvider:
     return HolidaysCalendarProvider()
 
 
+def _e217(path: Path, error: OSError) -> Issue:
+    """``E217`` for an output file that cannot be written (CLI-08)."""
+    return Issue("E217", f"cannot write output file {path}: {read_failure_reason(error)}")
+
+
+def _prepare_output(output: Path | None) -> None:
+    """Check the ``--output`` path before any query runs (CLI-08).
+
+    Opening the file in append mode proves the whole path is writable without
+    truncating an existing report, and turns every failure into ``E217`` (exit 2)
+    instead of a query run whose report is then lost.
+    """
+    if output is None:
+        return
+    try:
+        with output.open("a", encoding="utf-8"):
+            pass
+    except OSError as error:
+        raise ConfigError(_e217(output, error)) from error
+
+
 def _write(text: str, output: Path | None) -> None:
     if output is None:
         sys.stdout.write(text)
-    else:
+        return
+    try:
         output.write_text(text, encoding="utf-8")
+    except OSError as error:
+        raise ConfigError(_e217(output, error)) from error
+
+
+def _write_report(text: str, output: Path | None, report_code: int) -> int:
+    """Write the report and return the exit code it implies (CLI-08).
+
+    A broken pipe on stdout is not an error: the reader went away, so the command
+    exits quietly with the report's own code. A failed file write still reports the
+    report's code when that is higher than the configuration-error code 2, and says
+    with ``E217`` which file could not be written.
+    """
+    try:
+        _write(text, output)
+    except BrokenPipeError:
+        return report_code
+    except ConfigError as error:
+        for issue in error.issues:
+            sys.stderr.write(format_issue(issue) + "\n")
+        return max(report_code, 2)
+    return report_code
 
 
 def _fatal(error: ConfigError) -> int:
@@ -233,8 +334,24 @@ def _internal(error: BaseException) -> int:
     return 3
 
 
+def _reconfigure_stdout() -> None:
+    """Make stdout escape what its encoding cannot represent (CLI-19).
+
+    A terminal whose encoding is not UTF-8 (``PYTHONIOENCODING=ascii``, a legacy
+    locale) must not turn a trace with an accented path or a localized holiday name
+    into ``E599``; ``backslashreplace`` keeps the report readable in ASCII.
+    """
+    reconfigure = getattr(sys.stdout, "reconfigure", None)
+    if reconfigure is None:
+        return
+    # A stream that cannot be changed (a StringIO stand-in, a closed pipe) is fine.
+    with suppress(AttributeError, OSError, ValueError):
+        reconfigure(errors="backslashreplace")
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     """Run the CLI and return the process exit code."""
+    _reconfigure_stdout()
     parser = build_parser()
     try:
         args = parser.parse_args(argv)
@@ -242,8 +359,9 @@ def main(argv: Sequence[str] | None = None) -> int:
         return exc.code if isinstance(exc.code, int) else 0
 
     if args.command is None:
-        parser.print_help()
-        return 0
+        # A bare invocation is a usage error, exactly like argparse's own (§6.3).
+        parser.print_usage(sys.stderr)
+        return 2
 
     try:
         if args.command == "check":
@@ -264,15 +382,27 @@ def main(argv: Sequence[str] | None = None) -> int:
         return _internal(error)
 
 
-def _load(args: argparse.Namespace) -> tuple[AppConfig, list[SourceEntry], list[Issue]]:
+def _load(
+    args: argparse.Namespace, *, require_sources: bool = False
+) -> tuple[AppConfig, list[SourceEntry], list[Issue]]:
     config = load_config(args.config)
     entries, warnings = _catalogs(config)
+    if require_sources and not entries:
+        raise ConfigError(Issue("E216", "no sources to evaluate"))
     selected = select_entries(entries, getattr(args, "select", None))
     return config, selected, warnings
 
 
+def _require_connection(config: AppConfig) -> None:
+    """``E213`` (exit 2) for a command that cannot run without a connection (CLI-01)."""
+    if config.connection is None:
+        raise ConfigError(Issue("E213", "'connection' is required for this command"))
+
+
 def _run_check(args: argparse.Namespace) -> int:
-    config, entries, warnings = _load(args)
+    config, entries, warnings = _load(args, require_sources=True)
+    _require_connection(config)
+    _prepare_output(args.output)
     reader, reader_error = _make_reader(config)
     now = _clock(args).now()
     if reader is None:
@@ -298,12 +428,13 @@ def _run_check(args: argparse.Namespace) -> int:
     text = (
         JsonReporter().render(report) if args.format == "json" else TableReporter().render(report)
     )
-    _write(text, args.output)
-    return report.exit_code
+    return _write_report(text, args.output, report.exit_code)
 
 
 def _run_next_command(args: argparse.Namespace) -> int:
-    _, entries, warnings = _load(args)
+    config, entries, warnings = _load(args, require_sources=True)
+    _require_connection(config)
+    _prepare_output(args.output)
     report = run_next(
         entries, _provider(), _clock(args).now(), count=args.count, extra_warnings=warnings
     )
@@ -312,8 +443,8 @@ def _run_next_command(args: argparse.Namespace) -> int:
         if args.format == "json"
         else TableReporter().render_next(report)
     )
-    _write(text, args.output)
-    return 2 if any(source.error is not None for source in report.sources) else 0
+    code = 2 if any(source.error is not None for source in report.sources) else 0
+    return _write_report(text, args.output, code)
 
 
 def _run_explain_command(args: argparse.Namespace) -> int:
@@ -328,21 +459,28 @@ def _run_explain_command(args: argparse.Namespace) -> int:
         raw = _parse_observed(args.observed)
         query_text = None
     else:
+        if entry.rule is None:
+            # CLI-05: a source whose rule failed shows its own errors, never E213.
+            issues = entry.errors or (
+                Issue("E209", "schedule produces no release within 1830 days"),
+            )
+            for issue in issues:
+                sys.stderr.write(format_issue(issue) + "\n")
+            return 2
         reader, reader_error = _make_reader(config)
-        if reader is None or entry.rule is None:
-            if reader is not None:
-                reader.close()  # the rule is broken, but this reader was opened (CFG-22)
-            issue = reader_error or Issue("E213", "'connection' is required for this command")
-            sys.stderr.write(f"{issue.code} {issue.message}\n")
-            # E213 and per-source errors are configuration problems; anything else is runtime.
-            return 2 if issue.code in ("E213",) or entry.rule is None else 3
+        if reader is None:
+            # E213 only when there really is no connection; a reader that cannot be
+            # built for any other reason is a runtime error (E501/E505, §6.3).
+            assert reader_error is not None
+            sys.stderr.write(format_issue(reader_error) + "\n")
+            return 2 if reader_error.code == "E213" else 3
         try:
             with closing(reader):
                 raw = reader.read_latest(entry.rule.target)
         except QueryError as error:
             result = query_error_result(entry, _clock(args).now(), _provider(), error.issue)
-            sys.stdout.write(f"Result    {result.status.value}: {result.explanation}\n")
-            return 3
+            lines = [f"Result    {result.status.value}: {result.explanation}"]
+            return _write_report("\n".join(lines) + "\n", None, 3)
         query_text = _query_text(entry.rule.target)
 
     result, lines = run_explain(
@@ -358,8 +496,7 @@ def _run_explain_command(args: argparse.Namespace) -> int:
         text += f"{warning.code} {warning.message}\n"
     if result.error is not None:
         text += f"{result.error.code} {result.error.message}\n"
-    _write(text.lstrip("\n"), None)
-    return _status_exit_code(result)
+    return _write_report(text.lstrip("\n"), None, _status_exit_code(result))
 
 
 def _query_text(target: object) -> str:
@@ -377,15 +514,16 @@ def _status_exit_code(result: EvaluationResult) -> int:
 
 
 def _run_validate_command(args: argparse.Namespace) -> int:
-    _, entries, _ = _load(args)
-    report = run_validate(entries, _provider(), _clock(args).now())
-    for issue in report.issues:
-        sys.stdout.write(f"{issue.code} {issue.message}\n")
-    sys.stdout.write(
-        f"{report.valid_count} sources valid, {report.error_count} with errors, "
-        f"{report.warning_count} warnings\n"
+    _, entries, warnings = _load(args, require_sources=True)
+    report = run_validate(entries, _provider(), _clock(args).now(), extra_warnings=warnings)
+    lines = [format_issue(issue) for issue in report.issues]
+    noun = "source" if report.valid_count == 1 else "sources"
+    lines.append(
+        f"{report.valid_count} {noun} valid, {report.error_count} with errors, "
+        f"{report.warning_count} warnings"
     )
-    return 2 if report.error_count else 0
+    code = 2 if report.error_count else 0
+    return _write_report("\n".join(lines) + "\n", None, code)
 
 
 if __name__ == "__main__":

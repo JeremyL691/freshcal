@@ -413,14 +413,31 @@ def _deduplicate(issues: Iterable[Issue]) -> list[Issue]:
     return unique
 
 
+def _located(issue: Issue, source_id: str) -> Issue:
+    """Give an issue that names no location the source it came from (CLI-03).
+
+    ``validate`` prints ``CODE location: message``, so an ``E209``/``E405``/``E407``/
+    ``E408`` raised while checking one source must say which source; issues that already
+    carry a location (a schema path, a calendar reference) keep it.
+    """
+    if issue.location:
+        return issue
+    return Issue(issue.code, issue.message, source_id)
+
+
 def run_validate(
-    entries: Sequence[SourceEntry], provider: CalendarProvider, now: datetime
+    entries: Sequence[SourceEntry],
+    provider: CalendarProvider,
+    now: datetime,
+    *,
+    extra_warnings: Sequence[Issue] = (),
 ) -> ValidateReport:
     """Check every rule without a warehouse: schedules, calendars, and warnings (§6.2).
 
     Catches ``E209`` (no release in the horizon), ``E405``/``E407`` (calendar data or a
     roll failure), ``E408`` (an expired calendar) and the warnings ``W005``/``W006`` —
-    plus everything a rule already carried when it was loaded.
+    plus everything a rule already carried when it was loaded and the run-level warnings
+    the CLI passes in (``W004`` from the merge, CLI-04).
     """
     now = to_utc(now)
     errors: list[Issue] = []
@@ -431,7 +448,7 @@ def run_validate(
         entry_errors: list[Issue] = []
         calendar: BusinessCalendar | None = None
         if entry.rule is None:
-            entry_errors.extend(entry.errors)
+            entry_errors.extend(_located(issue, entry.source_id) for issue in entry.errors)
         else:
             rule = entry.rule
             calendar = BusinessCalendar(rule.calendar, provider, source_id=rule.source_id)
@@ -439,7 +456,7 @@ def run_validate(
                 calendar.check_valid_at(local_date(now, rule.schedule.timezone))
                 schedule_context(rule, now, provider)
             except (ConfigError, CalendarError) as failure:
-                entry_errors.append(failure.issue)
+                entry_errors.append(_located(failure.issue, rule.source_id))
             else:
                 # The same function `evaluate` uses, on the calendar this loop owns.
                 notice = calendar_notice(rule, calendar, now)
@@ -451,6 +468,7 @@ def run_validate(
             entries_with_errors += 1
         else:
             valid_count += 1
+    warnings.extend(extra_warnings)
     return ValidateReport(
         issues=tuple(_deduplicate([*errors, *warnings])),
         valid_count=valid_count,
