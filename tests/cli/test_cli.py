@@ -871,3 +871,113 @@ def test_aud03_no_command_echoes_the_connection_string(
     assert "environment variable name" in blob
     for leaked in (marker, "audit", "invalid.example", "password"):
         assert leaked not in blob, (command, leaked, blob)
+
+
+def _run_with_closed_stdout(argv: list[str], *, timeout: float = 180) -> tuple[int, str]:
+    """Run the CLI as a subprocess whose stdout is a pipe with its read end already closed.
+
+    This is a real OS pipe, not a mock: a small report fits the pipe buffer and only the
+    interpreter's shutdown flush fails, while a large one fails mid-write. Both must keep
+    the report's exit code (AUD-04).
+    """
+    read_fd, write_fd = os.pipe()
+    os.close(read_fd)
+    try:
+        proc = subprocess.run(
+            [sys.executable, "-m", "freshcal", *argv],
+            stdout=write_fd,
+            stderr=subprocess.PIPE,
+            cwd=Path.cwd(),
+            env={**os.environ, "PYTHONPATH": str(Path("src").resolve())},
+            timeout=timeout,
+            check=False,
+        )
+    finally:
+        os.close(write_fd)
+    return proc.returncode, proc.stderr.decode("utf-8", "replace")
+
+
+def _assert_quiet_broken_pipe(code: int, err: str, expected: int, label: str) -> None:
+    assert code == expected, (label, code, err[-400:])
+    for noise in ("BrokenPipeError", "Exception ignored", "Traceback", "E599"):
+        assert noise not in err, (label, noise, err[-400:])
+
+
+def test_aud04_a_closed_pipe_keeps_the_report_exit_code(tmp_path: Path) -> None:
+    """AUD-04: statuses 0, 1, 2 and 3 survive a closed stdout, and never become 120.
+
+    The four report codes come from four real fixtures: `next` on a healthy config (0),
+    an OVERDUE `check` (1), a `check` whose worst source is a configuration error (2), and
+    a `check` whose source cannot be read (3).
+    """
+    overdue = tmp_path / "overdue.yml"
+    overdue.write_text(
+        """version: 1
+connection: {type: duckdb, path: ":memory:"}
+sources:
+  - name: a.overdue
+    relation: "(SELECT TIMESTAMPTZ '2025-12-31 08:00:00+00' AS x) t"
+    loaded_at_field: x
+    schedule: {kind: business_days, time: "12:00", timezone: UTC}
+    grace: 1h
+""",
+        encoding="utf-8",
+    )
+    cases = [
+        (["next", "-c", str(ON_TIME), "--now", "2026-09-28T07:30:00+02:00", "--count", "3"], 0),
+        (["check", "-c", str(overdue), "--now", "2026-01-01T10:00:00Z"], 1),
+        (["check", "-c", str(MIXED), "--now", "2026-09-28T07:30:00+02:00"], 2),
+        (["check", "-c", str(MISSING_TABLE), "--now", "2026-09-28T07:30:00+02:00"], 3),
+    ]
+    for argv, expected in cases:
+        code, err = _run_with_closed_stdout(argv)
+        _assert_quiet_broken_pipe(code, err, expected, " ".join(argv[:3]))
+
+
+def test_aud04_a_large_report_on_a_closed_pipe_also_keeps_its_code(tmp_path: Path) -> None:
+    """AUD-04: a report larger than the pipe buffer fails mid-write and still exits 0.
+
+    120 sources x `--count 100` is well over the 64 KiB pipe buffer, so the write itself
+    raises inside the guarded call rather than at shutdown.
+    """
+    big = tmp_path / "big.yml"
+    sources = "\n".join(
+        f"  - {{name: s.n{index}, relation: raw.t, loaded_at_field: x, "
+        f'schedule: {{kind: business_days, time: "12:00", timezone: UTC}}, grace: 1h}}'
+        for index in range(120)
+    )
+    big.write_text(
+        f'version: 1\nconnection: {{type: duckdb, path: ":memory:"}}\nsources:\n{sources}\n',
+        encoding="utf-8",
+    )
+    code, err = _run_with_closed_stdout(
+        ["next", "-c", str(big), "--now", "2026-01-01T10:00:00Z", "--count", "100"]
+    )
+    _assert_quiet_broken_pipe(code, err, 0, "large next")
+
+
+def test_aud04_healthy_stdout_is_unchanged(capsys: pytest.CaptureFixture[str]) -> None:
+    """AUD-04: the guard is narrow — a healthy report still prints and exits 0."""
+    code, out, err = run(["next", "-c", str(ON_TIME), "--now", "2026-09-28T07:30:00+02:00"], capsys)
+    assert (code, err) == (0, "")
+    assert "ecb.fx_rates" in out
+
+
+def test_aud04_json_output_and_output_file_precedence_are_unchanged(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """AUD-04: JSON output and the `-o` failure precedence still behave as before."""
+    code, out, err = run(
+        ["check", "-c", str(ON_TIME), "--now", "2026-09-28T07:30:00+02:00", "--format", "json"],
+        capsys,
+    )
+    assert (code, err) == (0, "")
+    assert json.loads(out)["results"][0]["status"] == "ON_TIME"
+
+    unwritable = tmp_path / "missing" / "report.txt"
+    code, _out, err = run(
+        ["check", "-c", str(ON_TIME), "--now", "2026-09-28T07:30:00+02:00", "-o", str(unwritable)],
+        capsys,
+    )
+    assert code == 2
+    assert "E217" in err
