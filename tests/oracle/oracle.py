@@ -67,6 +67,7 @@ class Cron:
     dom_last: bool
     months: frozenset
     dow: frozenset | None  # None = '*', 0=Sunday
+    nth: tuple[tuple[int, int], ...] = ()  # (weekday 0=Sunday, ordinal 1-5) from `N#O`
 
     @staticmethod
     def parse(expr):
@@ -79,7 +80,21 @@ class Cron:
             dom_last = "L" in parts
             rest = [p for p in parts if p != "L"]
             dset = frozenset(_field(",".join(rest), 1, 31)) if rest else frozenset()
-        dws = None if dow == "*" else frozenset(d % 7 for d in _field(dow, 0, 7))
+        literals = []
+        nth = []
+        for part in dow.split(",") if dow != "*" else []:
+            if "#" in part:
+                day_text, ordinal_text = part.split("#")
+                nth.append((int(day_text) % 7, int(ordinal_text)))
+            else:
+                literals.append(part)
+        if literals and nth:
+            # Standard cron does not define mixing plain days with nth weekdays, croniter
+            # raises CroniterUnsupportedSyntaxError and FreshCal's loader turns that into
+            # E202; the oracle refuses it too rather than inventing a reading (T-8.2's
+            # documented grammar exclusion).
+            raise ValueError(f"day-of-week mixes literals and nth weekdays: {dow!r}")
+        dws = frozenset(d % 7 for d in _field(",".join(literals), 0, 7)) if literals else None
         return Cron(
             frozenset(_field(m, 0, 59)),
             frozenset(_field(h, 0, 23)),
@@ -87,7 +102,20 @@ class Cron:
             dom_last,
             frozenset(_field(mon, 1, 12)),
             dws,
+            tuple(nth),
         )
+
+    @staticmethod
+    def nth_weekday_day(d: date, weekday: int, ordinal: int) -> int | None:
+        """Day-of-month of the ``ordinal``-th ``weekday`` in ``d``'s month, or None if absent.
+
+        Independent of croniter: count forward from the month's first day. An ordinal of 5
+        is simply absent in a month with only four such weekdays.
+        """
+        first = date(d.year, d.month, 1)
+        first_cron_dow = (first.weekday() + 1) % 7
+        day = 1 + (weekday - first_cron_dow) % 7 + 7 * (ordinal - 1)
+        return day if day <= _cal.monthrange(d.year, d.month)[1] else None
 
     def day_matches(self, d: date) -> bool:
         if d.month not in self.months:
@@ -99,7 +127,13 @@ class Cron:
             else ((self.dom is not None and d.day in self.dom) or (self.dom_last and d.day == last))
         )
         cron_dow = (d.weekday() + 1) % 7
-        dow_ok = None if self.dow is None else cron_dow in self.dow
+        if self.dow is None and not self.nth:
+            dow_ok = None  # the field is `*`: it constrains nothing
+        else:
+            dow_ok = (self.dow is not None and cron_dow in self.dow) or any(
+                weekday == cron_dow and d.day == self.nth_weekday_day(d, weekday, ordinal)
+                for weekday, ordinal in self.nth
+            )
         if dom_ok is None and dow_ok is None:
             return True
         if dom_ok is None:

@@ -9405,5 +9405,1808 @@
    false,
    null
   ]
+ },
+ {
+  "args": {
+   "t": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "previous_release_at_or_before",
+  "density": 0,
+  "expect": [
+   "2026-01-01T09:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 1 * 1#1",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2026-01-01T09:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2025-12-27T17:29:05+00:00",
+   "now": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "NOT_DUE",
+   "2026-01-01T09:00:00+00:00",
+   "2026-01-01T10:00:00+00:00",
+   "2026-01-05T09:00:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 1 * 1#1",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "NOT_DUE",
+   "2026-01-01T09:00:00+00:00",
+   "2026-01-01T10:00:00+00:00",
+   "2026-01-05T09:00:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "t": "2026-03-08T07:30:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 0,
+  "expect": [
+   "2026-04-01T09:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 1 * 1#1",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2026-04-01T09:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "A": "2026-01-01T10:00:00+00:00",
+   "B": "2026-01-15T06:00:00+00:00"
+  },
+  "check": "releases_between",
+  "density": 0,
+  "expect": [
+   [
+    "2026-01-01T14:00:00+00:00",
+    "None",
+    "normal",
+    false
+   ],
+   [
+    "2026-01-05T14:00:00+00:00",
+    "None",
+    "normal",
+    false
+   ]
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 1 * 1#1",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "America/New_York",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   [
+    "2026-01-01T14:00:00+00:00",
+    "None",
+    "normal",
+    false
+   ],
+   [
+    "2026-01-05T14:00:00+00:00",
+    "None",
+    "normal",
+    false
+   ]
+  ]
+ },
+ {
+  "args": {
+   "inclusive": false,
+   "t": "2026-01-01T10:00:00+00:00",
+   "until": "2026-01-15T06:00:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 0,
+  "expect": [
+   "2026-01-01T14:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 1 * 1#1",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "America/New_York",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2026-01-01T14:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "t": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "previous_release_at_or_before",
+  "density": 0,
+  "expect": [
+   "2026-01-01T09:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 1,15 * 1#1,1#2",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2026-01-01T09:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2025-12-27T17:29:05+00:00",
+   "now": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "NOT_DUE",
+   "2026-01-01T09:00:00+00:00",
+   "2026-01-01T10:00:00+00:00",
+   "2026-01-05T09:00:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 1,15 * 1#1,1#2",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "NOT_DUE",
+   "2026-01-01T09:00:00+00:00",
+   "2026-01-01T10:00:00+00:00",
+   "2026-01-05T09:00:00+00:00",
+   0,
+   1,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "A": "2026-03-08T07:30:00+00:00",
+   "B": "2026-03-22T03:30:00+00:00"
+  },
+  "check": "releases_between",
+  "density": 0,
+  "expect": [
+   [
+    "2026-03-09T09:00:00+00:00",
+    "None",
+    "normal",
+    false
+   ],
+   [
+    "2026-03-15T09:00:00+00:00",
+    "None",
+    "normal",
+    false
+   ]
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 1,15 * 1#1,1#2",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   [
+    "2026-03-09T09:00:00+00:00",
+    "None",
+    "normal",
+    false
+   ],
+   [
+    "2026-03-15T09:00:00+00:00",
+    "None",
+    "normal",
+    false
+   ]
+  ]
+ },
+ {
+  "args": {
+   "t": "2026-07-15T03:00:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 0,
+  "expect": [
+   "2026-07-15T09:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 1,15 * 1#1,1#2",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2026-07-15T09:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": false,
+   "t": "2026-07-15T03:00:00+00:00",
+   "until": "2026-07-28T23:00:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 0,
+  "expect": [
+   "2026-07-15T09:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 1,15 * 1#1,1#2",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2026-07-15T09:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "t": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 0,
+  "expect": [
+   "2026-01-29T09:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 29 * 1#5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2026-01-29T09:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2025-12-27T17:29:05+00:00",
+   "now": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "OVERDUE",
+   "2025-12-29T09:00:00+00:00",
+   "2025-12-29T10:00:00+00:00",
+   "2026-01-29T09:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 29 * 1#5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "OVERDUE",
+   "2025-12-29T09:00:00+00:00",
+   "2025-12-29T10:00:00+00:00",
+   "2026-01-29T09:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "t": "2026-03-08T07:30:00+00:00"
+  },
+  "check": "previous_release_at_or_before",
+  "density": 0,
+  "expect": [
+   "2026-01-29T09:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 29 * 1#5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2026-01-29T09:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "A": "2026-07-15T03:00:00+00:00",
+   "B": "2026-07-28T23:00:00+00:00"
+  },
+  "check": "releases_between",
+  "density": 0,
+  "expect": [
+   [
+    "2026-07-28T20:00:00+00:00",
+    "None",
+    "normal",
+    false
+   ]
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 29 * 1#5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Pacific/Apia",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   [
+    "2026-07-28T20:00:00+00:00",
+    "None",
+    "normal",
+    false
+   ]
+  ]
+ },
+ {
+  "args": {
+   "inclusive": false,
+   "t": "2026-07-15T03:00:00+00:00",
+   "until": "2026-07-28T23:00:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 0,
+  "expect": [
+   "2026-07-28T20:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0 9 29 * 1#5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "Pacific/Apia",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2026-07-28T20:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "t": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 0,
+  "expect": [
+   "2026-01-31T02:30:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "30 2 31 * 0#5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2026-01-31T02:30:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "t": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "previous_release_at_or_before",
+  "density": 0,
+  "expect": [
+   "2025-12-31T02:30:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "30 2 31 * 0#5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2025-12-31T02:30:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2025-12-27T17:29:05+00:00",
+   "now": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "OVERDUE",
+   "2025-12-31T02:30:00+00:00",
+   "2025-12-31T03:30:00+00:00",
+   "2026-01-31T02:30:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "30 2 31 * 0#5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "OVERDUE",
+   "2025-12-31T02:30:00+00:00",
+   "2025-12-31T03:30:00+00:00",
+   "2026-01-31T02:30:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "A": "2026-01-01T10:00:00+00:00",
+   "B": "2026-01-15T06:00:00+00:00"
+  },
+  "check": "releases_between",
+  "density": 0,
+  "expect": [
+   [
+    "2026-01-05T00:10:00+00:00",
+    "None",
+    "normal",
+    false
+   ],
+   [
+    "2026-01-05T00:15:00+00:00",
+    "None",
+    "normal",
+    false
+   ],
+   [
+    "2026-01-05T00:20:00+00:00",
+    "None",
+    "normal",
+    false
+   ],
+   [
+    "2026-01-12T00:10:00+00:00",
+    "None",
+    "normal",
+    false
+   ],
+   [
+    "2026-01-12T00:15:00+00:00",
+    "None",
+    "normal",
+    false
+   ],
+   [
+    "2026-01-12T00:20:00+00:00",
+    "None",
+    "normal",
+    false
+   ]
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 0 15 * 1#1,1#2",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   [
+    "2026-01-05T00:10:00+00:00",
+    "None",
+    "normal",
+    false
+   ],
+   [
+    "2026-01-05T00:15:00+00:00",
+    "None",
+    "normal",
+    false
+   ],
+   [
+    "2026-01-05T00:20:00+00:00",
+    "None",
+    "normal",
+    false
+   ],
+   [
+    "2026-01-12T00:10:00+00:00",
+    "None",
+    "normal",
+    false
+   ],
+   [
+    "2026-01-12T00:15:00+00:00",
+    "None",
+    "normal",
+    false
+   ],
+   [
+    "2026-01-12T00:20:00+00:00",
+    "None",
+    "normal",
+    false
+   ]
+  ]
+ },
+ {
+  "args": {
+   "t": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 0,
+  "expect": [
+   "2026-01-05T00:10:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 0 15 * 1#1,1#2",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2026-01-05T00:10:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "inclusive": false,
+   "t": "2026-01-01T10:00:00+00:00",
+   "until": "2026-01-15T06:00:00+00:00"
+  },
+  "check": "next_release_after_until",
+  "density": 0,
+  "expect": [
+   "2026-01-05T00:10:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 0 15 * 1#1,1#2",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2026-01-05T00:10:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "t": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "previous_release_at_or_before",
+  "density": 0,
+  "expect": [
+   "2025-12-15T00:20:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 0 15 * 1#1,1#2",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2025-12-15T00:20:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2025-12-27T17:29:05+00:00",
+   "now": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "ON_TIME",
+   "2025-12-15T00:20:00+00:00",
+   "2025-12-15T01:20:00+00:00",
+   "2026-01-05T00:10:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 0 15 * 1#1,1#2",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "ON_TIME",
+   "2025-12-15T00:20:00+00:00",
+   "2025-12-15T01:20:00+00:00",
+   "2026-01-05T00:10:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "A": "2026-01-01T10:00:00+00:00",
+   "B": "2026-01-15T06:00:00+00:00"
+  },
+  "check": "releases_between",
+  "density": 0,
+  "expect": [],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0,30 0,12 30 2 1-5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": []
+ },
+ {
+  "args": {
+   "t": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 0,
+  "expect": [
+   "2026-02-02T00:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0,30 0,12 30 2 1-5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2026-02-02T00:00:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "t": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "previous_release_at_or_before",
+  "density": 0,
+  "expect": [
+   "2025-02-28T12:30:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0,30 0,12 30 2 1-5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2025-02-28T12:30:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2025-12-27T17:29:05+00:00",
+   "now": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "ON_TIME",
+   "2025-02-28T12:30:00+00:00",
+   "2025-02-28T13:30:00+00:00",
+   "2026-02-02T00:00:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "0,30 0,12 30 2 1-5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "ON_TIME",
+   "2025-02-28T12:30:00+00:00",
+   "2025-02-28T13:30:00+00:00",
+   "2026-02-02T00:00:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "A": "2026-01-01T10:00:00+00:00",
+   "B": "2026-01-15T06:00:00+00:00"
+  },
+  "check": "releases_between",
+  "density": 0,
+  "expect": [],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 0 31 2 1-5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": []
+ },
+ {
+  "args": {
+   "t": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 0,
+  "expect": [
+   "2026-02-02T00:10:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 0 31 2 1-5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2026-02-02T00:10:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "t": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "previous_release_at_or_before",
+  "density": 0,
+  "expect": [
+   "2025-02-28T00:20:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 0 31 2 1-5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2025-02-28T00:20:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2025-12-27T17:29:05+00:00",
+   "now": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "ON_TIME",
+   "2025-02-28T00:20:00+00:00",
+   "2025-02-28T01:20:00+00:00",
+   "2026-02-02T00:10:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 0 31 2 1-5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "ON_TIME",
+   "2025-02-28T00:20:00+00:00",
+   "2025-02-28T01:20:00+00:00",
+   "2026-02-02T00:10:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "A": "2026-01-01T10:00:00+00:00",
+   "B": "2026-01-15T06:00:00+00:00"
+  },
+  "check": "releases_between",
+  "density": 0,
+  "expect": [],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 0,12 30 2 1-5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": []
+ },
+ {
+  "args": {
+   "t": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 0,
+  "expect": [
+   "2026-02-02T00:10:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 0,12 30 2 1-5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2026-02-02T00:10:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "t": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "previous_release_at_or_before",
+  "density": 0,
+  "expect": [
+   "2025-02-28T12:20:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 0,12 30 2 1-5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2025-02-28T12:20:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2025-12-27T17:29:05+00:00",
+   "now": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "ON_TIME",
+   "2025-02-28T12:20:00+00:00",
+   "2025-02-28T13:20:00+00:00",
+   "2026-02-02T00:10:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "10-20/5 0,12 30 2 1-5",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "ON_TIME",
+   "2025-02-28T12:20:00+00:00",
+   "2025-02-28T13:20:00+00:00",
+   "2026-02-02T00:10:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "A": "2026-01-01T10:00:00+00:00",
+   "B": "2026-01-15T06:00:00+00:00"
+  },
+  "check": "releases_between",
+  "density": 0,
+  "expect": [],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "15 0 30 2 0,6",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": []
+ },
+ {
+  "args": {
+   "t": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 0,
+  "expect": [
+   "2026-02-01T00:15:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "15 0 30 2 0,6",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2026-02-01T00:15:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "t": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "previous_release_at_or_before",
+  "density": 0,
+  "expect": [
+   "2025-02-23T00:15:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "15 0 30 2 0,6",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2025-02-23T00:15:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2025-12-27T17:29:05+00:00",
+   "now": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "ON_TIME",
+   "2025-02-23T00:15:00+00:00",
+   "2025-02-23T01:15:00+00:00",
+   "2026-02-01T00:15:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "15 0 30 2 0,6",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "ON_TIME",
+   "2025-02-23T00:15:00+00:00",
+   "2025-02-23T01:15:00+00:00",
+   "2026-02-01T00:15:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "A": "2026-01-01T10:00:00+00:00",
+   "B": "2026-01-15T06:00:00+00:00"
+  },
+  "check": "releases_between",
+  "density": 0,
+  "expect": [],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "59 16 31 2 6",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": []
+ },
+ {
+  "args": {
+   "t": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "next_release_after",
+  "density": 0,
+  "expect": [
+   "2026-02-07T16:59:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "59 16 31 2 6",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2026-02-07T16:59:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "t": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "previous_release_at_or_before",
+  "density": 0,
+  "expect": [
+   "2025-02-22T16:59:00+00:00",
+   "None",
+   "normal",
+   false
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "59 16 31 2 6",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "2025-02-22T16:59:00+00:00",
+   "None",
+   "normal",
+   false
+  ]
+ },
+ {
+  "args": {
+   "O": "2025-12-27T17:29:05+00:00",
+   "now": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "ON_TIME",
+   "2025-02-22T16:59:00+00:00",
+   "2025-02-22T17:59:00+00:00",
+   "2026-02-07T16:59:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "None",
+   "expr": "59 16 31 2 6",
+   "grace": "1:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud06-surface",
+  "want": [
+   "ON_TIME",
+   "2025-02-22T16:59:00+00:00",
+   "2025-02-22T17:59:00+00:00",
+   "2026-02-07T16:59:00+00:00",
+   0,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "O": "2025-12-31T12:00:00+00:00",
+   "now": "2026-01-01T10:00:00+00:00"
+  },
+  "check": "evaluate",
+  "density": 0,
+  "expect": [
+   "OVERDUE",
+   "2026-01-01T09:00:00+00:00",
+   "2026-01-01T09:00:00+00:00",
+   "2026-01-05T09:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "2025-01-01",
+   "expr": "0 9 1 * 1#1",
+   "grace": "0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud01-union",
+  "want": [
+   "OVERDUE",
+   "2026-01-01T09:00:00+00:00",
+   "2026-01-01T09:00:00+00:00",
+   "2026-01-05T09:00:00+00:00",
+   1,
+   0,
+   false,
+   null
+  ]
+ },
+ {
+  "args": {
+   "A": "2026-01-01T00:00:00+00:00",
+   "B": "2026-01-31T23:59:59+00:00"
+  },
+  "check": "releases_between",
+  "density": 0,
+  "expect": [
+   [
+    "2026-01-01T09:00:00+00:00",
+    "None",
+    "normal",
+    false
+   ],
+   [
+    "2026-01-05T09:00:00+00:00",
+    "None",
+    "normal",
+    false
+   ]
+  ],
+  "oracle_limit": false,
+  "provider_seed": 0,
+  "rule": {
+   "X+": [],
+   "X-": [],
+   "active_from": "2025-01-01",
+   "expr": "0 9 1 * 1#1",
+   "grace": "0:00:00",
+   "kind": "cron",
+   "policy": "none",
+   "tz": "UTC",
+   "weekend": [
+    5,
+    6
+   ]
+  },
+  "source": "m8-aud01-union",
+  "want": [
+   [
+    "2026-01-01T09:00:00+00:00",
+    "None",
+    "normal",
+    false
+   ],
+   [
+    "2026-01-05T09:00:00+00:00",
+    "None",
+    "normal",
+    false
+   ]
+  ]
  }
 ]

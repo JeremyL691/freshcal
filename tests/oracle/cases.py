@@ -86,6 +86,30 @@ CRONITER_DAY_OR_REFUSALS = (
     "59 16 31 2 6",
 )
 
+# Restricted day-of-month plus an nth-weekday day-of-week (T-8.2). Standard cron ORs the two
+# restricted fields, so the answer is the union of the two branches; croniter computes only
+# the nth-weekday branch and silently drops the day-of-month one, so its output is a strict
+# *subset* and cannot be the reference truth here. `test_oracle_selfcheck` checks the union
+# against hand-derived cases and only checks that croniter's answer is contained in it.
+DOM_HASH_UNIONS = (
+    "0 9 1 * 1#1",
+    "0 9 1,15 * 1#1,1#2",
+    "0 9 29 * 1#5",
+    "30 2 31 * 0#5",
+    "10-20/5 0 15 * 1#1,1#2",
+)
+
+# The nth-weekday grammar the oracle implements: `N#O` with N a weekday (0-7, Sunday=0) and
+# O the occurrence in the month (1-5). A fifth occurrence is absent in months that have only
+# four such weekdays. Mixing plain weekdays with `#` in one field is refused (see
+# `oracle.Cron.parse`); the `H`/`R` extensions are not part of the grammar.
+NTH_WEEKDAY_EXPRESSIONS = (
+    "0 9 * * 1#1",
+    "0 9 * * 5#5",
+    "0 9 * * 0#3",
+    "0 9 * * 1#1,1#2",
+)
+
 # Every expression the recorded findings use, plus the never-firing set.
 CRON_EXPRS = [
     "* * * * *",
@@ -135,6 +159,8 @@ CRON_EXPRS = [
     "59 22 * * 6",
     "59 3 * 2 6",
     *NEVER_FIRES,
+    *NTH_WEEKDAY_EXPRESSIONS,
+    *DOM_HASH_UNIONS,
 ]
 
 US = timedelta(microseconds=1)

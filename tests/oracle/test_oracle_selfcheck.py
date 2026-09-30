@@ -15,9 +15,11 @@ The wall-clock comparison runs on at least 50 000 wall times (the T-7.1 acceptan
 
 from __future__ import annotations
 
+import calendar
+import json
 import random
 import re
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -27,14 +29,18 @@ from tests.oracle import oracle
 from tests.oracle.cases import (
     CRON_EXPRS,
     CRONITER_DAY_OR_REFUSALS,
+    DOM_HASH_UNIONS,
     NEVER_FIRES,
+    NTH_WEEKDAY_EXPRESSIONS,
     ZONES,
+    build,
     offsets_in_effect,
     table_classify,
     table_preimages,
     table_resolve,
     transitions,
 )
+from tests.property import strategies as property_strategies
 
 from freshcal.core.timeutil import classify_local, resolve_local
 
@@ -94,25 +100,37 @@ def test_orc_01_oracle_stays_independent() -> None:
 
 @pytest.mark.parametrize("expression", CRON_EXPRS)
 def test_orc_01_cron_matcher_agrees_with_croniter(expression: str) -> None:
-    """Where croniter supports an expression, the two enumerations are identical."""
+    """Where croniter supports an expression, the two enumerations are identical.
+
+    Restricted day-of-month plus nth weekdays is the documented exception (T-8.2): croniter
+    drops the day-of-month branch, so its answer is only a *subset* of the OR union and is
+    compared as such. The union itself is pinned by the hand-derived cases below.
+    """
     theirs = list(_croniter_stream(expression, CRON_START, CRON_END))
+    mine = list(_oracle_stream(expression, CRON_START, CRON_END))
+    if expression in DOM_HASH_UNIONS:
+        # croniter computes only the nth-weekday branch for these and sometimes refuses the
+        # expression outright; either way its answer can only be a subset of the OR union.
+        # The day-of-month branch itself is pinned by NTH_WEEKDAY_CASES below.
+        assert set(theirs) <= set(mine), f"{expression!r}: oracle lost a croniter date"
+        assert set(mine) - set(theirs), f"{expression!r}: the day-of-month branch is missing"
+        return
     if not theirs:
         # croniter refuses the expression (SEM-08). The oracle may then only be non-empty when
         # the expression is one of the documented `day_or` refusals.
-        mine = list(_oracle_stream(expression, CRON_START, CRON_END))
         if mine:
             assert expression in CRONITER_DAY_OR_REFUSALS, expression
             assert expression in NEVER_FIRES
         return
-    mine = _oracle_stream(expression, CRON_START, CRON_END)
     compared = 0
+    mine_iter = iter(mine)
     for right in theirs[:CRON_CAP]:
-        left = next(mine, None)
+        left = next(mine_iter, None)
         assert left == right, f"{expression!r}: oracle={left} croniter={right}"
         compared += 1
     expected_more = compared == CRON_CAP
     if not expected_more:
-        assert next(mine, None) is None, (
+        assert next(mine_iter, None) is None, (
             f"{expression!r}: the oracle has releases croniter does not"
         )
 
@@ -130,6 +148,104 @@ def test_orc_01_never_firing_expressions_are_empty_for_both() -> None:
             assert all(moment.month == 2 for moment in matches), expression
         else:
             assert list(_oracle_stream(expression, CRON_START, CRON_END)) == [], expression
+
+
+# Hand-derived nth-weekday expectations (T-8.2). January 2026 starts on a Thursday, so its
+# Mondays are 5, 12, 19, 26 (four of them) and its Fridays are 2, 9, 16, 23, 30 (five);
+# February 2026 has Fridays 6, 13, 20, 27 (four). Each row states the days the oracle must
+# match, derived by reading a calendar, never from croniter.
+NTH_WEEKDAY_CASES = (
+    # (expression, year, month, expected days)
+    ("0 9 1 * *", 2026, 1, [1]),  # day-of-month only
+    ("0 9 * * 1#1", 2026, 1, [5]),  # nth weekday only: the first Monday
+    ("0 9 * * 1#5", 2026, 1, []),  # absent: January 2026 has four Mondays
+    ("0 9 * * 5#5", 2026, 2, []),  # absent: February 2026 has four Fridays
+    ("0 9 * * 5#5", 2026, 1, [30]),  # present: January 2026 has five Fridays
+    ("0 9 1 * 1#1", 2026, 1, [1, 5]),  # union of the two branches (the AUD-01 case)
+    ("0 9 5 * 1#1", 2026, 1, [5]),  # overlapping branches, deduplicated
+    ("0 9 1,15 * 1#1,1#2", 2026, 1, [1, 5, 12, 15]),  # several alternatives each
+    ("0 9 29 * 1#5", 2026, 1, [29]),  # day-of-month only survives: no fifth Monday
+    ("0 9 * * 1#1,1#3", 2026, 1, [5, 19]),  # comma alternatives in one field
+    ("10-20/5 0 15 * 1#1,1#2", 2026, 1, [5, 12, 15]),  # croniter refuses this one outright
+)
+
+
+@pytest.mark.parametrize(
+    ("expression", "year", "month", "expected"), NTH_WEEKDAY_CASES, ids=lambda value: str(value)
+)
+def test_orc_01_nth_weekday_matching_is_hand_derived(
+    expression: str, year: int, month: int, expected: list[int]
+) -> None:
+    """`N#O` and its OR interaction with a restricted day-of-month, read off a calendar."""
+    cron = oracle.Cron.parse(expression)
+    got = [
+        day
+        for day in range(1, calendar.monthrange(year, month)[1] + 1)
+        if cron.day_matches(date(year, month, day))
+    ]
+    assert got == expected, f"{expression!r} {year}-{month:02d}: {got} != {expected}"
+
+
+def test_orc_01_the_audit_case_is_predicted() -> None:
+    """T-8.2 acceptance: `0 9 1 * 1#1` predicts Jan 1 and Jan 5 2026."""
+    cron = oracle.Cron.parse("0 9 1 * 1#1")
+    days = [day for day in range(1, 32) if cron.day_matches(date(2026, 1, day))]
+    assert days == [1, 5], days
+
+
+def test_orc_01_grammar_exclusions_are_documented() -> None:
+    """The oracle refuses what the loader refuses, and says so rather than guessing."""
+    for expression in ("0 9 * * 1#1,3", "0 9 * * 0,6#2"):
+        with pytest.raises(ValueError, match="mixes literals and nth weekdays"):
+            oracle.Cron.parse(expression)
+    # The supported grammar is the whole of §3.4.1: five fields, `*`, ranges, steps, lists,
+    # `L` in the day-of-month field and `N#O` in the day-of-week field. `H`/`R` extensions
+    # are refused by the loader (E202) and are not part of the oracle's grammar either.
+    for expression in ("0 9 * * H(2)", "0 9 * * R(1-5)"):
+        with pytest.raises(ValueError, match="invalid literal for int"):
+            oracle.Cron.parse(expression)
+
+
+def test_orc_01_hash_expressions_are_exercised() -> None:
+    """The seeded campaign and the property strategies really draw `#` combinations (T-8.2).
+
+    A generator that never produces the syntax would let the oracle's nth-weekday support rot
+    unnoticed, so this is a distribution assertion over the same draws the tests use.
+    """
+    assert all("#" in expression for expression in NTH_WEEKDAY_EXPRESSIONS)
+    assert all("#" in expression and expression.split()[2] != "*" for expression in DOM_HASH_UNIONS)
+
+    rng = random.Random(20260929)
+    drawn = 0
+    for _ in range(2000):
+        rule, _provider, _instant = build(rng, "cron")
+        if "#" in rule.schedule.expression:
+            drawn += 1
+    assert drawn > 0, "the campaign generator produced no `#` case in 2000 draws"
+
+    # The property strategies sample the same day-of-week list, so the syntax reaches the
+    # property suite as well (a seeded draw from the same lists, not a Hypothesis example).
+    assert any("#" in value for value in property_strategies.CRON_DAYS_OF_WEEK)
+    property_drawn = 0
+    for _ in range(2000):
+        expression = " ".join(
+            [
+                rng.choice(property_strategies.CRON_MINUTES),
+                rng.choice(property_strategies.CRON_HOURS),
+                rng.choice(property_strategies.CRON_DAYS_OF_MONTH),
+                "*",
+                rng.choice(property_strategies.CRON_DAYS_OF_WEEK),
+            ]
+        )
+        if "#" in expression:
+            property_drawn += 1
+    assert property_drawn > 0, "the property strategies produced no `#` case in 2000 draws"
+
+    # The recorded regression corpus keeps the cases the sound comparator surfaced (T-8.1/
+    # T-8.2), so the syntax stays pinned even where the seeded draw happens to miss it.
+    corpus = json.loads(Path(__file__).with_name("regressions.json").read_text())
+    pinned = [case for case in corpus if "#" in case["rule"].get("expr", "")]
+    assert len(pinned) >= 10, len(pinned)
 
 
 def _wall_times(seed: int = 20260929) -> list[tuple[datetime, str]]:

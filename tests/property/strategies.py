@@ -65,7 +65,10 @@ CRON_MINUTES = ("0", "15", "30", "45", "*/30")
 #: the mix. TEST-04 found the old list had neither `0-23` nor the fixed-offset zones.
 CRON_HOURS = ("0-23", "*/6", "0", "6", "12", "18")
 CRON_DAYS_OF_MONTH = ("*", "1", "15", "L", "29", "30", "31")
-CRON_DAYS_OF_WEEK = ("*", "1-5", "0,6")
+#: T-8.2 adds the nth-weekday syntax (`N#O`) the platform promises, including a fifth
+#: occurrence (absent in some months) and a comma alternative, so the property suite
+#: exercises the grammar the oracle's independent matcher implements.
+CRON_DAYS_OF_WEEK = ("*", "1-5", "0,6", "1#1", "5#5", "1#1,1#2", "0#3")
 SUB_HOURLY_MINUTES = ("*/30",)
 
 
