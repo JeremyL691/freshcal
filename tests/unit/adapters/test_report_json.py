@@ -143,7 +143,7 @@ def validate(document: object) -> None:
 def test_u_json_01_example_renders_exactly() -> None:
     rendered = JsonReporter().render(example_report())
     expected = spec_example()
-    # The blueprint's example was written for the released version string.
+    # The example was written for the released version string.
     expected["freshcal_version"] = __version__
 
     assert rendered.endswith("\n")

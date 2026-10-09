@@ -3,7 +3,7 @@
 Wall time is measured with ``time.perf_counter()``, which is allowed: only *reading the
 wall clock for decisions* is banned (the clock rule of ADR 0010). The budgets are
 roughly ten times the expected cost, so hardware noise does not fail them; if one fails
-in CI, investigate first and raise it only through a Blueprint Amendment, never by
+in CI, investigate first and raise it only through a deliberate budget change, never by
 skipping the test.
 """
 
@@ -123,7 +123,7 @@ def test_pb_2_per_minute_rule_with_thirty_day_old_data() -> None:
 
     assert result.missed_count == 10_000
     assert result.missed_truncated is True
-    # The blueprint's 2 s budget holds because the search streams releases and stops at
+    # The 2 s budget holds because the search streams releases and stops at
     # the counting cap instead of materialising a 32-day window (Amendment A-5 records the
     # investigation: 2.29 s before the fix, ~0.3 s after).
     assert elapsed < 2.0, f"PB-2 took {elapsed:.2f}s (budget 2s)"

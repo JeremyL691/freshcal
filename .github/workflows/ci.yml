@@ -66,8 +66,8 @@ jobs:
       - run: uv run pytest -m postgres --cov --cov-report=term-missing
       - run: uv run coverage report --include="*/adapters/postgres_reader.py" --fail-under=80
   oracle:
-    # AUD-05: the full seeded campaign (>= 20 seeds x 500 cases) is the proof obligation for
-    # every core change (rule P1), and the default pytest selection excludes its marker. A
+    # The full seeded campaign (>= 20 seeds x 500 cases) is the proof obligation for
+    # every core change, and the default pytest selection excludes its marker. A
     # dedicated job keeps it out of the 20-minute matrix jobs; 45 minutes is the measured
     # campaign (863 s on the reference machine) with generous headroom. The campaign prints
     # its seeds, case count, `#` coverage and disagreements, and a test asserts that this

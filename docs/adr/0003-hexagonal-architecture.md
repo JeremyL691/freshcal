@@ -34,7 +34,7 @@ The core is testable without a database, a network, or a real clock; golden test
 in three process time zones and must give identical results (§3.8.14). Adapter
 failures cannot corrupt semantics, and a new warehouse is an additive adapter. The cost is a port per outside interaction (§5.4), some
 boilerplate in `cli.py`, and a test suite that must keep the contracts honest
-(the T-0.2 probes prove both guards actually fire).
+(dedicated probes prove both guards actually fire).
 
 ## Alternatives considered
 

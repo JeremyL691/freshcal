@@ -52,5 +52,5 @@ golden non-verdict rows G20b, G34, G37.
   deterministic and must be fixed before any verdict is trusted, which is why 2
   outranks 1.
 - **Warnings that change the exit code.** Rejected: it makes W-codes a second,
-  redundant error channel; the E214 change in blueprint 1.1 moved the one case that
-  mattered (guessing a zone) into an error.
+  redundant error channel; the E214 change in design revision 1.1 moved the one case
+  that mattered (guessing a zone) into an error.

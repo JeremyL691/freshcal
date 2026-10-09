@@ -56,8 +56,8 @@ qualification that a gap can delay the expectation. Negative: a publisher that r
 fires at the shifted wall time (03:30) is judged earlier — up to one gap length (one hour
 in Berlin, 30 minutes on Lord Howe), producing a possible false alarm of that duration;
 and every gap test and golden row changes at once, which is exactly why this stays a
-proposal until the owner decides. The drift guard is the oracle suite (`tests/oracle/`,
-rule P1): whichever rule is chosen must be implemented in one place and kept green.
+proposal until the owner decides. The drift guard is the oracle suite (`tests/oracle/`):
+whichever rule is chosen must be implemented in one place and kept green.
 
 ## Alternatives considered
 

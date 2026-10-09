@@ -18,7 +18,7 @@ EXPECTED_FIELDS = (
 )
 
 
-def test_scenario_file_holds_every_blueprint_row() -> None:
+def test_scenario_file_holds_every_specified_row() -> None:
     assert len(SCENARIOS) == 44
     assert SCENARIO_IDS == [
         "G01",

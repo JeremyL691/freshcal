@@ -12,7 +12,7 @@ Accepted.
 
 FreshCal is meant to be adopted inside company data stacks, and it links no
 GPL-family code at runtime beyond one optional dependency. The owner did not answer
-decision 3 ("License") before T-0.1 started, so the documented default applies:
+decision 3 ("License") before development started, so the documented default applies:
 Apache-2.0. The main alternative in this space is MIT,
 which is shorter and equally permissive but silent on patents and on contribution
 terms.
@@ -25,7 +25,7 @@ in the task's acceptance criteria), and `pyproject.toml` declares
 `license = "Apache-2.0"` with `license-files = ["LICENSE"]` (PEP 639). Runtime
 dependencies are permissive (croniter MIT, holidays MIT, PyYAML MIT, jsonschema MIT,
 DuckDB MIT); psycopg is LGPL-3.0-only and stays an optional, separately installed extra
-(§1.5 F7), which the blueprint treats as compatible with an Apache-2.0 FreshCal — an
+(§1.5 F7), which this project treats as compatible with an Apache-2.0 FreshCal — an
 owner assumption, not legal advice (§14.2 item 8).
 
 ## Consequences
@@ -44,5 +44,5 @@ answer — if it differs — supersedes this record rather than being lost in ch
 - **AGPL or another copyleft license.** Rejected: it would prevent the intended
   adoption inside private data platforms.
 - **No license (all rights reserved) until the owner answers.** Rejected: without a
-  license the code is not usable by anyone, and every task from T-0.1 on would produce
-  unlicensed artifacts.
+  license the code is not usable by anyone, and everything produced from the first
+  commit on would be unlicensed artifacts.

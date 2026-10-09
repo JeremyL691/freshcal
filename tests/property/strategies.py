@@ -1,6 +1,6 @@
 """Hypothesis strategies for the schedule and verdict property tests (§9.3).
 
-The time-zone list is the one the blueprint names, including the ones whose DST
+The time-zone list includes the zones whose DST
 transitions are unusual (a 30-minute shift for ``Australia/Lord_Howe``, a 45-minute
 offset for ``Asia/Kathmandu``, midnight for ``America/Santiago``). Schedules come from
 a deliberately small grammar so that failures are explainable, and calendars come from

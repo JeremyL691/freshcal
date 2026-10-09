@@ -11,7 +11,7 @@ Accepted.
 ## Context
 
 The toolchain must be reproducible on a macOS development machine and on
-`ubuntu-latest` CI, run the same commands the agent runs, and add as little
+`ubuntu-latest` CI, keep the commands identical everywhere, and add as little
 dependency surface as possible: every extra runtime dependency is something a user
 must trust and a maintainer must track. Python packaging in 2026 has several
 overlapping choices (pip/venv/tox, poetry/pdm/hatch/uv, black+isort/flake8/ruff,
@@ -36,7 +36,7 @@ One tool per job, a single lockfile, and no tool-specific source layout: the pac
 is a plain `src/` layout that any PEP 517 tool can build, and `uv build`'s artifacts
 pass `twine check --strict`. Version bumps are visible in one file. The costs: uv is a
 young tool whose lockfile format changes across majors (CI pins the action by commit
-SHA, Amendment A-4), coverage of `jsonschema` errors had to be mapped to our own issue
+SHA), coverage of `jsonschema` errors had to be mapped to our own issue
 codes rather than emitted raw, and `argparse` means writing help text and validation by
 hand instead of using decorators — accepted because the exit-code contract matters
 more than ergonomics.

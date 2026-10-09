@@ -4,7 +4,7 @@ Stage 1 of the two-stage validation: the committed JSON Schema decides whether a
 document has the right shape, and every schema error is mapped to a coded
 :class:`Issue` with a precise location such as ``sources[0].schedule.time``.
 
-Two design constraints come from the blueprint: sub-schemas are validated through a
+Two design constraints shape this module: sub-schemas are validated through a
 wrapper ``{"$defs": …, "$ref": "#/$defs/<name>"}`` so that ``$ref``s still resolve,
 and every error is reported because ``validate`` lists them all; the ``best_match``
 error stays first so a caller that shows only one (the ``check`` path) keeps the most

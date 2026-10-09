@@ -1,7 +1,8 @@
 """Real-publication validation: release dates against what publishers actually did.
 
-Golden tests prove that the code matches the blueprint; these tests prove, with real
-public data, that the blueprint's calendar model matches the world (§9.10 A). Each test
+Golden tests prove that the code matches the design specification; these tests prove,
+with real public data, that the specification's calendar model matches the world
+(§9.10 A). Each test
 compares "FreshCal expects a release on this day" with "the publisher published on this
 day" over a complete, committed publication history, using FreshCal's own
 ``releases_between`` and the real ``HolidaysCalendarProvider``.

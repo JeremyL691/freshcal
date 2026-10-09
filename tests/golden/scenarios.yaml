@@ -739,7 +739,7 @@
     explanation: "Overdue: release Mon 2026-09-28 16:00 CEST missed its deadline Mon 2026-09-28 18:00 CEST; 3 releases missed; latest data observed Fri 2026-09-25 16:07 CEST."
 
 - id: G33
-  title: Century gap finds the exact oldest miss (blueprint 1.0 regression)
+  title: Century gap finds the exact oldest miss (early-version regression)
   rule:
     schedule: {kind: cron, cron: "0 0 29 2 *", timezone: UTC}
     calendar: {weekend: [sat, sun]}

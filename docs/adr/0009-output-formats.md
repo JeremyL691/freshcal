@@ -33,7 +33,7 @@ verdict, not a punctuality record.
 
 Both renderers are testable: the table against the worked example in §8.3, the JSON
 against the example in §8.2 and against the schema on every run, with drift guards
-comparing the committed schemas to the blueprint's blocks. Slack, Elementary, and
+comparing the committed schemas against frozen copies. Slack, Elementary, and
 other formats are additive work behind the same `Reporter` port (roadmap items 3–4).
 The cost is discipline: any new field must be additive and schema-validated, and a
 semantic change must be recorded rather than slipped into the output.

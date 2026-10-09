@@ -27,11 +27,11 @@ record keeps its text and its status becomes `Superseded by NNNN`.
 ## Consequences
 
 The set of decisions is finite and reviewable: an owner can read 20 short records
-instead of 3,000 lines of blueprint. Contributors proposing a semantic change must
+instead of 3,000 lines of specification. Contributors proposing a semantic change must
 write a record, which forces the trade-off to be stated. The cost is a write-up per
-decision and a discipline to keep records in sync with the code; T-0.4's acceptance
-criteria (20 files, all sections present, every decision record citing its blueprint
-section) make the discipline checkable.
+decision and a discipline to keep records in sync with the code; the acceptance
+criteria for the records (20 files, all sections present, every decision record citing
+its specification section) make the discipline checkable.
 
 ## Alternatives considered
 
